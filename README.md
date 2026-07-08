@@ -4,10 +4,11 @@
 
 A **single-file web app** for researchers deciding where to publish:
 
-- **Journals tab** — find **open access journals**: **Diamond OA** (free to publish *and* free to read — no APC, no hidden fees) by default, with one click to include APC journals (fees shown on each card). All cross-referenced with **SCImago** rankings (quartile, SJR, H-index) and DOAJ metadata (turnaround time, peer-review type, country, languages, subjects).
+- **Journals tab** — find **open access journals**: **Diamond OA** (free to publish *and* free to read — no APC, no hidden fees) by default, with one click to include APC journals (fees shown on each card). All cross-referenced with **SCImago** rankings (quartile, SJR, H-index) and DOAJ metadata (turnaround time, peer-review type, country, languages, subjects). Every journal card has a **"Check Scopus"** button that opens a popup with a **live verdict from the Scopus API** (indexed or not, document count, most recent indexed paper).
 - **Conferences tab** — two sources:
   - **Worldwide CS** — ranked computer-science conferences (CCF + CORE ranks) with live upcoming **submission deadlines**, dates, locations, and links.
   - **Morocco** — research events in Morocco from the **CNRST** agenda (all disciplines), with event dates, countdowns, and discipline filters.
+- **Scopus ✓ tab** — check whether *any* journal or paper is indexed in Scopus: type an **ISSN** or a paper **DOI** for a live check straight from the Scopus API, or a journal name to search the offline SCImago snapshot (~32,000 sources, with a warning when Scopus coverage ended — useful against predatory "Scopus indexed" claims).
 
 Everything runs **entirely in your browser**. No server, no account, nothing is uploaded anywhere. Loaded data is cached locally (IndexedDB) so the app opens instantly next time.
 
@@ -51,13 +52,22 @@ The **Morocco** source loads automatically too: the CNRST server doesn't allow c
 - Filter by discipline and upcoming-only; full-text search
 - Links to each event's CNRST page
 
+### Scopus check
+
+- **Per-journal popup** — a "Check Scopus" button on every journal card shows a live verdict: indexed or not, how many documents, date of the most recent indexed paper
+- **Live ISSN / DOI check** — paste any ISSN or paper DOI in the Scopus ✓ tab for an authoritative answer straight from the Scopus API
+- **Offline snapshot search** — search all ~32,000 Scopus sources by name; journals whose Scopus coverage ended are flagged (helps catch discontinued and predatory journals)
+
+To self-host the live checks: get a free API key at [dev.elsevier.com](https://dev.elsevier.com), deploy this repo to Netlify, and set the `SCOPUS_API_KEY` environment variable (`netlify env:set SCOPUS_API_KEY <key> --secret`). Everything else works without it.
+
 ## How it works
 
 - **Diamond OA definition:** journals in DOAJ with `APC = No` **and** `Has other fees = No`. All ~23,000 DOAJ journals are loaded; the fee filter switches between Diamond and APC journals.
 - **Join:** DOAJ records are matched to SCImago rows by normalized print/electronic ISSN.
 - **DOAJ live fetch:** DOAJ's search API caps every query at 1,000 accessible records, so the app cursor-paginates — sorted by `created_date`, advancing a date-range filter window by window — while respecting the 2 requests/second rate limit.
 - **Conference feed:** a small built-in YAML parser reads the ccfddl dataset; deadlines are converted from their announced timezone (AoE, UTC±N, PT) and compared against your clock.
-- No frameworks, no build step, no dependencies — one HTML file with vanilla JS.
+- **Live Scopus checks:** a tiny [Netlify serverless function](netlify/functions/scopus.mjs) proxies the Elsevier Scopus Search API so the API key stays server-side (env var `SCOPUS_API_KEY`, never shipped to the browser or committed to this repo). When the proxy is unreachable (e.g. opening the HTML file locally), the app falls back to the offline SCImago snapshot.
+- No frameworks, no build step, no dependencies — one HTML file with vanilla JS, plus one optional serverless function for the live Scopus checks.
 
 ## Data sources & credits
 
@@ -67,6 +77,7 @@ The **Morocco** source loads automatically too: the CNRST server doesn't allow c
 | [SCImago Journal Rank](https://www.scimagojr.com) | Quartiles, SJR, H-index | Free with attribution; data from Scopus® |
 | [ccf-deadlines (ccfddl)](https://github.com/ccfddl/ccf-deadlines) | CS conference deadlines & CCF/CORE ranks | MIT, community-maintained |
 | [CNRST](https://www.cnrst.ma/fr/liste-des-evenements) | Research events in Morocco (RSS) | Public feed from Morocco's National Center for Scientific and Technical Research |
+| [Elsevier Scopus API](https://dev.elsevier.com) | Live journal/paper indexing checks | Free API key; requests proxied server-side, key never exposed |
 
 The CSV data files are not committed to this repository — download fresh ones from the links above (fresher data = better results).
 
