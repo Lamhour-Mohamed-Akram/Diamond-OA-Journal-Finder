@@ -2,7 +2,7 @@
 
 **▶ Live app: [diamond-oa-finder.netlify.app](https://diamond-oa-finder.netlify.app/)**
 
-A **single-file web app** for researchers deciding where to publish:
+A **lightweight static web app** (plain HTML/CSS/JS, no build step, no frameworks) for researchers deciding where to publish:
 
 - **Journals tab** — find **open access journals**: **Diamond OA** (free to publish *and* free to read — no APC, no hidden fees) by default, with one click to include APC journals (fees shown on each card). All cross-referenced with **SCImago** rankings (quartile, SJR, H-index) and DOAJ metadata (turnaround time, peer-review type, country, languages, subjects). Every journal card has a **"Check Scopus"** button that opens a popup with a **live verdict from the Scopus API** (indexed or not, document count, most recent indexed paper).
 - **Conferences tab** — two sources:
@@ -14,7 +14,7 @@ Everything runs **entirely in your browser**. No server, no account, nothing is 
 
 ## Quick start
 
-Use the hosted app at **[diamond-oa-finder.netlify.app](https://diamond-oa-finder.netlify.app/)**, or download [`index.html`](index.html) and open it in any modern browser — it works the same either way.
+Use the hosted app at **[diamond-oa-finder.netlify.app](https://diamond-oa-finder.netlify.app/)**, or clone this repo and open [`index.html`](index.html) in any modern browser — it works the same either way.
 
 1. Open the app.
 2. Download the DOAJ journal CSV from [doaj.org/csv](https://doaj.org/csv) (the download starts by itself) and drop it in.
@@ -65,7 +65,7 @@ To self-host the live checks: get a free API key at [dev.elsevier.com](https://d
 - **SCImago files:** both the full export (`SJR Best Quartile` column) and filtered per-category/region exports (`SJR Quartile` column) are accepted; the file type is detected automatically from its header.
 - **Conference feed:** a small built-in YAML parser reads the ccfddl dataset; deadlines are converted from their announced timezone (AoE, UTC±N, PT) and compared against your clock.
 - **Live Scopus checks:** a tiny [Netlify serverless function](netlify/functions/scopus.mjs) proxies the Elsevier Scopus Search API so the API key stays server-side (env var `SCOPUS_API_KEY`, never shipped to the browser or committed to this repo). When the proxy is unreachable (e.g. opening the HTML file locally), the app falls back to the offline SCImago snapshot.
-- No frameworks, no build step, no dependencies — one HTML file with vanilla JS, plus one optional serverless function for the live Scopus checks.
+- No frameworks, no build step, no dependencies — plain HTML ([`index.html`](index.html)), one stylesheet ([`css/`](css/)) and six small vanilla-JS modules ([`js/`](js/)), plus one optional serverless function for the live Scopus checks.
 
 ## Data sources & credits
 
