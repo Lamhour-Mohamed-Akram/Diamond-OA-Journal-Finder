@@ -20,7 +20,12 @@ jobs:
 
       - name: Fetch feed
         run: |
-          curl -sSf --max-time 300 --retry 3 \
+          # cnrst.ma serves an incomplete TLS chain (missing the HARICA/GEANT
+          # intermediate) — fetch it from the cert's AIA URL so curl can verify
+          curl -sSf 'http://crt.harica.gr/HARICA-GEANT-TLS-R1.cer' -o inter.der
+          openssl x509 -inform DER -in inter.der -out inter.pem 2>/dev/null || cp inter.der inter.pem
+          cat /etc/ssl/certs/ca-certificates.crt inter.pem > cabundle.pem
+          curl -sSf --max-time 300 --retry 3 --cacert cabundle.pem \
             'https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&type=rss' \
             -o cnrst_new.xml
           grep -q '<item>' cnrst_new.xml
