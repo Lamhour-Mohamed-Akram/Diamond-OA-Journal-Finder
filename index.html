@@ -257,14 +257,14 @@ main{padding:26px 30px 60px;min-width:0}
     <div class="steps">
       <div class="step" id="slot-doaj">
         <div class="step-head"><span class="stepnum">1</span><b>Journal data (DOAJ)</b><span class="sstat" id="slot-doaj-s">waiting…</span></div>
-        <button class="apibtn" id="apiBtn">⤓ Fetch automatically — nothing to download<small>gets ~23,000 open access journals from DOAJ · takes 2–3 minutes</small></button>
-        <div class="alt">Prefer a file? Open <a href="https://doaj.org/csv" target="_blank" rel="noopener">doaj.org/csv</a> — a CSV file downloads by itself — then drop it in the box below.</div>
+        <a class="linkbtn" href="https://doaj.org/csv" target="_blank" rel="noopener">⬇ Download the DOAJ journal CSV</a>
+        <div class="alt">The download starts by itself when you open the link (~25 MB, all open access journals). Then drop the file in the box below.</div>
       </div>
 
       <div class="step" id="slot-sci">
         <div class="step-head"><span class="stepnum">2</span><b>Rankings (SCImago)</b><span class="sstat" id="slot-sci-s">waiting…</span></div>
         <a class="linkbtn" href="https://www.scimagojr.com/journalrank.php" target="_blank" rel="noopener">↗ Open scimagojr.com/journalrank.php</a>
-        <div class="alt">On that page, click the <b>“⬇ Download data”</b> button at the top right, above the ranking table. It saves a file like <b>“scimagojr 2025.csv”</b> — then drop that file in the box below.</div>
+        <div class="alt">On that page, click the <b>“⬇ Download”</b> button at the top right. It saves a file like <b>“scimagojr 2025.csv”</b> — then drop that file in the box below.<br>💡 <b>Tip:</b> for the best results, download the <b>full default list (no filters)</b> — you can filter inside this app afterwards. Filtered downloads (one category, one region…) also work, but journals outside your filter will show as “unranked”.</div>
       </div>
     </div>
 
@@ -534,8 +534,9 @@ function sniffDelim(firstLine){
   return (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
 }
 function detectKind(headerRow){
-  const h=headerRow.map(x=>x.toLowerCase());
-  if(h.some(x=>x.includes('sjr best quartile'))) return 'sci';
+  const h=headerRow.map(x=>x.trim().toLowerCase());
+  // full export uses "SJR Best Quartile"; filtered per-category exports use "SJR Quartile"
+  if(h.some(x=>x==='sjr best quartile'||x==='sjr quartile')) return 'sci';
   if(h.some(x=>x==='apc') && h.some(x=>x.includes('journal title'))) return 'doaj';
   return null;
 }
@@ -551,6 +552,8 @@ const normISSN = v => {
 function buildSci(sciRows){
   const sh=sciRows[0];
   const si=Object.fromEntries(sh.map((c,i)=>[c.trim(),i]));
+  // filtered per-category exports name the quartile column "SJR Quartile"
+  if(!('SJR Best Quartile' in si) && ('SJR Quartile' in si)) si['SJR Best Quartile']=si['SJR Quartile'];
   for(const c of ['Issn','SJR','SJR Best Quartile','H index','Categories','Areas'])
     if(!(c in si)) throw new Error('SCImago file: missing column “'+c+'”');
   const smap=new Map(), list=[];
@@ -641,68 +644,6 @@ function assemble(inters, sciRows){
   };
 }
 
-/* ================= DOAJ live API fetch =================
-   The search API caps every query at 1,000 accessible records, so we
-   cursor-paginate: sort by created_date and move the range lower bound
-   forward after each 1,000-record window. Results dedupe by record id. */
-const regionNames=(typeof Intl!=='undefined'&&Intl.DisplayNames)?new Intl.DisplayNames(['en'],{type:'region'}):null;
-const langNames=(typeof Intl!=='undefined'&&Intl.DisplayNames)?new Intl.DisplayNames(['en'],{type:'language'}):null;
-function apiToInter(rec){
-  const b=rec.bibjson||{};
-  let country=(b.publisher&&b.publisher.country)||'';
-  if(country&&regionNames){ try{ country=regionNames.of(country.toUpperCase()); }catch(e){} }
-  const langs=(b.language||[]).map(c=>{ if(!langNames) return c; try{return langNames.of(String(c).toLowerCase());}catch(e){return c;} }).join(', ');
-  const subj=(b.subject||[]).map(s=>s.term).filter(Boolean).join('; ');
-  const kw=(b.keywords||[]).join(', ');
-  const hasApc=!!(b.apc&&b.apc.has_apc), hasFees=!!(b.other_charges&&b.other_charges.has_other_charges);
-  const apcMax=(b.apc&&b.apc.max)||[];
-  return {
-    dia:!hasApc&&!hasFees,
-    fee:apcMax.length?apcMax[0].price+' '+apcMax[0].currency:'',
-    t:b.title||'', pissn:b.pissn||'', eissn:b.eissn||'',
-    w:(b.publication_time_weeks!=null&&!isNaN(b.publication_time_weeks))?Math.round(b.publication_time_weeks):null,
-    rev:((b.editorial&&b.editorial.review_process)||[]).join(', '),
-    pub:(b.publisher&&b.publisher.name)||'', c:country,
-    lang:langs, dsub:subj+(kw?'; '+kw:''),
-    url:(b.ref&&b.ref.journal)||'', doaj:'https://doaj.org/toc/'+(b.eissn||b.pissn||rec.id)
-  };
-}
-async function fetchDoajLive(onProgress){
-  const BASE='https://doaj.org/api/search/journals/';
-  const UPPER='2099-01-01T00:00:00Z';
-  let cursor='1970-01-01T00:00:00Z';
-  const seen=new Map();
-  let grand=null;
-  for(let round=0; round<80; round++){
-    const q=encodeURIComponent('created_date:["'+cursor+'" TO "'+UPPER+'"]');
-    let roundTotal=null, last=null, got=0;
-    for(let page=1; page<=10; page++){
-      let j=null;
-      for(let attempt=0; attempt<3; attempt++){
-        try{
-          const res=await fetch(BASE+q+'?page='+page+'&pageSize=100&sort=created_date:asc');
-          if(res.status===429){ await new Promise(r=>setTimeout(r,2000)); continue; }
-          if(!res.ok) throw new Error('DOAJ API returned '+res.status);
-          j=await res.json(); break;
-        }catch(e){
-          if(attempt===2) throw e;
-          await new Promise(r=>setTimeout(r,1500));
-        }
-      }
-      roundTotal=j.total;
-      if(grand==null) grand=j.total;
-      for(const rec of j.results){ if(rec.id && !seen.has(rec.id)) seen.set(rec.id,apiToInter(rec)); last=rec.created_date; }
-      got+=j.results.length;
-      onProgress(seen.size,grand);
-      if(j.results.length<100) break;
-      await new Promise(r=>setTimeout(r,400)); // stay under the 2 req/s limit
-    }
-    if(roundTotal==null || roundTotal<=1000 || got<1000 || !last || last===cursor) break;
-    cursor=last;
-  }
-  return [...seen.values()];
-}
-
 /* ================= IndexedDB cache ================= */
 const DB='oa_finder', STORE='data';
 function idb(){ return new Promise((res,rej)=>{ const rq=indexedDB.open(DB,1);
@@ -740,20 +681,15 @@ async function ingest(fileList){
     else { status('“'+f.name+'” doesn’t look like a DOAJ or SCImago CSV — check the file.',true); }
   }
   if(files.doaj && files.sci) processAll();
-  else if(files.doaj||files.sci) status(files.sci?'SCImago loaded — drop the DOAJ CSV or use the live fetch button.':'One file loaded — drop the other one.');
+  else if(files.doaj||files.sci) status(files.sci?'SCImago loaded ✓ — now drop the DOAJ CSV (step 1).':'DOAJ loaded ✓ — now drop the SCImago CSV (step 2).');
 }
 
 async function processAll(){
   try{
-    let inters;
-    if(files.doaj.api){
-      inters=files.doaj.inters;
-    } else {
-      status('Parsing DOAJ file… (large file, a few seconds)');
-      await new Promise(r=>setTimeout(r,30));
-      const doajRows=parseCSV(files.doaj.text, files.doaj.delim);
-      inters=doajCsvToInters(doajRows);
-    }
+    status('Parsing DOAJ file… (large file, a few seconds)');
+    await new Promise(r=>setTimeout(r,30));
+    const doajRows=parseCSV(files.doaj.text, files.doaj.delim);
+    const inters=doajCsvToInters(doajRows);
     status('Parsing SCImago file…');
     await new Promise(r=>setTimeout(r,30));
     const sciRows=parseCSV(files.sci.text, files.sci.delim);
@@ -772,25 +708,6 @@ dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');}
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');ingest([...e.dataTransfer.files]);});
 $('fileInput').addEventListener('change',e=>ingest([...e.target.files]));
-
-$('apiBtn').addEventListener('click',async ()=>{
-  const btn=$('apiBtn');
-  btn.disabled=true;
-  try{
-    const inters=await fetchDoajLive((got,total)=>{
-      status('Fetching from DOAJ API… '+got.toLocaleString()+' of '+(total?total.toLocaleString():'?')+' journals');
-    });
-    if(!inters.length) throw new Error('DOAJ API returned no journals.');
-    files.doaj={api:true,inters,name:'DOAJ live API ('+inters.length.toLocaleString()+' journals)'};
-    $('slot-doaj').classList.add('ok');
-    $('slot-doaj-s').textContent='live API · '+inters.length.toLocaleString()+' diamond journals';
-    if(files.sci) processAll();
-    else status('Journals fetched ✓ — now drop the SCImago CSV to add rankings.');
-  }catch(e){
-    status('Live fetch failed: '+e.message+' — you can still drop the CSV file instead.',true);
-    btn.disabled=false;
-  }
-});
 
 $('confOnly').addEventListener('click',()=>startApp(null,null,'c'));
 
@@ -899,7 +816,6 @@ function bindOnce(){
     files.doaj=files.sci=null;
     ['slot-doaj','slot-sci'].forEach(id=>$(id).classList.remove('ok'));
     $('slot-doaj-s').textContent='waiting…'; $('slot-sci-s').textContent='waiting…';
-    $('apiBtn').disabled=false;
     status('');
     $('app').style.display='none'; $('loader').style.display='flex';
     $('cacheNote').style.display='none';

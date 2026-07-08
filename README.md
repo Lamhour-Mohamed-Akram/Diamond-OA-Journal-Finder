@@ -17,10 +17,8 @@ Everything runs **entirely in your browser**. No server, no account, nothing is 
 Use the hosted app at **[diamond-oa-finder.netlify.app](https://diamond-oa-finder.netlify.app/)**, or download [`index.html`](index.html) and open it in any modern browser — it works the same either way.
 
 1. Open the app.
-2. Load journal data, either way:
-   - **Live fetch** — click *"Fetch journals live from the DOAJ API"* (~14,000 Diamond OA journals, takes 1–2 minutes), or
-   - **CSV drop** — drop the DOAJ journal CSV from [doaj.org/csv](https://doaj.org/csv).
-3. Drop the SCImago rank CSV from [scimagojr.com/journalrank.php](https://www.scimagojr.com/journalrank.php) (*"Download data"* button) — needed for quartiles/SJR either way.
+2. Download the DOAJ journal CSV from [doaj.org/csv](https://doaj.org/csv) (the download starts by itself) and drop it in.
+3. Download the SCImago rank CSV from [scimagojr.com/journalrank.php](https://www.scimagojr.com/journalrank.php) (*"Download"* button) and drop it in. **Tip:** download the full default list for best results — filtered exports (one category, one region, …) are accepted too, but journals outside the filter will show as unranked.
 4. The app joins both sources on ISSN and remembers the result.
 
 The **Conferences** tab needs no files at all — it fetches the open [ccf-deadlines](https://github.com/ccfddl/ccf-deadlines) feed live (cached for 24 h). There is also a *"Just looking for conferences?"* shortcut on the start screen.
@@ -64,7 +62,7 @@ To self-host the live checks: get a free API key at [dev.elsevier.com](https://d
 
 - **Diamond OA definition:** journals in DOAJ with `APC = No` **and** `Has other fees = No`. All ~23,000 DOAJ journals are loaded; the fee filter switches between Diamond and APC journals.
 - **Join:** DOAJ records are matched to SCImago rows by normalized print/electronic ISSN.
-- **DOAJ live fetch:** DOAJ's search API caps every query at 1,000 accessible records, so the app cursor-paginates — sorted by `created_date`, advancing a date-range filter window by window — while respecting the 2 requests/second rate limit.
+- **SCImago files:** both the full export (`SJR Best Quartile` column) and filtered per-category/region exports (`SJR Quartile` column) are accepted; the file type is detected automatically from its header.
 - **Conference feed:** a small built-in YAML parser reads the ccfddl dataset; deadlines are converted from their announced timezone (AoE, UTC±N, PT) and compared against your clock.
 - **Live Scopus checks:** a tiny [Netlify serverless function](netlify/functions/scopus.mjs) proxies the Elsevier Scopus Search API so the API key stays server-side (env var `SCOPUS_API_KEY`, never shipped to the browser or committed to this repo). When the proxy is unreachable (e.g. opening the HTML file locally), the app falls back to the offline SCImago snapshot.
 - No frameworks, no build step, no dependencies — one HTML file with vanilla JS, plus one optional serverless function for the live Scopus checks.
