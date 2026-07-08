@@ -157,6 +157,18 @@ main{padding:26px 30px 60px;min-width:0}
 .due-mid{background:var(--amber-soft);color:var(--amber)}
 .due-far{background:var(--sea-soft);color:var(--sea)}
 .due-none{background:#EFEDE6;color:var(--muted-2);font-family:Inter,sans-serif;font-weight:500;font-size:11.5px}
+.due-past{background:#EFEDE6;color:var(--muted-2)}
+.srcbar{display:flex;background:#0a1e24;border:1px solid #17343c;border-radius:9px;padding:3px;gap:3px;margin-bottom:14px}
+.srcbar button{flex:1;background:transparent;border:0;border-radius:6px;color:#8fa5a2;font-family:inherit;font-size:11.5px;font-weight:600;padding:7px 4px;cursor:pointer;transition:.12s}
+.srcbar button.on{background:#24454d;color:#F4F7F5}
+.srcbar button:not(.on):hover{color:#dfe8e6}
+.q-date{background:var(--slate-soft);color:var(--ink-2)}
+.q-date .q{font-size:16px}
+.jsnip{font-size:12px;color:var(--muted);line-height:1.5;margin:4px 0 7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.masetup{max-width:560px;margin:30px auto;text-align:center}
+.masetup h3{font-family:Spectral,serif;font-size:20px;margin:0 0 10px}
+.masetup p{color:var(--muted);font-size:13.5px;line-height:1.7;margin:0 0 18px}
+.masetup a{color:var(--coral);font-weight:600}
 .dueinfo{text-align:right;font-size:11.5px;color:var(--muted);line-height:1.45}
 .dueinfo b{color:var(--ink-2);font-weight:600}
 .extlinks{display:flex;gap:12px}
@@ -288,11 +300,18 @@ main{padding:26px 30px 60px;min-width:0}
 
   <!-- ---- Conference filters ---- -->
   <div id="side-c" style="display:none">
-    <div class="datainfo">CS conference deadlines & ranks from the <b>ccfddl</b> open dataset (CCF + CORE ranks).<br>Feed loaded: <b id="confStamp">—</b><button id="confRefresh">Refresh feed</button></div>
+    <div class="srcbar">
+      <button data-src="ccf" class="on">Worldwide CS</button>
+      <button data-src="ma">Morocco</button>
+    </div>
+
+    <div class="datainfo" id="cinfo-ccf">CS conference deadlines & ranks from the <b>ccfddl</b> open dataset (CCF + CORE ranks).<br>Feed loaded: <b id="confStamp">—</b><button id="confRefresh">Refresh feed</button></div>
+    <div class="datainfo" id="cinfo-ma" style="display:none">Research events in <b>Morocco</b> from the CNRST agenda (all disciplines).<br>Feed loaded: <b id="maStamp">—</b><button id="maReload">Load newer feed file…</button></div>
+
     <div class="stat-row">
-      <div class="stat"><b id="s-ctotal">–</b><span>Conferences</span></div>
-      <div class="stat"><b id="s-copen">–</b><span>Open calls</span></div>
-      <div class="stat"><b id="s-c30">–</b><span>Due ≤ 30 days</span></div>
+      <div class="stat"><b id="s-ctotal">–</b><span id="s-ctotal-l">Conferences</span></div>
+      <div class="stat"><b id="s-copen">–</b><span id="s-copen-l">Open calls</span></div>
+      <div class="stat"><b id="s-c30">–</b><span id="s-c30-l">Due ≤ 30 days</span></div>
     </div>
 
     <div class="grp search">
@@ -301,13 +320,26 @@ main{padding:26px 30px 60px;min-width:0}
       <input id="cq" type="search" placeholder="Acronym, name, place…" autocomplete="off">
     </div>
 
-    <div class="grp">
-      <label class="h">CCF rank</label>
-      <div class="chips" id="cchips">
-        <span class="chip q1 on" data-r="A">A</span>
-        <span class="chip q2 on" data-r="B">B</span>
-        <span class="chip q3 on" data-r="C">C</span>
-        <span class="chip none on" data-r="N">Not ranked</span>
+    <div id="cflt-ccf">
+      <div class="grp">
+        <label class="h">CCF rank</label>
+        <div class="chips" id="cchips">
+          <span class="chip q1 on" data-r="A">A</span>
+          <span class="chip q2 on" data-r="B">B</span>
+          <span class="chip q3 on" data-r="C">C</span>
+          <span class="chip none on" data-r="N">Not ranked</span>
+        </div>
+      </div>
+      <div class="grp">
+        <label class="h">Field</label>
+        <select id="csub"><option value="">All fields</option></select>
+      </div>
+    </div>
+
+    <div id="cflt-ma" style="display:none">
+      <div class="grp">
+        <label class="h">Discipline</label>
+        <select id="macat"><option value="">All disciplines</option></select>
       </div>
     </div>
 
@@ -315,13 +347,8 @@ main{padding:26px 30px 60px;min-width:0}
       <label class="toggle">
         <input type="checkbox" id="openOnly" checked>
         <span class="track"></span>
-        <span>Open calls only<span class="sub">hide conferences with no upcoming deadline</span></span>
+        <span><span id="openLbl">Open calls only</span><span class="sub" id="openSub">hide conferences with no upcoming deadline</span></span>
       </label>
-    </div>
-
-    <div class="grp">
-      <label class="h">Field</label>
-      <select id="csub"><option value="">All fields</option></select>
     </div>
 
     <button class="reset" id="cresetBtn">Reset all filters</button>
@@ -351,7 +378,7 @@ main{padding:26px 30px 60px;min-width:0}
   <!-- ---- Conferences ---- -->
   <div id="main-c" style="display:none">
     <div class="topbar">
-      <div class="count"><b id="cresCount">0</b><span>conferences</span></div>
+      <div class="count"><b id="cresCount">0</b><span id="cresLbl">conferences</span></div>
       <div class="sortwrap">
         Sort
         <select id="csort">
@@ -363,6 +390,18 @@ main{padding:26px 30px 60px;min-width:0}
       </div>
     </div>
     <div class="cstatus" id="cstatus" style="display:none"></div>
+    <div class="masetup" id="maSetup" style="display:none">
+      <h3>Load the Morocco events feed</h3>
+      <p>The CNRST website doesn’t allow direct fetching from other pages, so it takes one manual step:<br>
+      1. Open the <a href="https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&amp;type=rss" target="_blank" rel="noopener">CNRST events RSS feed ↗</a> and save the page as a file (⌘S / Ctrl-S).<br>
+      2. Drop the saved file below.</p>
+      <label class="dropzone" id="madz">
+        <input type="file" id="maFile" accept=".rss,.xml,.txt,application/rss+xml,text/xml">
+        <div class="big">Drop the CNRST feed file here</div>
+        <div class="sub">or click to choose — the .xml / .rss file you just saved</div>
+      </label>
+      <div class="status" id="maStatus"></div>
+    </div>
     <div class="list" id="clist"></div>
     <div id="cpager"></div>
   </div>
@@ -652,7 +691,7 @@ function switchTab(tab){
   $('main-j').style.display = tab==='j'?'block':'none';
   $('side-c').style.display = tab==='c'?'block':'none';
   $('main-c').style.display = tab==='c'?'block':'none';
-  if(tab==='c') loadConfs();
+  if(tab==='c'){ if(csrc==='ma') loadMa(); else loadConfs(); }
   if(tab==='j' && !R.length){
     // no journal data yet — go back to the loader to get some
     $('app').style.display='none';
@@ -918,8 +957,44 @@ function confNext(c,now){
 }
 
 let C=[], cstate=null, confsReady=false, confsLoading=false;
+let M=[], mstate=null, maReady=false, csrc='ccf';
+let ccfStats=null, maStats=null;
 const cstatus=(msg,err)=>{ const el=$('cstatus');
   el.style.display=msg?'block':'none'; el.textContent=msg||''; el.classList.toggle('err',!!err); };
+function curState(){ return csrc==='ma'?mstate:cstate; }
+function refreshC(){ if(csrc==='ma') renderMa(); else renderConfs(); }
+function applyStats(){
+  const s=csrc==='ma'?maStats:ccfStats;
+  const L=csrc==='ma'?['Events','Upcoming','Next 30 days']:['Conferences','Open calls','Due ≤ 30 days'];
+  $('s-ctotal').textContent=s?s[0].toLocaleString():'–';
+  $('s-copen').textContent=s?s[1].toLocaleString():'–';
+  $('s-c30').textContent=s?s[2].toLocaleString():'–';
+  $('s-ctotal-l').textContent=L[0]; $('s-copen-l').textContent=L[1]; $('s-c30-l').textContent=L[2];
+}
+function setSrc(src){
+  csrc=src;
+  document.querySelectorAll('.srcbar button').forEach(b=>b.classList.toggle('on',b.dataset.src===src));
+  $('cinfo-ccf').style.display=src==='ccf'?'block':'none';
+  $('cinfo-ma').style.display=src==='ma'?'block':'none';
+  $('cflt-ccf').style.display=src==='ccf'?'block':'none';
+  $('cflt-ma').style.display=src==='ma'?'block':'none';
+  $('cresLbl').textContent=src==='ma'?'events':'conferences';
+  $('openLbl').textContent=src==='ma'?'Upcoming events only':'Open calls only';
+  $('openSub').textContent=src==='ma'?'hide events that already happened':'hide conferences with no upcoming deadline';
+  $('cq').placeholder=src==='ma'?'Title, discipline, keyword…':'Acronym, name, place…';
+  const sel=$('csort');
+  sel.innerHTML= src==='ma'
+    ? '<option value="tl">Date (upcoming first)</option><option value="az">Title A–Z</option>'
+    : '<option value="dl">Deadline soonest</option><option value="ccf">CCF rank</option><option value="core">CORE rank</option><option value="az">Acronym A–Z</option>';
+  const st=curState();
+  if(st){ sel.value=st.sort; $('cq').value=st.q; $('openOnly').checked=st.open; }
+  else { $('cq').value=''; $('openOnly').checked=true; }
+  applyStats();
+  $('clist').innerHTML=''; $('cpager').innerHTML=''; $('cresCount').textContent='0';
+  $('maSetup').style.display='none';
+  if(src==='ma') loadMa();
+  else { cstatus(''); if(confsReady) refreshC(); else loadConfs(); }
+}
 
 async function loadConfs(force){
   if(confsLoading || (confsReady && !force)) return;
@@ -951,9 +1026,8 @@ function useConfs(payload,note){
   $('confStamp').textContent=payload.stamp+(note||'');
   const now=Date.now();
   const nexts=C.map(c=>confNext(c,now));
-  $('s-ctotal').textContent=C.length.toLocaleString();
-  $('s-copen').textContent=nexts.filter(Boolean).length.toLocaleString();
-  $('s-c30').textContent=nexts.filter(n=>n&&(n.ts-now)<30*86400e3).length.toLocaleString();
+  ccfStats=[C.length, nexts.filter(Boolean).length, nexts.filter(n=>n&&(n.ts-now)<30*86400e3).length];
+  if(csrc==='ccf') applyStats();
   const sel=$('csub');
   if(sel.options.length<=1){
     Object.keys(SUBS).sort((a,b)=>SUBS[a].localeCompare(SUBS[b])).forEach(k=>{
@@ -975,17 +1049,47 @@ function bindConfsOnce(){
       cstate.limit=60; renderConfs();
     });
   });
-  $('cq').addEventListener('input',e=>{ if(!cstate)return; cstate.q=e.target.value.toLowerCase().trim(); cstate.limit=60; renderConfs(); });
-  $('openOnly').addEventListener('change',e=>{ if(!cstate)return; cstate.open=e.target.checked; cstate.limit=60; renderConfs(); });
+  $('cq').addEventListener('input',e=>{ const st=curState(); if(!st)return; st.q=e.target.value.toLowerCase().trim(); st.limit=60; refreshC(); });
+  $('openOnly').addEventListener('change',e=>{ const st=curState(); if(!st)return; st.open=e.target.checked; st.limit=60; refreshC(); });
   $('csub').addEventListener('change',e=>{ if(!cstate)return; cstate.sub=e.target.value; cstate.limit=60; renderConfs(); });
-  $('csort').addEventListener('change',e=>{ if(!cstate)return; cstate.sort=e.target.value; renderConfs(); });
+  $('csort').addEventListener('change',e=>{ const st=curState(); if(!st)return; st.sort=e.target.value; refreshC(); });
   $('cresetBtn').addEventListener('click',()=>{
+    if(csrc==='ma'){
+      mstate={q:'',cat:'',open:true,sort:mstate?mstate.sort:'tl',limit:60};
+      $('cq').value=''; $('openOnly').checked=true; $('macat').value='';
+      renderMa(); return;
+    }
     cstate={q:'',ranks:new Set(['A','B','C','N']),open:true,sub:'',sort:cstate?cstate.sort:'dl',limit:60};
     $('cq').value=''; $('openOnly').checked=true; $('csub').value='';
     document.querySelectorAll('#cchips .chip').forEach(ch=>ch.classList.add('on'));
     renderConfs();
   });
   $('confRefresh').addEventListener('click',()=>{ confsReady=false; loadConfs(true); });
+
+  // ---- Morocco (CNRST) bindings ----
+  document.querySelectorAll('.srcbar button').forEach(b=>b.addEventListener('click',()=>{ if(b.dataset.src!==csrc) setSrc(b.dataset.src); }));
+  $('macat').addEventListener('change',e=>{ if(!mstate)return; mstate.cat=e.target.value; mstate.limit=60; renderMa(); });
+  const maIngest=async f=>{
+    const st=$('maStatus');
+    try{
+      st.classList.remove('err'); st.textContent='Reading '+f.name+'…';
+      const evs=parseCnrstRss(await readFile(f));
+      const payload={evs,ts:Date.now(),stamp:new Date().toLocaleDateString()+' · '+f.name+' · '+evs.length+' events'};
+      await cacheSet('cnrst',payload);
+      st.textContent='';
+      useMa(payload);
+    }catch(e){ st.textContent=e.message; st.classList.add('err'); }
+  };
+  $('maFile').addEventListener('change',e=>{ if(e.target.files[0]) maIngest(e.target.files[0]); });
+  const madz=$('madz');
+  madz.addEventListener('dragover',e=>{e.preventDefault();madz.classList.add('drag');});
+  madz.addEventListener('dragleave',()=>madz.classList.remove('drag'));
+  madz.addEventListener('drop',e=>{e.preventDefault();madz.classList.remove('drag'); if(e.dataTransfer.files[0]) maIngest(e.dataTransfer.files[0]);});
+  $('maReload').addEventListener('click',()=>{
+    maReady=false;
+    $('maSetup').style.display='block';
+    $('clist').innerHTML=''; $('cpager').innerHTML=''; $('cresCount').textContent='0';
+  });
 }
 
 function fmtDeadline(ts){
@@ -1056,6 +1160,109 @@ function renderConfs(){
   if(items.length>shown.length){
     pager.innerHTML='<div class="more">Showing '+shown.length.toLocaleString()+' of '+items.length.toLocaleString()+'<br><button id="cloadmore">Show 60 more</button></div>';
     $('cloadmore').onclick=()=>{cstate.limit+=60;renderConfs();};
+  } else if(items.length>60){
+    pager.innerHTML='<div class="more">All '+items.length.toLocaleString()+' shown</div>';
+  } else pager.innerHTML='';
+}
+
+/* ================= Morocco events (CNRST) =================
+   Source: https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&type=rss
+   The CNRST server sends no CORS headers, so the browser cannot fetch it
+   directly — the user saves the RSS file once and drops it in. Each <item>
+   carries the event title, page link, discipline (<category>) and the event
+   date (<pubDate>). */
+function parseCnrstRss(text){
+  const doc=new DOMParser().parseFromString(text,'text/xml');
+  if(doc.querySelector('parsererror')) throw new Error('That file isn’t valid XML/RSS — save the feed page itself (⌘S / Ctrl-S).');
+  const norm=s=>s.toLowerCase().replace(/\s+/g,' ').trim();
+  const tmp=document.createElement('div');
+  const evs=[];
+  for(const it of doc.querySelectorAll('item')){
+    const g=t=>{const el=it.getElementsByTagName(t)[0];return el?el.textContent.trim():'';};
+    let t=g('title'); const cat=g('category');
+    const pm=t.match(/^(.*)\(([^)]*)\)\s*$/);          // feed appends "(discipline)" to titles
+    if(pm && cat && norm(pm[2])===norm(cat)) t=pm[1].trim();
+    if(!t) continue;
+    const pd=g('pubDate'); const ts=pd?Date.parse(pd):NaN;
+    tmp.innerHTML=g('description').replace(/<[^>]*>/g,' ');   // strip tags, keep entity decoding
+    const snip=(tmp.textContent||'').replace(/\s+/g,' ').trim().slice(0,220);
+    evs.push({t, url:g('link'), cat, ts:isNaN(ts)?null:ts, snip});
+  }
+  if(!evs.length) throw new Error('No events found in this file — is it the CNRST events RSS feed?');
+  return evs;
+}
+async function loadMa(){
+  if(maReady){ $('maSetup').style.display='none'; applyStats(); refreshC(); return; }
+  const cached=await cacheGet('cnrst');
+  if(csrc!=='ma') return;                    // user switched away while we read the cache
+  if(cached && cached.evs && cached.evs.length) useMa(cached);
+  else { $('maSetup').style.display='block'; $('clist').innerHTML=''; $('cpager').innerHTML=''; }
+}
+function useMa(payload){
+  M=payload.evs; maReady=true;
+  $('maStamp').textContent=payload.stamp;
+  const now=Date.now();
+  const up=M.filter(e=>e.ts&&e.ts>now);
+  maStats=[M.length, up.length, up.filter(e=>(e.ts-now)<30*86400e3).length];
+  const sel=$('macat'); sel.innerHTML='<option value="">All disciplines</option>';
+  const cc={}; M.forEach(e=>{ if(e.cat) cc[e.cat]=(cc[e.cat]||0)+1; });
+  Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).forEach(c=>{
+    const o=document.createElement('option'); o.value=c; o.textContent=c+' ('+cc[c]+')'; sel.appendChild(o);
+  });
+  if(!mstate) mstate={q:'',cat:'',open:true,sort:'tl',limit:60};
+  if(csrc==='ma'){ $('maSetup').style.display='none'; applyStats(); renderMa(); }
+}
+function renderMa(){
+  if(!maReady||!mstate) return;
+  const now=Date.now();
+  const items=M.filter(ev=>{
+    if(mstate.open && !(ev.ts && ev.ts>now)) return false;
+    if(mstate.cat && ev.cat!==mstate.cat) return false;
+    if(mstate.q){
+      const hay=(ev.t+' '+ev.cat+' '+ev.snip).toLowerCase();
+      if(!hay.includes(mstate.q)) return false;
+    }
+    return true;
+  });
+  items.sort((a,b)=>{
+    if(mstate.sort==='az') return a.t.localeCompare(b.t);
+    const af=a.ts&&a.ts>now, bf=b.ts&&b.ts>now;
+    if(af!==bf) return af?-1:1;        // upcoming before past
+    if(af) return a.ts-b.ts;           // upcoming: soonest first
+    return (b.ts||0)-(a.ts||0);        // past: most recent first
+  });
+  $('cresCount').textContent=items.length.toLocaleString();
+  const shown=items.slice(0,mstate.limit);
+  const list=$('clist');
+  if(!items.length){
+    list.innerHTML='<div class="empty"><h3>No events match</h3><p>Try turning off “upcoming events only” or clearing the search.</p></div>';
+    $('cpager').innerHTML=''; return;
+  }
+  list.innerHTML=shown.map(ev=>{
+    const d=ev.ts?new Date(ev.ts):null;
+    const day=d?String(d.getDate()).padStart(2,'0'):'—';
+    const mon=d?d.toLocaleDateString('en',{month:'short'}).toUpperCase()+' ’'+String(d.getFullYear()).slice(2):'';
+    let due;
+    if(d && ev.ts>now){
+      const days=Math.max(0,Math.ceil((ev.ts-now)/86400e3));
+      const cls=days<=14?'due-soon':(days<=60?'due-mid':'due-far');
+      due='<span class="due '+cls+'">in '+days+'d</span>';
+    } else due='<span class="due due-past">past</span>';
+    const title=ev.url?'<a href="'+esc(ev.url)+'" target="_blank" rel="noopener">'+esc(ev.t)+'</a>':esc(ev.t);
+    const dateLine=d?'<div class="dueinfo"><b>'+esc(d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))+'</b></div>':'';
+    return '<div class="jrow">'
+      +'<div class="qbadge q-date"><span class="q">'+day+'</span><span class="lbl">'+esc(mon)+'</span></div>'
+      +'<div class="jmain"><h3 class="jtitle">'+title+'</h3>'
+      +(ev.snip?'<p class="jsnip">'+esc(ev.snip)+'</p>':'')
+      +'<div class="tags">'+(ev.cat?'<span class="tag area">'+esc(ev.cat)+'</span>':'')+'</div></div>'
+      +'<div class="jside">'+due+dateLine
+      +(ev.url?'<div class="extlinks"><a href="'+esc(ev.url)+'" target="_blank" rel="noopener">Details ↗</a></div>':'')
+      +'</div></div>';
+  }).join('');
+  const pager=$('cpager');
+  if(items.length>shown.length){
+    pager.innerHTML='<div class="more">Showing '+shown.length.toLocaleString()+' of '+items.length.toLocaleString()+'<br><button id="mloadmore">Show 60 more</button></div>';
+    $('mloadmore').onclick=()=>{mstate.limit+=60;renderMa();};
   } else if(items.length>60){
     pager.innerHTML='<div class="more">All '+items.length.toLocaleString()+' shown</div>';
   } else pager.innerHTML='';
