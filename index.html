@@ -88,7 +88,7 @@ aside{background:var(--ink);color:#EAF0EE;padding:22px 20px 40px;position:sticky
 .search input{width:100%;background:#0a1e24;border:1px solid #24454d;color:#F4F7F5;border-radius:9px;padding:11px 12px 11px 34px;font-size:13.5px;font-family:inherit}
 .search input::placeholder{color:#6f8582}
 .search input:focus{outline:none;border-color:var(--coral);box-shadow:0 0 0 3px rgba(224,86,62,.18)}
-.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:#6f8582}
+.search svg{position:absolute;left:11px;bottom:13px;width:15px;height:15px;stroke:#6f8582;pointer-events:none}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{cursor:pointer;user-select:none;font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:12px;padding:6px 11px;border-radius:20px;border:1px solid #2a4c54;background:#0a1e24;color:#c6d4d1;transition:.12s}
 .chip:hover{border-color:#3d6069}
@@ -306,7 +306,7 @@ main{padding:26px 30px 60px;min-width:0}
     </div>
 
     <div class="datainfo" id="cinfo-ccf">CS conference deadlines & ranks from the <b>ccfddl</b> open dataset (CCF + CORE ranks).<br>Feed loaded: <b id="confStamp">—</b><button id="confRefresh">Refresh feed</button></div>
-    <div class="datainfo" id="cinfo-ma" style="display:none">Research events in <b>Morocco</b> from the CNRST agenda (all disciplines).<br>Feed loaded: <b id="maStamp">—</b><button id="maReload">Load newer feed file…</button></div>
+    <div class="datainfo" id="cinfo-ma" style="display:none">Research events in <b>Morocco</b> from the CNRST agenda (all disciplines), mirrored daily.<br>Feed loaded: <b id="maStamp">—</b><button id="maReload">Refresh feed</button></div>
 
     <div class="stat-row">
       <div class="stat"><b id="s-ctotal">–</b><span id="s-ctotal-l">Conferences</span></div>
@@ -392,7 +392,7 @@ main{padding:26px 30px 60px;min-width:0}
     <div class="cstatus" id="cstatus" style="display:none"></div>
     <div class="masetup" id="maSetup" style="display:none">
       <h3>Load the Morocco events feed</h3>
-      <p>The CNRST website doesn’t allow direct fetching from other pages, so it takes one manual step:<br>
+      <p>The automatic feed mirror couldn’t be reached (are you offline?). You can load it manually:<br>
       1. Open the <a href="https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&amp;type=rss" target="_blank" rel="noopener">CNRST events RSS feed ↗</a> and save the page as a file (⌘S / Ctrl-S).<br>
       2. Drop the saved file below.</p>
       <label class="dropzone" id="madz">
@@ -1085,11 +1085,7 @@ function bindConfsOnce(){
   madz.addEventListener('dragover',e=>{e.preventDefault();madz.classList.add('drag');});
   madz.addEventListener('dragleave',()=>madz.classList.remove('drag'));
   madz.addEventListener('drop',e=>{e.preventDefault();madz.classList.remove('drag'); if(e.dataTransfer.files[0]) maIngest(e.dataTransfer.files[0]);});
-  $('maReload').addEventListener('click',()=>{
-    maReady=false;
-    $('maSetup').style.display='block';
-    $('clist').innerHTML=''; $('cpager').innerHTML=''; $('cresCount').textContent='0';
-  });
+  $('maReload').addEventListener('click',()=>loadMa(true));
 }
 
 function fmtDeadline(ts){
@@ -1191,16 +1187,46 @@ function parseCnrstRss(text){
   if(!evs.length) throw new Error('No events found in this file — is it the CNRST events RSS feed?');
   return evs;
 }
-async function loadMa(){
-  if(maReady){ $('maSetup').style.display='none'; applyStats(); refreshC(); return; }
-  const cached=await cacheGet('cnrst');
-  if(csrc!=='ma') return;                    // user switched away while we read the cache
-  if(cached && cached.evs && cached.evs.length) useMa(cached);
-  else { $('maSetup').style.display='block'; $('clist').innerHTML=''; $('cpager').innerHTML=''; }
+/* The app never talks to cnrst.ma directly (no CORS there). A GitHub Action
+   in this repo mirrors the feed daily; raw.githubusercontent.com serves it
+   with CORS enabled. A same-directory copy is the second fallback (useful
+   when self-hosting), and manual file drop remains the last resort. */
+const MA_MIRRORS=[
+  'https://raw.githubusercontent.com/Lamhour-Mohamed-Akram/Diamond-OA-Journal-Finder/main/cnrst.xml',
+  'cnrst.xml'
+];
+const MA_TTL=24*3600e3;
+let maLoading=false;
+async function loadMa(force){
+  if(maLoading) return;
+  if(maReady && !force){ $('maSetup').style.display='none'; applyStats(); refreshC(); return; }
+  maLoading=true;
+  try{
+    const cached=await cacheGet('cnrst');
+    if(!force && cached && cached.evs && cached.evs.length && (Date.now()-cached.ts)<MA_TTL){
+      useMa(cached); return;
+    }
+    if(csrc==='ma') cstatus('Loading Morocco events feed…');
+    for(const url of MA_MIRRORS){
+      try{
+        const res=await fetch(url,{cache:'no-store'});
+        if(!res.ok) throw new Error('feed returned '+res.status);
+        const evs=parseCnrstRss(await res.text());
+        const payload={evs,ts:Date.now(),stamp:new Date().toLocaleDateString()+' · auto-updated mirror · '+evs.length+' events'};
+        await cacheSet('cnrst',payload);
+        cstatus('');
+        useMa(payload);
+        return;
+      }catch(e){ /* try the next mirror */ }
+    }
+    cstatus('');
+    if(cached && cached.evs && cached.evs.length) useMa(cached,' (mirror unreachable — using saved copy)');
+    else if(csrc==='ma'){ $('maSetup').style.display='block'; $('clist').innerHTML=''; $('cpager').innerHTML=''; }
+  } finally { maLoading=false; }
 }
-function useMa(payload){
+function useMa(payload,note){
   M=payload.evs; maReady=true;
-  $('maStamp').textContent=payload.stamp;
+  $('maStamp').textContent=payload.stamp+(note||'');
   const now=Date.now();
   const up=M.filter(e=>e.ts&&e.ts>now);
   maStats=[M.length, up.length, up.filter(e=>(e.ts-now)<30*86400e3).length];

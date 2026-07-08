@@ -11,7 +11,9 @@ Everything runs **entirely in your browser**. No server, no account, nothing is 
 
 ## Quick start
 
-1. Download `Diamond_OA_Journal_Finder_Live.html` and open it in any modern browser.
+Use the hosted app, or download [`index.html`](index.html) and open it in any modern browser — it works the same either way.
+
+1. Open the app.
 2. Load journal data, either way:
    - **Live fetch** — click *"Fetch journals live from the DOAJ API"* (~14,000 Diamond OA journals, takes 1–2 minutes), or
    - **CSV drop** — drop the DOAJ journal CSV from [doaj.org/csv](https://doaj.org/csv).
@@ -20,17 +22,19 @@ Everything runs **entirely in your browser**. No server, no account, nothing is 
 
 The **Conferences** tab needs no files at all — it fetches the open [ccf-deadlines](https://github.com/ccfddl/ccf-deadlines) feed live (cached for 24 h). There is also a *"Just looking for conferences?"* shortcut on the start screen.
 
-For the **Morocco** source, the CNRST server doesn't allow cross-site fetching, so it takes one manual step: open the [CNRST events RSS feed](https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&type=rss), save the page as a file (⌘S / Ctrl-S), and drop it into the app — it's parsed locally and cached like everything else.
+The **Morocco** source loads automatically too: the CNRST server doesn't allow cross-site fetching, so a [GitHub Action](.github/workflows/mirror-cnrst.yml) in this repo mirrors the [CNRST events RSS feed](https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&type=rss) daily into [`cnrst.xml`](cnrst.xml), which the app fetches from GitHub. If the mirror is ever unreachable, the app falls back to letting you save the feed and drop the file in manually.
 
 ## Features
 
 ### Journals
+
 - Filter by SJR quartile (Q1–Q4 / unranked), subject area, country, max weeks to publication, SCImago-indexed only
 - Full-text search across title, publisher, subjects, and country
 - Sort by quartile, SJR, H-index, turnaround, or title
 - Direct links to each journal's website and DOAJ record
 
 ### Conferences — Worldwide CS
+
 - 350+ CCF-listed CS conferences with CCF rank (A/B/C) and CORE rank (A*–C)
 - Next abstract/submission deadline with days-left countdown
 - Filter by rank, field (AI, Security, Databases, …), open calls only; search by acronym, name, or place
@@ -38,6 +42,7 @@ For the **Morocco** source, the CNRST server doesn't allow cross-site fetching, 
 - Links to each conference website and dblp
 
 ### Conferences — Morocco (CNRST)
+
 - 600+ research events across all disciplines (engineering, exact & natural sciences, law/economics, humanities, medical, …)
 - Event date with days-left countdown; upcoming events first, past events browsable
 - Filter by discipline and upcoming-only; full-text search

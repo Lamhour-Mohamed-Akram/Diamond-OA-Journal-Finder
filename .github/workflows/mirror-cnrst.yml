@@ -1,0 +1,37 @@
+name: Mirror CNRST events feed
+
+# The CNRST server sends no CORS headers, so the app can't fetch the feed
+# directly from the browser. This workflow mirrors it into the repo daily;
+# the app loads it from raw.githubusercontent.com instead.
+
+on:
+  schedule:
+    - cron: '17 5 * * *'   # daily, 05:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch feed
+        run: |
+          curl -sSf --max-time 300 --retry 3 \
+            'https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&type=rss' \
+            -o cnrst_new.xml
+          grep -q '<item>' cnrst_new.xml
+          # lastBuildDate changes on every request — strip it so unchanged
+          # feeds don't produce a new commit every day
+          sed -i 's|<lastBuildDate>[^<]*</lastBuildDate>||' cnrst_new.xml
+          mv cnrst_new.xml cnrst.xml
+
+      - name: Commit if changed
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add cnrst.xml
+          git diff --cached --quiet || { git commit -m 'Update CNRST feed mirror'; git push; }
