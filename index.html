@@ -209,6 +209,31 @@ main{padding:26px 30px 60px;min-width:0}
 .live .lv-body{font-size:13px;color:var(--ink-2);line-height:1.6;margin-top:8px}
 .live .lv-body b{color:var(--ink)}
 .live .lv-src{font-size:11px;color:var(--muted-2);margin-top:8px}
+.scopus-btn{font-size:11px;color:var(--coral);font-weight:600;background:none;border:1px solid var(--line-2);border-radius:7px;padding:4px 10px;cursor:pointer;font-family:inherit;transition:.12s}
+.scopus-btn:hover{border-color:var(--coral);background:var(--coral-soft)}
+.modal{position:fixed;inset:0;z-index:100;background:rgba(14,42,51,.55);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(2px)}
+.modal-card{background:var(--card);border-radius:16px;padding:26px 26px 24px;max-width:480px;width:100%;position:relative;box-shadow:0 24px 60px -20px rgba(14,42,51,.5);animation:pop .16s ease-out}
+@keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-x{position:absolute;top:14px;right:16px;background:none;border:0;font-size:26px;line-height:1;color:var(--muted-2);cursor:pointer;font-family:inherit}
+.modal-x:hover{color:var(--ink)}
+.modal-eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--coral)}
+.modal-title{font-family:Spectral,serif;font-size:20px;font-weight:700;margin:6px 40px 16px 0;line-height:1.2}
+.mv{border-radius:12px;padding:16px 18px}
+.mv.load{background:var(--paper-2);color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:13px;text-align:center}
+.mv.yes{background:#EAF7F1;border:1px solid #a9d6c3}
+.mv.no{background:var(--coral-soft);border:1px solid #eeb9ad}
+.mv.warn{background:var(--amber-soft);border:1px solid #ecdcb5}
+.mv-head{display:flex;align-items:center;gap:9px;font-family:Spectral,serif;font-size:18px;font-weight:700}
+.mv.yes .mv-head{color:var(--sea)}.mv.no .mv-head{color:var(--coral)}.mv.warn .mv-head{color:var(--amber)}
+.mv-body{font-size:13.5px;color:var(--ink-2);line-height:1.65;margin-top:9px}
+.mv-body b{color:var(--ink)}
+.mv-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid rgba(14,42,51,.07);font-size:13px}
+.mv-row:last-child{border-bottom:0}
+.mv-row span{color:var(--muted)}.mv-row b{color:var(--ink);font-family:"IBM Plex Mono",monospace;font-weight:600}
+.modal-links{margin-top:14px;font-size:12px}
+.modal-links a{color:var(--coral);font-weight:600;text-decoration:none}
+.modal-links a:hover{text-decoration:underline}
+.modal-foot{font-size:11px;color:var(--muted-2);margin-top:12px}
 @media(max-width:860px){
   .wrap{grid-template-columns:1fr}
   aside{position:static;height:auto;border-right:0;border-bottom:1px solid #0a1e24}
@@ -475,6 +500,16 @@ main{padding:26px 30px 60px;min-width:0}
 </div>
 </div>
 
+<!-- ======== Scopus popup ======== -->
+<div id="modal" class="modal" style="display:none">
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <button class="modal-x" id="modalX" aria-label="Close">×</button>
+    <div class="modal-eyebrow">Scopus indexing check</div>
+    <h3 class="modal-title" id="modalTitle">—</h3>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
 <script>
 /* ================= CSV parsing (RFC-4180: quotes, embedded newlines) ================= */
 function parseCSV(text, delim){
@@ -588,6 +623,7 @@ function assemble(inters, sciRows){
     }
     records.push({
       t:it.t, idx:!!sci, q, sjr, h, cats, areas, w:it.w, dia:it.dia, fee:it.fee,
+      issn:normISSN(it.eissn)||normISSN(it.pissn)||'',
       rev:it.rev, pub:it.pub, c:it.c, lang:it.lang, dsub:it.dsub, url:it.url, doaj:it.doaj
     });
   }
@@ -726,7 +762,7 @@ async function processAll(){
     const data=assemble(inters,sciRows);
     if(data.meta.total===0) throw new Error('Join produced 0 Diamond journals — are these the right files?');
     const stamp=new Date().toLocaleDateString()+' · '+files.doaj.name+' + '+files.sci.name;
-    await cacheSet('dataset3',{data,stamp,ts:Date.now()});
+    await cacheSet('dataset4',{data,stamp,ts:Date.now()});
     startApp(data,stamp);
   }catch(e){ status(e.message,true); }
 }
@@ -758,7 +794,7 @@ $('apiBtn').addEventListener('click',async ()=>{
 
 $('confOnly').addEventListener('click',()=>startApp(null,null,'c'));
 
-cacheGet('dataset3').then(c=>{
+cacheGet('dataset4').then(c=>{
   if(c && c.data){
     $('cacheNote').style.display='block';
     $('cacheDate').textContent=c.stamp;
@@ -869,6 +905,14 @@ function bindOnce(){
     $('cacheNote').style.display='none';
   });
   $('sq').addEventListener('input',renderScopus);
+  // per-journal Scopus popup (event delegation over the list)
+  $('list').addEventListener('click',e=>{
+    const btn=e.target.closest('.scopus-btn');
+    if(btn) openScopusModal(btn.dataset.issn,btn.dataset.title);
+  });
+  $('modalX').addEventListener('click',closeModal);
+  $('modal').addEventListener('click',e=>{ if(e.target===$('modal')) closeModal(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('modal').style.display!=='none') closeModal(); });
   bindConfsOnce();
 }
 
@@ -926,8 +970,10 @@ function render(){
       +'<div class="jmeta"><span class="pub">'+esc(r.pub||'—')+'</span><span class="dot"></span><span>'+esc(r.c||'')+'</span>'+(r.lang?'<span class="dot"></span><span>'+esc(r.lang)+'</span>':'')+'</div>'
       +'<div class="tags">'+feeT+areaT+catT+'</div></div>'
       +'<div class="jside">'+notIdx+'<div style="display:flex;gap:16px">'+sjr+hix+'</div>'+speedHtml(r.w)
-      +(r.doaj?'<a href="'+esc(r.doaj)+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--coral);font-weight:600;text-decoration:none">DOAJ record ↗</a>':'')
-      +'</div></div>';
+      +'<div style="display:flex;gap:12px;align-items:center">'
+      +(r.issn?'<button class="scopus-btn" data-issn="'+esc(r.issn)+'" data-title="'+esc(r.t)+'">✓ Check Scopus</button>':'')
+      +(r.doaj?'<a href="'+esc(r.doaj)+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--coral);font-weight:600;text-decoration:none">DOAJ ↗</a>':'')
+      +'</div></div></div>';
   }).join('');
   const pager=$('pager');
   if(filtered.length>shown.length){
@@ -1278,6 +1324,63 @@ function renderConfs(){
    all source types, not only open access). Coverage years reveal journals
    that were dropped from Scopus but still advertise "Scopus indexed". */
 function fmtISSN(n){ return n.slice(0,4)+'-'+n.slice(4); }
+
+/* ---- per-journal Scopus popup ---- */
+let modalSeq=0;
+function closeModal(){ $('modal').style.display='none'; modalSeq++; }
+async function openScopusModal(issn,title){
+  const seq=++modalSeq;
+  $('modalTitle').textContent=title||'Journal';
+  $('modalBody').innerHTML='<div class="mv load">🔍 Checking Scopus live…</div>';
+  $('modal').style.display='flex';
+  // offline snapshot info for this ISSN (if the SCImago data is loaded)
+  const snap=S.find(s=>s.issns.includes(issn));
+  let d=null;
+  try{
+    const res=await fetch(SCOPUS_FN+'?issn='+encodeURIComponent(issn));
+    if(res.ok) d=await res.json();
+  }catch(e){}
+  if(seq!==modalSeq) return;   // closed or superseded
+  const issnLine='<div class="mv-row"><span>ISSN</span><b>'+esc(fmtISSN(issn))+'</b></div>';
+  const scopusLink='<div class="modal-links"><a href="https://www.scopus.com/sources" target="_blank" rel="noopener">Verify on scopus.com/sources ↗</a></div>';
+  if(d && !d.error){
+    if(d.indexed){
+      const yr=d.latestCoverDate?String(d.latestCoverDate).slice(0,4):'';
+      const active=yr && (+yr>=(new Date().getFullYear()-1));
+      $('modalBody').innerHTML='<div class="mv '+(active?'yes':'warn')+'">'
+        +'<div class="mv-head">'+(active?'✓ Indexed in Scopus':'⚠ In Scopus — check recency')+'</div>'
+        +'<div class="mv-body">'
+        +issnLine
+        +'<div class="mv-row"><span>Documents indexed</span><b>'+d.documentCount.toLocaleString()+'</b></div>'
+        +(d.publicationName?'<div class="mv-row"><span>Source name</span><b>'+esc(d.publicationName)+'</b></div>':'')
+        +(d.latestCoverDate?'<div class="mv-row"><span>Most recent paper</span><b>'+esc(d.latestCoverDate)+'</b></div>':'')
+        +(snap&&snap.q?'<div class="mv-row"><span>SCImago quartile</span><b>'+esc(snap.q)+'</b></div>':'')
+        +'</div>'+scopusLink
+        +'<div class="modal-foot">Live from Scopus (Elsevier API)'+(active?'':' — latest indexed paper isn’t recent; the journal may have been discontinued from Scopus.')+'</div></div>';
+    } else {
+      $('modalBody').innerHTML='<div class="mv no"><div class="mv-head">✗ Not found in Scopus</div>'
+        +'<div class="mv-body">'+issnLine
+        +'<div class="mv-row"><span>Documents indexed</span><b>0</b></div></div>'
+        +'<div class="mv-body" style="margin-top:6px">This ISSN returned no documents in Scopus — it is most likely <b>not indexed</b>. Be cautious of any “Scopus indexed” claim on the journal’s own site.</div>'
+        +scopusLink+'<div class="modal-foot">Live from Scopus (Elsevier API)</div></div>';
+    }
+    return;
+  }
+  // proxy unavailable → fall back to the offline SCImago snapshot
+  if(snap){
+    const active=covActive(snap.cov);
+    $('modalBody').innerHTML='<div class="mv '+(active?'yes':'warn')+'"><div class="mv-head">'+(active?'✓ In Scopus (snapshot)':'⚠ Coverage ended (snapshot)')+'</div>'
+      +'<div class="mv-body">'+issnLine
+      +'<div class="mv-row"><span>Scopus coverage</span><b>'+esc(snap.cov||'—')+'</b></div>'
+      +(snap.q?'<div class="mv-row"><span>SCImago quartile</span><b>'+esc(snap.q)+'</b></div>':'')
+      +'</div>'+scopusLink
+      +'<div class="modal-foot">From the offline SCImago snapshot (live check unavailable).</div></div>';
+  } else {
+    $('modalBody').innerHTML='<div class="mv no"><div class="mv-head">✗ Not in Scopus</div>'
+      +'<div class="mv-body">'+issnLine+'Not found in Scopus (offline snapshot; live check unavailable).</div>'
+      +scopusLink+'</div>';
+  }
+}
 
 /* Live check via the Netlify Scopus proxy (falls back silently when the proxy
    isn't available, e.g. running the file locally without `netlify dev`). */
