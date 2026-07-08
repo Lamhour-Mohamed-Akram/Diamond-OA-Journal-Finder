@@ -1,0 +1,5 @@
+# data snapshots — download fresh from doaj.org/csv and scimagojr.com
+*.csv
+
+.DS_Store
+node_modules/
