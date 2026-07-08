@@ -1,10 +1,10 @@
-# Diamond OA Journal & Conference Finder
+# Open Access Journal & Conference Finder
 
 **▶ Live app: [diamond-oa-finder.netlify.app](https://diamond-oa-finder.netlify.app/)**
 
 A **single-file web app** for researchers deciding where to publish:
 
-- **Journals tab** — find **Diamond Open Access** journals (free to publish *and* free to read: no APC, no hidden fees), cross-referenced with **SCImago** rankings (quartile, SJR, H-index) and DOAJ metadata (turnaround time, peer-review type, country, languages, subjects).
+- **Journals tab** — find **open access journals**: **Diamond OA** (free to publish *and* free to read — no APC, no hidden fees) by default, with one click to include APC journals (fees shown on each card). All cross-referenced with **SCImago** rankings (quartile, SJR, H-index) and DOAJ metadata (turnaround time, peer-review type, country, languages, subjects).
 - **Conferences tab** — two sources:
   - **Worldwide CS** — ranked computer-science conferences (CCF + CORE ranks) with live upcoming **submission deadlines**, dates, locations, and links.
   - **Morocco** — research events in Morocco from the **CNRST** agenda (all disciplines), with event dates, countdowns, and discipline filters.
@@ -30,6 +30,7 @@ The **Morocco** source loads automatically too: the CNRST server doesn't allow c
 
 ### Journals
 
+- Filter by publication fees — Diamond (free) and/or APC journals, with APC amounts shown per journal
 - Filter by SJR quartile (Q1–Q4 / unranked), subject area, country, max weeks to publication, SCImago-indexed only
 - Full-text search across title, publisher, subjects, and country
 - Sort by quartile, SJR, H-index, turnaround, or title
@@ -52,7 +53,7 @@ The **Morocco** source loads automatically too: the CNRST server doesn't allow c
 
 ## How it works
 
-- **Diamond OA definition:** journals in DOAJ with `APC = No` **and** `Has other fees = No`.
+- **Diamond OA definition:** journals in DOAJ with `APC = No` **and** `Has other fees = No`. All ~23,000 DOAJ journals are loaded; the fee filter switches between Diamond and APC journals.
 - **Join:** DOAJ records are matched to SCImago rows by normalized print/electronic ISSN.
 - **DOAJ live fetch:** DOAJ's search API caps every query at 1,000 accessible records, so the app cursor-paginates — sorted by `created_date`, advancing a date-range filter window by window — while respecting the 2 requests/second rate limit.
 - **Conference feed:** a small built-in YAML parser reads the ccfddl dataset; deadlines are converted from their announced timezone (AoE, UTC±N, PT) and compared against your clock.

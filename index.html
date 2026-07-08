@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Diamond OA Journal & Conference Finder — Live</title>
+<title>Open Access Journal & Conference Finder — Live</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -147,6 +147,8 @@ main{padding:26px 30px 60px;min-width:0}
 .tags{display:flex;flex-wrap:wrap;gap:5px}
 .tag{font-size:11px;padding:3px 8px;border-radius:6px;background:var(--paper-2);color:var(--muted);border:1px solid var(--line)}
 .tag.area{background:#EAF1EE;color:#2c6b58;border-color:#d6e6df}
+.tag.fee-ok{background:var(--sea-soft);color:var(--sea);border-color:#cfe5da;font-weight:600}
+.tag.fee{background:var(--amber-soft);color:var(--amber);border-color:#ecdcb5;font-weight:600}
 .jside{display:flex;flex-direction:column;align-items:flex-end;gap:9px;min-width:150px}
 .metric{text-align:right}
 .metric .v{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:15px}
@@ -206,8 +208,8 @@ main{padding:26px 30px 60px;min-width:0}
 <div id="loader">
   <div class="load-card">
     <span class="mark">◆ OA · LIVE DATA</span>
-    <h1>Diamond OA Journal Finder</h1>
-    <p class="lead">Load journal data below — everything runs right here in your browser (nothing is uploaded anywhere) and the result is remembered for next time.</p>
+    <h1>Open Access Journal Finder</h1>
+    <p class="lead">Find open access journals — Diamond (100% free to publish) by default, or include APC journals with one click. Everything runs right here in your browser (nothing is uploaded anywhere) and the result is remembered for next time.</p>
 
     <label class="dropzone" id="dz">
       <input type="file" id="fileInput" multiple accept=".csv">
@@ -221,7 +223,7 @@ main{padding:26px 30px 60px;min-width:0}
     </div>
 
     <div class="orsep">no DOAJ file? fetch it live instead</div>
-    <button class="apibtn" id="apiBtn">⤓ Fetch journals live from the DOAJ API<small>downloads ~14,000 Diamond OA journals · takes 1–2 minutes · SCImago CSV still needed for rankings</small></button>
+    <button class="apibtn" id="apiBtn">⤓ Fetch journals live from the DOAJ API<small>downloads ~23,000 open access journals · takes 2–3 minutes · SCImago CSV still needed for rankings</small></button>
 
     <div class="status" id="status"></div>
 
@@ -246,8 +248,8 @@ main{padding:26px 30px 60px;min-width:0}
 <div id="app">
 <div class="wrap">
 <aside>
-  <div class="brand"><span class="mark">◆ OA</span><h1>Diamond Finder</h1></div>
-  <p class="tagline">Free-to-publish journals & ranked CS conferences — with live data.</p>
+  <div class="brand"><span class="mark">◆ OA</span><h1>Open Access Finder</h1></div>
+  <p class="tagline">Open access journals, ranked conferences & research events — with live data.</p>
 
   <div class="tabbar">
     <button data-tab="j" class="on">Journals</button>
@@ -258,8 +260,8 @@ main{padding:26px 30px 60px;min-width:0}
   <div id="side-j">
     <div class="datainfo">Data loaded: <b id="dataStamp">—</b><button id="reload">Load newer data…</button></div>
     <div class="stat-row">
-      <div class="stat"><b id="s-total">–</b><span>Diamond OA</span></div>
-      <div class="stat"><b id="s-idx">–</b><span>In SCImago</span></div>
+      <div class="stat"><b id="s-total">–</b><span>OA journals</span></div>
+      <div class="stat"><b id="s-idx">–</b><span>Diamond · free</span></div>
       <div class="stat"><b id="s-q12">–</b><span>Q1 / Q2</span></div>
     </div>
 
@@ -267,6 +269,14 @@ main{padding:26px 30px 60px;min-width:0}
       <label class="h">Search</label>
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       <input id="q" type="search" placeholder="Title, publisher, subject…" autocomplete="off">
+    </div>
+
+    <div class="grp">
+      <label class="h">Publication fees</label>
+      <div class="chips" id="fchips">
+        <span class="chip q1 on" data-f="dia">Diamond · free</span>
+        <span class="chip q2" data-f="apc">APC / fees</span>
+      </div>
     </div>
 
     <div class="grp">
@@ -486,9 +496,11 @@ function doajCsvToInters(doajRows){
     const row=doajRows[r]; if(!row || row.length<5) continue;
     const apc=(row[di['APC']]||'').trim().toLowerCase();
     const fees=(row[di['Has other fees']]||'').trim().toLowerCase();
-    if(apc!=='no' || fees!=='no') continue;  // Diamond = no APC AND no other fees
+    const dia = apc==='no' && fees==='no';   // Diamond = no APC AND no other fees
+    const fee = dia ? '' : ((('APC amount' in di) && row[di['APC amount']]) ? row[di['APC amount']].split(';')[0].trim() : '');
     const wRaw=row[di['Average number of weeks between article submission and publication']];
     inters.push({
+      dia, fee,
       t:row[di['Journal title']],
       pissn:row[di['Journal ISSN (print version)']], eissn:row[di['Journal EISSN (online version)']],
       w: wRaw && !isNaN(parseFloat(wRaw)) ? Math.round(parseFloat(wRaw)) : null,
@@ -518,7 +530,7 @@ function assemble(inters, sciRows){
       cats=sci[si['Categories']]||''; areas=sci[si['Areas']]||'';
     }
     records.push({
-      t:it.t, idx:!!sci, q, sjr, h, cats, areas, w:it.w,
+      t:it.t, idx:!!sci, q, sjr, h, cats, areas, w:it.w, dia:it.dia, fee:it.fee,
       rev:it.rev, pub:it.pub, c:it.c, lang:it.lang, dsub:it.dsub, url:it.url, doaj:it.doaj
     });
   }
@@ -529,7 +541,7 @@ function assemble(inters, sciRows){
     areas:[...areaSet].sort(),
     meta:{
       total:records.length,
-      indexed:records.filter(r=>r.idx).length,
+      dia:records.filter(r=>r.dia).length,
       q12:records.filter(r=>r.q==='Q1'||r.q==='Q2').length
     }
   };
@@ -548,7 +560,11 @@ function apiToInter(rec){
   const langs=(b.language||[]).map(c=>{ if(!langNames) return c; try{return langNames.of(String(c).toLowerCase());}catch(e){return c;} }).join(', ');
   const subj=(b.subject||[]).map(s=>s.term).filter(Boolean).join('; ');
   const kw=(b.keywords||[]).join(', ');
+  const hasApc=!!(b.apc&&b.apc.has_apc), hasFees=!!(b.other_charges&&b.other_charges.has_other_charges);
+  const apcMax=(b.apc&&b.apc.max)||[];
   return {
+    dia:!hasApc&&!hasFees,
+    fee:apcMax.length?apcMax[0].price+' '+apcMax[0].currency:'',
     t:b.title||'', pissn:b.pissn||'', eissn:b.eissn||'',
     w:(b.publication_time_weeks!=null&&!isNaN(b.publication_time_weeks))?Math.round(b.publication_time_weeks):null,
     rev:((b.editorial&&b.editorial.review_process)||[]).join(', '),
@@ -564,7 +580,7 @@ async function fetchDoajLive(onProgress){
   const seen=new Map();
   let grand=null;
   for(let round=0; round<80; round++){
-    const q=encodeURIComponent('(bibjson.apc.has_apc:false AND bibjson.other_charges.has_other_charges:false) AND created_date:["'+cursor+'" TO "'+UPPER+'"]');
+    const q=encodeURIComponent('created_date:["'+cursor+'" TO "'+UPPER+'"]');
     let roundTotal=null, last=null, got=0;
     for(let page=1; page<=10; page++){
       let j=null;
@@ -652,7 +668,7 @@ async function processAll(){
     const data=assemble(inters,sciRows);
     if(data.meta.total===0) throw new Error('Join produced 0 Diamond journals — are these the right files?');
     const stamp=new Date().toLocaleDateString()+' · '+files.doaj.name+' + '+files.sci.name;
-    await cacheSet('dataset',{data,stamp,ts:Date.now()});
+    await cacheSet('dataset2',{data,stamp,ts:Date.now()});
     startApp(data,stamp);
   }catch(e){ status(e.message,true); }
 }
@@ -684,7 +700,7 @@ $('apiBtn').addEventListener('click',async ()=>{
 
 $('confOnly').addEventListener('click',()=>startApp(null,null,'c'));
 
-cacheGet('dataset').then(c=>{
+cacheGet('dataset2').then(c=>{
   if(c && c.data){
     $('cacheNote').style.display='block';
     $('cacheDate').textContent=c.stamp;
@@ -719,7 +735,7 @@ function startApp(data,stamp,tab){
     R=data.records;
     $('dataStamp').textContent=stamp;
     $('s-total').textContent=data.meta.total.toLocaleString();
-    $('s-idx').textContent=data.meta.indexed.toLocaleString();
+    $('s-idx').textContent=(data.meta.dia!=null?data.meta.dia:0).toLocaleString();
     $('s-q12').textContent=data.meta.q12.toLocaleString();
 
     const areaSel=$('area'); areaSel.innerHTML='<option value="">All areas</option>';
@@ -728,7 +744,7 @@ function startApp(data,stamp,tab){
     const cc={}; R.forEach(r=>{if(r.c)cc[r.c]=(cc[r.c]||0)+1;});
     Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c+' ('+cc[c]+')';cSel.appendChild(o);});
 
-    state={q:'',quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,country:'',sort:'q',limit:60};
+    state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,country:'',sort:'q',limit:60};
   }
   bindOnce();
   switchTab(tab||'j');
@@ -746,6 +762,13 @@ function bindOnce(){
       state.limit=60; render();
     });
   });
+  document.querySelectorAll('#fchips .chip').forEach(ch=>{
+    ch.addEventListener('click',()=>{
+      ch.classList.toggle('on');
+      if(ch.classList.contains('on')) state.fees.add(ch.dataset.f); else state.fees.delete(ch.dataset.f);
+      state.limit=60; render();
+    });
+  });
   $('q').addEventListener('input',e=>{state.q=e.target.value.toLowerCase().trim();state.limit=60;render();});
   $('idxOnly').addEventListener('change',e=>{state.idxOnly=e.target.checked;state.limit=60;render();});
   $('area').addEventListener('change',e=>{state.area=e.target.value;state.limit=60;render();});
@@ -757,10 +780,11 @@ function bindOnce(){
     state.limit=60; render();
   });
   $('resetBtn').addEventListener('click',()=>{
-    state={q:'',quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,country:'',sort:state.sort,limit:60};
+    state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,country:'',sort:state.sort,limit:60};
     $('q').value='';$('idxOnly').checked=true;$('area').value='';$('country').value='';
     $('weeks').value=52;$('wkVal').textContent='Any';
     document.querySelectorAll('#qchips .chip').forEach(ch=>ch.classList.toggle('on',ch.dataset.q==='Q1'||ch.dataset.q==='Q2'));
+    document.querySelectorAll('#fchips .chip').forEach(ch=>ch.classList.toggle('on',ch.dataset.f==='dia'));
     render();
   });
   $('reload').addEventListener('click',()=>{
@@ -777,6 +801,7 @@ function bindOnce(){
 
 /* ================= Journal finder ================= */
 function match(r){
+  if(!state.fees.has(r.dia?'dia':'apc')) return false;
   if(state.idxOnly && !r.idx) return false;
   if(!state.quarts.has(r.q||'')) return false;
   if(state.area && !(r.areas||'').includes(state.area)) return false;
@@ -818,13 +843,15 @@ function render(){
     const sjr=r.sjr!=null?'<div class="metric"><div class="v">'+r.sjr.toFixed(3)+'</div><div class="k">SJR</div></div>':'';
     const hix=r.h!=null?'<div class="metric"><div class="v">'+r.h+'</div><div class="k">H-index</div></div>':'';
     const notIdx=!r.idx?'<span class="indexed-no">Not in SCImago</span>':'';
+    const feeT=r.dia?'<span class="tag fee-ok">Diamond · free</span>'
+                    :'<span class="tag fee">'+(r.fee?'APC: '+esc(r.fee):'Has fees')+'</span>';
     const areaT=(r.areas||'').split(';').map(s=>s.trim()).filter(Boolean).slice(0,3).map(a=>'<span class="tag area">'+esc(a)+'</span>').join('');
     const catT=(r.cats||'').split(';').map(s=>s.trim()).filter(Boolean).slice(0,3).map(c=>'<span class="tag">'+esc(c)+'</span>').join('');
     return '<div class="jrow">'
       +'<div class="qbadge q-'+q+'"><span class="q">'+(r.idx?(r.q||'—'):'—')+'</span><span class="lbl">'+(r.idx?'quartile':'unranked')+'</span></div>'
       +'<div class="jmain"><h3 class="jtitle">'+link+'</h3>'
       +'<div class="jmeta"><span class="pub">'+esc(r.pub||'—')+'</span><span class="dot"></span><span>'+esc(r.c||'')+'</span>'+(r.lang?'<span class="dot"></span><span>'+esc(r.lang)+'</span>':'')+'</div>'
-      +'<div class="tags">'+areaT+catT+'</div></div>'
+      +'<div class="tags">'+feeT+areaT+catT+'</div></div>'
       +'<div class="jside">'+notIdx+'<div style="display:flex;gap:16px">'+sjr+hix+'</div>'+speedHtml(r.w)
       +(r.doaj?'<a href="'+esc(r.doaj)+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--coral);font-weight:600;text-decoration:none">DOAJ record ↗</a>':'')
       +'</div></div>';
