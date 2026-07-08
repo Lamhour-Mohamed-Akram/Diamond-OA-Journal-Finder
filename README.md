@@ -66,3 +66,7 @@ The **Morocco** source loads automatically too: the CNRST server doesn't allow c
 | [CNRST](https://www.cnrst.ma/fr/liste-des-evenements) | Research events in Morocco (RSS) | Public feed from Morocco's National Center for Scientific and Technical Research |
 
 The CSV data files are not committed to this repository — download fresh ones from the links above (fresher data = better results).
+
+## Author
+
+Made by **Mohamed-Akram Lamhour** — [LinkedIn](https://www.linkedin.com/in/ak2lamhour/)
