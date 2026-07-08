@@ -1,5 +1,7 @@
 # Diamond OA Journal & Conference Finder
 
+**▶ Live app: [diamond-oa-finder.netlify.app](https://diamond-oa-finder.netlify.app/)**
+
 A **single-file web app** for researchers deciding where to publish:
 
 - **Journals tab** — find **Diamond Open Access** journals (free to publish *and* free to read: no APC, no hidden fees), cross-referenced with **SCImago** rankings (quartile, SJR, H-index) and DOAJ metadata (turnaround time, peer-review type, country, languages, subjects).
@@ -11,7 +13,7 @@ Everything runs **entirely in your browser**. No server, no account, nothing is 
 
 ## Quick start
 
-Use the hosted app, or download [`index.html`](index.html) and open it in any modern browser — it works the same either way.
+Use the hosted app at **[diamond-oa-finder.netlify.app](https://diamond-oa-finder.netlify.app/)**, or download [`index.html`](index.html) and open it in any modern browser — it works the same either way.
 
 1. Open the app.
 2. Load journal data, either way:
