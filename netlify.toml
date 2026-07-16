@@ -1,6 +1,12 @@
 [build]
   publish = "."
   functions = "netlify/functions"
+  # Every production deploy costs ~15 credits (free plan: 300/month), so if
+  # this repo is ever linked to Netlify for auto-deploys, skip builds for
+  # commits that only touch the data snapshots or the CNRST mirror — the app
+  # fetches those straight from GitHub raw, no redeploy needed. Without this
+  # rule the daily cnrst.xml commit alone would burn ~450 credits/month.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)data' ':(exclude)cnrst.xml'"
 
 [functions]
   node_bundler = "esbuild"
