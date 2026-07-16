@@ -1,6 +1,11 @@
 # data snapshots — download fresh from doaj.org/csv and scimagojr.com
 *.csv
 
+# …except the bundled snapshots served by the site (one-click "built-in data" load).
+# To refresh them, overwrite data/doaj.csv and data/scimago.csv with new downloads.
+!data/doaj.csv
+!data/scimago.csv
+
 .DS_Store
 node_modules/
 

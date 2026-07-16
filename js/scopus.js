@@ -95,9 +95,11 @@ async function liveScopus(kind,val){
   }
 }
 
+let sLimit=20, sLastQ='';
 function renderScopus(){
   const box=$('slist'); if(!box) return;
   const raw=($('sq').value||'').trim();
+  if(raw!==sLastQ){ sLastQ=raw; sLimit=20; }   // new search — restart pagination
   const digits=raw.toUpperCase().replace(/[^0-9X]/g,'');
   const isISSN=/^\d{7}[0-9X]$/.test(digits);
   const isDOI=looksDOI(raw);
@@ -134,7 +136,7 @@ function renderScopus(){
     box.innerHTML='<div class="empty"><h3>✗ Not found in the Scopus source list</h3><p>“'+esc(raw)+'” doesn’t match any of the '+S.length.toLocaleString()+' sources in the SCImago/Scopus snapshot — it is most likely <b>not indexed in Scopus</b>.<br><br>Double-check the exact ISSN on <a href="https://www.scopus.com/sources" target="_blank" rel="noopener" style="color:var(--coral);font-weight:600">scopus.com/sources ↗</a> — and be careful with journals that claim indexing on their own website.</p></div>';
     return;
   }
-  box.innerHTML=hits.slice(0,20).map(s=>{
+  box.innerHTML=hits.slice(0,sLimit).map(s=>{
     const end=covEnd(s.cov);
     const active=covActive(s.cov);
     const verdict=active
@@ -153,5 +155,9 @@ function renderScopus(){
       +'<div class="jside"><div style="display:flex;gap:16px">'+sjr+hix+'</div>'
       +'<a href="https://www.scopus.com/sources" target="_blank" rel="noopener" style="font-size:11px;color:var(--coral);font-weight:600;text-decoration:none">Verify on scopus.com ↗</a>'
       +'</div></div>';
-  }).join('')+(hits.length>20?'<div class="more">Showing 20 of '+hits.length.toLocaleString()+' — refine your search</div>':'');
+  }).join('')+(hits.length>sLimit
+    ?'<div class="more">Showing '+Math.min(sLimit,hits.length).toLocaleString()+' of '+hits.length.toLocaleString()+'<br><button id="sloadmore">Show 20 more</button></div>'
+    :(hits.length>20?'<div class="more">All '+hits.length.toLocaleString()+' shown</div>':''));
+  const more=$('sloadmore');
+  if(more) more.onclick=()=>{sLimit+=20;renderScopus();};
 }

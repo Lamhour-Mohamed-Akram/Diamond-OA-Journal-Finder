@@ -14,12 +14,16 @@ Everything runs **entirely in your browser**. No server, no account, nothing is 
 
 ## Quick start
 
-Use the hosted app at **[diamond-oa-finder.netlify.app](https://diamond-oa-finder.netlify.app/)**, or clone this repo and open [`index.html`](index.html) in any modern browser — it works the same either way.
+Open the hosted app at **[diamond-oa-finder.netlify.app](https://diamond-oa-finder.netlify.app/)** — that's the whole quick start. On the first visit the app automatically loads the DOAJ + SCImago snapshots bundled in [`data/`](data/) (a few MB, with a progress indicator), joins them on ISSN, and caches the result on your device; every later visit opens straight into the journal list.
 
-1. Open the app.
-2. Download the DOAJ journal CSV from [doaj.org/csv](https://doaj.org/csv) (the download starts by itself) and drop it in.
-3. Download the SCImago rank CSV from [scimagojr.com/journalrank.php](https://www.scimagojr.com/journalrank.php) (*"Download"* button) and drop it in. **Tip:** download the full default list for best results — filtered exports (one category, one region, …) are accepted too, but journals outside the filter will show as unranked.
-4. The app joins both sources on ISSN and remembers the result.
+To self-host, clone this repo and serve the folder (e.g. `python3 -m http.server`). Opening `index.html` directly from disk also works, but then the built-in data can't be auto-fetched — load the files manually as below.
+
+Prefer the very latest data? Click **"Load newer data…"** in the sidebar (the **"← Back to the journals"** button returns without reloading) and drop in fresh files:
+
+1. Download the DOAJ journal CSV from [doaj.org/csv](https://doaj.org/csv) (the download starts by itself) and drop it in.
+2. Download the SCImago rank CSV from [scimagojr.com/journalrank.php](https://www.scimagojr.com/journalrank.php) (*"Download"* button) and drop it in. **Tip:** download the full default list for best results — filtered exports (one category, one region, …) are accepted too, but journals outside the filter will show as unranked.
+
+(The SCImago download link sits behind a bot-protection wall, so the app can't fetch it live — that's why a snapshot is bundled instead.)
 
 The **Conferences** tab needs no files at all — it fetches the open [ccf-deadlines](https://github.com/ccfddl/ccf-deadlines) feed live (cached for 24 h). There is also a *"Just looking for conferences?"* shortcut on the start screen.
 
@@ -54,7 +58,7 @@ The **Morocco** source loads automatically too: the CNRST server doesn't allow c
 
 - **Per-journal popup** — a "Check Scopus" button on every journal card shows a live verdict: indexed or not, how many documents, date of the most recent indexed paper
 - **Live ISSN / DOI check** — paste any ISSN or paper DOI in the Scopus ✓ tab for an authoritative answer straight from the Scopus API
-- **Offline snapshot search** — search all ~32,000 Scopus sources by name; journals whose Scopus coverage ended are flagged (helps catch discontinued and predatory journals)
+- **Offline snapshot search** — search all ~32,000 Scopus sources by name, with paginated results; journals whose Scopus coverage ended are flagged (helps catch discontinued and predatory journals)
 
 To self-host the live checks: get a free API key at [dev.elsevier.com](https://dev.elsevier.com), deploy this repo to Netlify, and set the `SCOPUS_API_KEY` environment variable (`netlify env:set SCOPUS_API_KEY <key> --secret`). Everything else works without it.
 
@@ -73,11 +77,12 @@ To self-host the live checks: get a free API key at [dev.elsevier.com](https://d
 | --- | --- | --- |
 | [DOAJ](https://doaj.org) | Open access journal metadata | CC BY-SA (journal metadata) |
 | [SCImago Journal Rank](https://www.scimagojr.com) | Quartiles, SJR, H-index | Free with attribution; data from Scopus® |
+| [sjrdata](https://github.com/ikashnitsky/sjrdata) (I. Kashnitsky) | Mirror used to auto-refresh the SCImago snapshot | MIT |
 | [ccf-deadlines (ccfddl)](https://github.com/ccfddl/ccf-deadlines) | CS conference deadlines & CCF/CORE ranks | MIT, community-maintained |
 | [CNRST](https://www.cnrst.ma/fr/liste-des-evenements) | Research events in Morocco (RSS) | Public feed from Morocco's National Center for Scientific and Technical Research |
 | [Elsevier Scopus API](https://dev.elsevier.com) | Live journal/paper indexing checks | Free API key; requests proxied server-side, key never exposed |
 
-The CSV data files are not committed to this repository — download fresh ones from the links above (fresher data = better results).
+Bundled snapshots for the one-click load live in [`data/`](data/) and refresh themselves: a [GitHub Action](.github/workflows/refresh-data.yml) runs twice a month (1st and 15th), re-downloading `doaj.csv` from doaj.org and rebuilding `scimago.csv` from [our fork](https://github.com/Lamhour-Mohamed-Akram/sjrdata) of the [sjrdata](https://github.com/ikashnitsky/sjrdata) mirror (MIT, by Ilya Kashnitsky) — scimagojr.com itself blocks scripted downloads, so [`scripts/scimago_from_sjrdata.py`](scripts/scimago_from_sjrdata.py) converts the mirror's latest yearly export back to the official CSV format (verified identical to the official download, all 32k rows). Once a year, when the new SCImago edition lands upstream, hit **"Sync fork"** on the fork so the workflow picks it up. Every replacement is sanity-checked so a bad download never overwrites good data, and the app shows each snapshot's date automatically. Any other CSV in the repo stays untracked.
 
 ## Author
 

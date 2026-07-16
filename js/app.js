@@ -98,6 +98,7 @@ function bindOnce(){
     status('');
     $('app').style.display='none'; $('loader').style.display='flex';
     $('cacheNote').style.display='none';
+    $('backToApp').style.display='inline-block';   // current data stays loaded — one click back
   });
   $('sq').addEventListener('input',renderScopus);
   // per-journal Scopus popup (event delegation over the list)

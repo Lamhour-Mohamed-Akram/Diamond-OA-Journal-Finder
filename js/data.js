@@ -44,7 +44,9 @@ function buildSci(sciRows){
   for(const c of ['Issn','SJR','SJR Best Quartile','H index','Categories','Areas'])
     if(!(c in si)) throw new Error('SCImago file: missing column “'+c+'”');
   const smap=new Map(), list=[];
-  const col=(row,name)=>(name in si)?String(row[si[name]]||'').trim():'';
+  // SCImago exports contain HTML entities ("Taylor &amp; Francis") — decode them
+  const deent=s=>s.indexOf('&')<0?s:s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#0?39;/g,"'");
+  const col=(row,name)=>(name in si)?deent(String(row[si[name]]||'').trim()):'';
   for(let r=1;r<sciRows.length;r++){
     const row=sciRows[r]; if(!row || row.length<3) continue;
     const issns=[];
@@ -144,3 +146,7 @@ async function cacheGet(key){ try{ const db=await idb();
   return await new Promise((res,rej)=>{ const rq=db.transaction(STORE).objectStore(STORE).get(key);
     rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>rej(rq.error); });
 }catch(e){ return null; } }
+async function cacheDel(key){ try{ const db=await idb();
+  await new Promise((res,rej)=>{ const tx=db.transaction(STORE,'readwrite');
+    tx.objectStore(STORE).delete(key); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); });
+}catch(e){} }

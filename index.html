@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=2">
 </head>
 <body>
 
@@ -17,6 +17,15 @@
     <span class="mark">◆ OA · LIVE DATA</span>
     <h1>Open Access Journal Finder</h1>
     <p class="lead">Find open access journals — Diamond (100% free to publish) by default, or include APC journals with one click. Everything runs right here in your browser (nothing is uploaded anywhere) and the result is remembered for next time.</p>
+
+    <button class="backbtn" id="backToApp" style="display:none">← Back to the journals</button>
+
+    <div class="quickload">
+      <button id="useBundled">⚡ Load the built-in data</button>
+      <span class="sub">One click — uses the DOAJ + SCImago snapshots shipped with the app (a few MB, then cached on this device). Want the very latest data instead? Follow steps 1–2 below.</span>
+    </div>
+
+    <div class="or-sep">— or load fresh files yourself —</div>
 
     <div class="steps">
       <div class="step" id="slot-doaj">
@@ -274,11 +283,13 @@
   </div>
 </div>
 
-<script src="js/data.js"></script>
-<script src="js/journals.js"></script>
-<script src="js/scopus.js"></script>
-<script src="js/confs.js"></script>
-<script src="js/app.js"></script>
-<script src="js/loader.js"></script>
+<!-- bump ?v= together with any JS/CSS change so browsers never mix old and
+     new files from cache (symptom: "... is not defined" errors after a deploy) -->
+<script src="js/data.js?v=2"></script>
+<script src="js/journals.js?v=2"></script>
+<script src="js/scopus.js?v=2"></script>
+<script src="js/confs.js?v=2"></script>
+<script src="js/app.js?v=2"></script>
+<script src="js/loader.js?v=2"></script>
 </body>
 </html>

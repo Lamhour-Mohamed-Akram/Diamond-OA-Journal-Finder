@@ -1,0 +1,73 @@
+name: Refresh data snapshots
+
+# Refreshes the bundled snapshots behind the one-click "built-in data" load
+# twice a month (Netlify redeploys on push):
+#
+#  - data/doaj.csv    — straight from doaj.org/csv (no bot protection)
+#  - data/scimago.csv — scimagojr.com blocks scripted downloads (Cloudflare),
+#    so the latest yearly export is pulled from the community mirror
+#    github.com/ikashnitsky/sjrdata (MIT) and converted back to the official
+#    CSV format by scripts/scimago_from_sjrdata.py. Verified identical to the
+#    official download for the 2025 edition. SCImago publishes one edition per
+#    year, so most runs only change the DOAJ file.
+#
+# Every replacement is sanity-checked first — a failed or truncated download
+# never overwrites good data (the job just fails and keeps the old snapshot).
+
+on:
+  schedule:
+    - cron: '43 4 1,15 * *'   # 1st and 15th of each month, 04:43 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refresh DOAJ snapshot
+        run: |
+          curl -sSfL --max-time 600 --retry 3 'https://doaj.org/csv' -o doaj_new.csv
+          # sanity checks — same header columns the app's detector relies on,
+          # and a size floor so a truncated download never replaces good data
+          head -1 doaj_new.csv | grep -qi 'journal title'
+          head -1 doaj_new.csv | grep -qi 'apc'
+          [ "$(stat -c%s doaj_new.csv)" -gt 10000000 ]
+          mv doaj_new.csv data/doaj.csv
+
+      - name: Refresh SCImago snapshot (via sjrdata mirror)
+        run: |
+          pip -q install duckdb
+          # newest yearly file in the mirror (each contains all editions to date;
+          # the converter keeps only the latest year)
+          fetch_from() {
+            LATEST=$(curl -sSf "https://api.github.com/repos/$1/contents/data-raw/sjr-journal" \
+              | python -c "import json,sys; print(sorted(x['name'] for x in json.load(sys.stdin) if x['name'].endswith('.parquet'))[-1])" 2>/dev/null) \
+              || return 1
+            echo "using $1 file: $LATEST"
+            curl -sSfL --max-time 600 --retry 3 \
+              "https://raw.githubusercontent.com/$1/master/data-raw/sjr-journal/$LATEST" \
+              -o sjr.parquet
+          }
+          # our own fork of ikashnitsky/sjrdata — fully under our control.
+          # NOTE: once a year, when the new SCImago edition lands upstream,
+          # click "Sync fork" on github.com/Lamhour-Mohamed-Akram/sjrdata so
+          # this picks it up. Until then, refreshes keep the current edition.
+          fetch_from 'Lamhour-Mohamed-Akram/sjrdata'
+          # the script refuses to write if the export looks incomplete (<25k rows)
+          python scripts/scimago_from_sjrdata.py sjr.parquet scimago_new.csv
+          head -1 scimago_new.csv | grep -q 'SJR Best Quartile'
+          mv scimago_new.csv data/scimago.csv
+
+      - name: Commit if changed
+        # runs even if one source failed — the other file still gets refreshed
+        # (the workflow stays red so the failure is visible)
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/doaj.csv data/scimago.csv
+          git diff --cached --quiet || { git commit -m 'Refresh bundled data snapshots'; git push; }
