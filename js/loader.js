@@ -31,15 +31,22 @@ async function ingest(fileList){
   else if(files.doaj||files.sci) status(files.sci?'SCImago loaded ✓ — now drop the DOAJ CSV (step 1).':'DOAJ loaded ✓ — now drop the SCImago CSV (step 2).');
 }
 
-/* ---- Built-in snapshots (served with the site from /data) ---- */
+/* ---- Built-in snapshots ----
+   Served from the GitHub repo (free bandwidth, gzip, CORS) so visitors
+   don't consume Netlify bandwidth; the copy deployed with the site is
+   only the fallback. Data refreshes reach users as soon as the refresh
+   workflow commits — no redeploy needed. */
+const GH_DATA='https://raw.githubusercontent.com/Lamhour-Mohamed-Akram/Diamond-OA-Journal-Finder/main/';
 const BUNDLED=[
-  {url:'data/doaj.csv',    label:'DOAJ journal list'},
-  {url:'data/scimago.csv', label:'SCImago rankings'},
+  {url:GH_DATA+'data/doaj.csv',    fallback:'data/doaj.csv',    label:'DOAJ journal list'},
+  {url:GH_DATA+'data/scimago.csv', fallback:'data/scimago.csv', label:'SCImago rankings'},
 ];
 
-async function fetchBundled(url,label){
-  const res=await fetch(url);
-  if(!res.ok) throw new Error('Couldn’t load the built-in '+label+' ('+res.status+'). You can still load the files manually below.');
+async function fetchBundled(url,label,fallback){
+  let res=null;
+  try{ res=await fetch(url); }catch(e){}
+  if((!res || !res.ok) && fallback){ res=await fetch(fallback); }
+  if(!res || !res.ok) throw new Error('Couldn’t load the built-in '+label+(res?' ('+res.status+')':'')+'. You can still load the files manually below.');
   const lastMod=res.headers.get('last-modified');
   if(!res.body || !res.body.getReader) return {text:await res.text(), lastMod};
   const reader=res.body.getReader();
@@ -61,7 +68,7 @@ async function loadBundled(){
     for(const b of BUNDLED){
       if(files.manual) return;   // user started dropping their own files — stand down
       status('Downloading '+b.label+'…');
-      const {text,lastMod}=await fetchBundled(b.url,b.label);
+      const {text,lastMod}=await fetchBundled(b.url,b.label,b.fallback);
       if(files.manual) return;
       const date=lastMod? new Date(lastMod).toLocaleDateString() : '';
       const name=b.label+' (built-in'+(date?', '+date:'')+')';

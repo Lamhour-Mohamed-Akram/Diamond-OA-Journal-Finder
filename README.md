@@ -14,7 +14,7 @@ Everything runs **entirely in your browser**. No server, no account, nothing is 
 
 ## Quick start
 
-Open the hosted app at **[diamond-oa-finder.netlify.app](https://diamond-oa-finder.netlify.app/)** — that's the whole quick start. On the first visit the app automatically loads the DOAJ + SCImago snapshots bundled in [`data/`](data/) (a few MB, with a progress indicator), joins them on ISSN, and caches the result on your device; every later visit opens straight into the journal list.
+Open the hosted app at **[diamond-oa-finder.netlify.app](https://diamond-oa-finder.netlify.app/)** — that's the whole quick start. On the first visit the app automatically loads the DOAJ + SCImago snapshots from [`data/`](data/) (a few MB, with a progress indicator — fetched from GitHub's CDN to keep hosting bandwidth free, with the site's own copy as fallback), joins them on ISSN, and caches the result on your device; every later visit opens straight into the journal list. Data refreshes reach users as soon as they're committed — no redeploy needed.
 
 To self-host, clone this repo and serve the folder (e.g. `python3 -m http.server`). Opening `index.html` directly from disk also works, but then the built-in data can't be auto-fetched — load the files manually as below.
 
