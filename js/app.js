@@ -6,6 +6,60 @@ function covActive(cov){ const e=covEnd(cov); return e!=null && sciRef!=null && 
 const qRank={Q1:1,Q2:2,Q3:3,Q4:4,'':9};
 function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
+/* ---- Shareable filter URLs: journal filters <-> location.hash ----
+   Only non-default values are written, so the default view keeps a clean URL. */
+function stateToHash(){
+  const p=new URLSearchParams();
+  if(state.q) p.set('s',state.q);
+  const f=[...state.fees].sort().join(',');
+  if(f!=='dia') p.set('f',f);
+  const qt=[...state.quarts].map(v=>v||'none').sort().join(',');
+  if(qt!=='Q1,Q2') p.set('qt',qt);
+  if(!state.idxOnly) p.set('x','0');
+  if(state.area) p.set('a',state.area);
+  if(state.weeks<52) p.set('w',state.weeks);
+  if(state.country) p.set('c',state.country);
+  if(state.sort!=='q') p.set('o',state.sort);
+  return p.toString();
+}
+function syncHash(){
+  if(!state) return;
+  const h=stateToHash();
+  history.replaceState(null,'',h?'#'+h:location.pathname+location.search);
+}
+function applyHash(){
+  const h=location.hash.slice(1);
+  if(!state || !h) return;
+  const p=new URLSearchParams(h);
+  const hasOpt=(sel,v)=>[...$(sel).options].some(o=>o.value===v);
+  if(p.has('s')){ $('q').value=p.get('s'); state.q=p.get('s').toLowerCase().trim(); }
+  if(p.has('f')) state.fees=new Set(p.get('f').split(',').filter(v=>v==='dia'||v==='apc'));
+  if(p.has('qt')) state.quarts=new Set(p.get('qt').split(',').filter(v=>['Q1','Q2','Q3','Q4','none'].includes(v)).map(v=>v==='none'?'':v));
+  if(p.has('x')){ state.idxOnly=p.get('x')!=='0'; $('idxOnly').checked=state.idxOnly; }
+  if(p.has('a') && hasOpt('area',p.get('a'))){ state.area=p.get('a'); $('area').value=state.area; }
+  if(p.has('w')){ const w=parseInt(p.get('w')); if(w>=0&&w<52){ state.weeks=w; $('weeks').value=w; $('wkVal').textContent='≤ '+w+'w'; } }
+  if(p.has('c') && hasOpt('country',p.get('c'))){ state.country=p.get('c'); $('country').value=state.country; }
+  if(p.has('o') && hasOpt('sort',p.get('o'))){ state.sort=p.get('o'); $('sort').value=state.sort; }
+  document.querySelectorAll('#fchips .chip').forEach(ch=>ch.classList.toggle('on',state.fees.has(ch.dataset.f)));
+  document.querySelectorAll('#qchips .chip').forEach(ch=>ch.classList.toggle('on',state.quarts.has(ch.dataset.q==='none'?'':ch.dataset.q)));
+}
+
+/* ---- CSV export of the current filtered view ---- */
+function exportCSV(){
+  const rows=R.filter(match).sort(sortRecs);
+  const cell=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const head=['Title','ISSN','Fees','APC','Quartile','SJR','H-index','Weeks to publication','Publisher','Country','Languages','Areas','Categories','Journal URL','DOAJ URL'];
+  const lines=[head.join(',')];
+  for(const r of rows)
+    lines.push([r.t,r.issn,r.dia?'Diamond (free)':'Has fees',r.fee,(r.idx?r.q:'')||'',r.sjr??'',r.h??'',r.w??'',r.pub,r.c,r.lang,r.areas,r.cats,r.url,r.doaj].map(cell).join(','));
+  const blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}); // BOM so Excel opens UTF-8 correctly
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='oa-journals-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function switchTab(tab){
   document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
   for(const t of ['j','c','s']){
@@ -49,6 +103,7 @@ function startApp(data,stamp,tab){
     Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c+' ('+cc[c]+')';cSel.appendChild(o);});
 
     state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,country:'',sort:'q',limit:60};
+    applyHash();   // restore filters from a shared link, if any
   }
   bindOnce();
   switchTab(tab||'j');
@@ -99,6 +154,15 @@ function bindOnce(){
     $('app').style.display='none'; $('loader').style.display='flex';
     $('cacheNote').style.display='none';
     $('backToApp').style.display='inline-block';   // current data stays loaded — one click back
+  });
+  $('exportBtn').addEventListener('click',exportCSV);
+  $('shareBtn').addEventListener('click',async()=>{
+    syncHash();
+    const btn=$('shareBtn'), old=btn.textContent;
+    try{ await navigator.clipboard.writeText(location.href); }
+    catch(e){ prompt('Copy this link:',location.href); return; }
+    btn.textContent='✓ Link copied'; btn.classList.add('done');
+    setTimeout(()=>{ btn.textContent=old; btn.classList.remove('done'); },1600);
   });
   $('sq').addEventListener('input',renderScopus);
   // per-journal Scopus popup (event delegation over the list)

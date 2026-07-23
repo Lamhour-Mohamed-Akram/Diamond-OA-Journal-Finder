@@ -28,6 +28,7 @@ function speedHtml(w){
   return '<div class="speed"><div class="stop"><span>Turnaround</span><b>'+w+'w</b></div><div class="bar '+cls+'"><i style="width:'+pct+'%"></i></div></div>';
 }
 function render(){
+  syncHash();   // keep the URL shareable — it always reflects the current filters
   const filtered=R.filter(match).sort(sortRecs);
   $('resCount').textContent=filtered.length.toLocaleString();
   const shown=filtered.slice(0,state.limit);

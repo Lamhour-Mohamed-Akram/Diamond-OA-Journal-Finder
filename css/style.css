@@ -130,6 +130,10 @@ main{padding:26px 30px 60px;min-width:0}
 .count b{font-size:30px;font-weight:700}
 .count span{color:var(--muted);font-size:14px;margin-left:6px}
 .sortwrap{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.tools{display:flex;gap:8px}
+.toolbtn{background:var(--card);border:1px solid var(--line-2);border-radius:8px;padding:8px 13px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;transition:.12s}
+.toolbtn:hover{border-color:var(--coral);color:var(--coral)}
+.toolbtn.done{border-color:#9fccb8;color:var(--sea);background:var(--sea-soft)}
 .sortwrap select{width:auto;background:var(--card);color:var(--ink);border:1px solid var(--line-2);border-radius:8px;padding:8px 30px 8px 12px;font-family:inherit;font-size:13px}
 .list{display:flex;flex-direction:column;gap:10px}
 .jrow{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;display:grid;grid-template-columns:56px 1fr auto;gap:16px;box-shadow:var(--shadow);transition:.12s}

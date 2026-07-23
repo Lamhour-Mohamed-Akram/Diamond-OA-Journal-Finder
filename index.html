@@ -4,10 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Open Access Journal & Conference Finder — Live</title>
+<meta name="description" content="Find open access journals that are 100% free to publish (Diamond OA), ranked with SCImago quartiles — plus conference deadlines and a Scopus indexing check. Runs entirely in your browser.">
+<link rel="canonical" href="https://diamond-oa-finder.netlify.app/">
+<meta property="og:title" content="Open Access Journal & Conference Finder">
+<meta property="og:description" content="Find journals that are 100% free to publish (Diamond OA), ranked with SCImago quartiles. Conference deadlines and Scopus indexing checks included.">
+<meta property="og:url" content="https://diamond-oa-finder.netlify.app/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cpolygon%20points='50,4%2096,50%2050,96%204,50'%20fill='%23E0563E'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 
@@ -225,6 +233,10 @@
           <option value="az">Title A–Z</option>
         </select>
       </div>
+      <div class="tools">
+        <button class="toolbtn" id="shareBtn" title="Copy a link that opens this exact filtered view">🔗 Share view</button>
+        <button class="toolbtn" id="exportBtn" title="Download the current filtered list as a CSV file">⬇ Export CSV</button>
+      </div>
     </div>
     <div class="list" id="list"></div>
     <div id="pager"></div>
@@ -285,11 +297,11 @@
 
 <!-- bump ?v= together with any JS/CSS change so browsers never mix old and
      new files from cache (symptom: "... is not defined" errors after a deploy) -->
-<script src="js/data.js?v=3"></script>
-<script src="js/journals.js?v=3"></script>
-<script src="js/scopus.js?v=3"></script>
-<script src="js/confs.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
-<script src="js/loader.js?v=3"></script>
+<script src="js/data.js?v=4"></script>
+<script src="js/journals.js?v=4"></script>
+<script src="js/scopus.js?v=4"></script>
+<script src="js/confs.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
+<script src="js/loader.js?v=4"></script>
 </body>
 </html>
