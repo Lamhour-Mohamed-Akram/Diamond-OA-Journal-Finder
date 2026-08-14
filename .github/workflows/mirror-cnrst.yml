@@ -19,20 +19,49 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Fetch feed
+        shell: bash
         run: |
-          # cnrst.ma serves an incomplete TLS chain (missing the HARICA/GEANT
-          # intermediate) — fetch it from the cert's AIA URL so curl can verify
-          curl -sSf 'http://crt.harica.gr/HARICA-GEANT-TLS-R1.cer' -o inter.der
-          openssl x509 -inform DER -in inter.der -out inter.pem 2>/dev/null || cp inter.der inter.pem
+          FEED_URL='https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&type=rss'
+          TMP_FILE='cnrst_new.xml'
+
+          rm -f "$TMP_FILE" inter.der inter.pem cabundle.pem
+
+          # cnrst.ma currently serves an incomplete TLS chain. Build a local CA
+          # bundle with the missing HARICA/GEANT intermediate certificate.
+          if ! curl -sSf --connect-timeout 20 --max-time 60 \
+            'http://crt.harica.gr/HARICA-GEANT-TLS-R1.cer' -o inter.der; then
+            echo '::warning::Could not download the CNRST TLS intermediate certificate. Keeping the existing cnrst.xml.'
+            exit 0
+          fi
+
+          if ! openssl x509 -inform DER -in inter.der -out inter.pem 2>/dev/null; then
+            echo '::warning::Could not convert the CNRST TLS intermediate certificate. Keeping the existing cnrst.xml.'
+            exit 0
+          fi
+
           cat /etc/ssl/certs/ca-certificates.crt inter.pem > cabundle.pem
-          curl -sSf --max-time 300 --retry 3 --cacert cabundle.pem \
-            'https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&type=rss' \
-            -o cnrst_new.xml
-          grep -q '<item>' cnrst_new.xml
-          # lastBuildDate changes on every request — strip it so unchanged
-          # feeds don't produce a new commit every day
-          sed -i 's|<lastBuildDate>[^<]*</lastBuildDate>||' cnrst_new.xml
-          mv cnrst_new.xml cnrst.xml
+
+          # CNRST is occasionally unavailable (503, timeout, SSL handshake error).
+          # In that case, keep the last valid mirror instead of failing the Action.
+          if ! curl -sSf --connect-timeout 20 --max-time 180 \
+            --retry 3 --retry-delay 5 --retry-all-errors \
+            --cacert cabundle.pem "$FEED_URL" -o "$TMP_FILE"; then
+            echo '::warning::CNRST feed is temporarily unavailable. Keeping the existing cnrst.xml.'
+            rm -f "$TMP_FILE"
+            exit 0
+          fi
+
+          # Never replace the cached feed with an invalid/empty response.
+          if ! grep -q '<item>' "$TMP_FILE"; then
+            echo '::warning::CNRST returned a response without RSS items. Keeping the existing cnrst.xml.'
+            rm -f "$TMP_FILE"
+            exit 0
+          fi
+
+          # lastBuildDate changes on every request; strip it so unchanged feeds
+          # don't produce a new commit every day.
+          sed -i 's|<lastBuildDate>[^<]*</lastBuildDate>||' "$TMP_FILE"
+          mv "$TMP_FILE" cnrst.xml
 
       - name: Commit if changed
         run: |
