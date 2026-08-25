@@ -18,7 +18,7 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SITE = 'https://diaop.de';
+const SITE = 'https://openaccessfinder.de';
 const TOP_N = 50;
 const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf-8');
 
@@ -131,7 +131,7 @@ const head = ({ title, desc, url, ld }) => `<!DOCTYPE html>
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:url" content="${url}">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="diaop.de">
+<meta property="og:site_name" content="openaccessfinder.de">
 <meta property="og:image" content="${SITE}/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Cpolygon%20points='50,4%2096,50%2050,96%204,50'%20fill='%23E0563E'/%3E%3C/svg%3E">
@@ -146,7 +146,7 @@ ${ld.map(o => `<script type="application/ld+json">${JSON.stringify(o)}</script>`
 <nav><a href="/">Search journals</a><a href="/subjects/">All subjects</a><a href="/#tab=s">Scopus check</a></nav></header>
 <main class="wrap">`;
 const foot = () => `</main>
-<footer>Data: <a href="https://doaj.org" rel="noopener">DOAJ</a> (journal list, fees) and <a href="https://www.scimagojr.com" rel="noopener">SCImago Journal Rank</a> (quartiles, SJR, Scopus coverage), snapshot of ${esc(monthYear)}. Pages regenerate automatically with every data refresh. Built by Mohamed-Akram Lamhour · <a href="/">diaop.de</a></footer>
+<footer>Data: <a href="https://doaj.org" rel="noopener">DOAJ</a> (journal list, fees) and <a href="https://www.scimagojr.com" rel="noopener">SCImago Journal Rank</a> (quartiles, SJR, Scopus coverage), snapshot of ${esc(monthYear)}. Pages regenerate automatically with every data refresh. Built by Mohamed-Akram Lamhour · <a href="/">openaccessfinder.de</a></footer>
 </body>
 </html>
 `;

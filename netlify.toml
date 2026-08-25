@@ -15,12 +15,24 @@
 # keeping the path and query string (shareable filter links keep working).
 [[redirects]]
   from = "https://diamond-oa-finder.netlify.app/*"
-  to = "https://diaop.de/:splat"
+  to = "https://openaccessfinder.de/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://diaop.de/*"
+  to = "https://openaccessfinder.de/:splat"
   status = 301
   force = true
 
 [[redirects]]
   from = "https://www.diaop.de/*"
-  to = "https://diaop.de/:splat"
+  to = "https://openaccessfinder.de/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.openaccessfinder.de/*"
+  to = "https://openaccessfinder.de/:splat"
   status = 301
   force = true
