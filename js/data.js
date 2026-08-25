@@ -27,6 +27,25 @@ function detectKind(headerRow){
   if(h.some(x=>x==='apc') && h.some(x=>x.includes('journal title'))) return 'doaj';
   return null;
 }
+/* Rough exchange rates to USD (mid-2026, for sorting/filtering only, not for billing).
+   DOAJ lists "1000 CHF; 250 EUR" style multi-currency amounts; we take the cheapest. */
+const FX={USD:1,EUR:1.08,GBP:1.27,CHF:1.12,AUD:0.66,CAD:0.73,NZD:0.60,JPY:0.0065,CNY:0.14,INR:0.012,IDR:0.000062,
+  IRR:0.000024,EGP:0.021,UAH:0.024,BRL:0.18,IQD:0.00076,ZAR:0.054,PLN:0.25,PKR:0.0036,RUB:0.011,KRW:0.00072,NGN:0.00065,
+  MYR:0.22,KZT:0.0021,TRY:0.029,NOK:0.092,SEK:0.095,DKK:0.145,XOF:0.0016,XAF:0.0016,MAD:0.10,DZD:0.0074,TND:0.32,SAR:0.27,
+  AED:0.27,QAR:0.27,KWD:3.25,BHD:2.65,OMR:2.60,JOD:1.41,LKR:0.0033,BDT:0.0085,NPR:0.0075,VND:0.00004,THB:0.028,PHP:0.017,
+  TWD:0.031,HKD:0.128,SGD:0.74,MXN:0.055,COP:0.00024,ARS:0.001,CLP:0.0011,PEN:0.27,HUF:0.0027,CZK:0.043,RON:0.22,BGN:0.55,
+  RSD:0.0092,HRK:0.14,GEL:0.36,AMD:0.0026,AZN:0.59,UZS:0.00008,KES:0.0077,GHS:0.065,ETB:0.0078,TZS:0.0004,UGX:0.00027};
+function apcUSD(str){
+  let best=null;
+  for(const part of String(str||'').split(';')){
+    const m=part.match(/([\d.,]+)\s*([A-Z]{3})/);
+    if(!m||!(m[2] in FX)) continue;
+    const n=parseFloat(m[1].replace(/,/g,'')); if(isNaN(n)) continue;
+    const v=Math.round(n*FX[m[2]]);
+    if(best==null||v<best) best=v;
+  }
+  return best;
+}
 const normISSN = v => {
   if(!v) return null;
   const n=String(v).toUpperCase().replace(/[^0-9X]/g,'');
@@ -44,7 +63,7 @@ function buildSci(sciRows){
   for(const c of ['Issn','SJR','SJR Best Quartile','H index','Categories','Areas'])
     if(!(c in si)) throw new Error('SCImago file: missing column “'+c+'”');
   const smap=new Map(), list=[];
-  // SCImago exports contain HTML entities ("Taylor &amp; Francis") — decode them
+  // SCImago exports contain HTML entities ("Taylor &amp; Francis") - decode them
   const deent=s=>s.indexOf('&')<0?s:s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#0?39;/g,"'");
   const col=(row,name)=>(name in si)?deent(String(row[si[name]]||'').trim()):'';
   for(let r=1;r<sciRows.length;r++){
@@ -62,7 +81,7 @@ function buildSci(sciRows){
         t:col(row,'Title'), ty:col(row,'Type'), issns,
         q, sjr:sRaw&&!isNaN(parseFloat(sRaw))?Math.round(parseFloat(sRaw)*1000)/1000:null,
         h:!isNaN(parseInt(col(row,'H index')))?parseInt(col(row,'H index')):null,
-        pub:col(row,'Publisher'), cov:col(row,'Coverage'), areas:col(row,'Areas')
+        pub:col(row,'Publisher'), cov:col(row,'Coverage'), areas:col(row,'Areas'), cats:col(row,'Categories')
       });
     }
   }
@@ -81,10 +100,12 @@ function doajCsvToInters(doajRows){
     const apc=(row[di['APC']]||'').trim().toLowerCase();
     const fees=(row[di['Has other fees']]||'').trim().toLowerCase();
     const dia = apc==='no' && fees==='no';   // Diamond = no APC AND no other fees
-    const fee = dia ? '' : ((('APC amount' in di) && row[di['APC amount']]) ? row[di['APC amount']].split(';')[0].trim() : '');
+    const feeAll = (('APC amount' in di) && row[di['APC amount']]) ? row[di['APC amount']] : '';
+    const fee = dia ? '' : feeAll.split(';')[0].trim();
+    const usd = dia ? 0 : apcUSD(feeAll);   // approx USD (null when unknown)
     const wRaw=row[di['Average number of weeks between article submission and publication']];
     inters.push({
-      dia, fee,
+      dia, fee, usd,
       t:row[di['Journal title']],
       pissn:row[di['Journal ISSN (print version)']], eissn:row[di['Journal EISSN (online version)']],
       w: wRaw && !isNaN(parseFloat(wRaw)) ? Math.round(parseFloat(wRaw)) : null,
@@ -114,8 +135,9 @@ function assemble(inters, sciRows){
       cats=sci[si['Categories']]||''; areas=sci[si['Areas']]||'';
     }
     records.push({
-      t:it.t, idx:!!sci, q, sjr, h, cats, areas, w:it.w, dia:it.dia, fee:it.fee,
+      t:it.t, idx:!!sci, q, sjr, h, cats, areas, w:it.w, dia:it.dia, fee:it.fee, usd:it.usd,
       issn:normISSN(it.eissn)||normISSN(it.pissn)||'',
+      issns:[normISSN(it.pissn),normISSN(it.eissn)].filter(Boolean),
       rev:it.rev, pub:it.pub, c:it.c, lang:it.lang, dsub:it.dsub, url:it.url, doaj:it.doaj
     });
   }

@@ -40,6 +40,8 @@ export default async (request) => {
     latestCoverDate: entry['prism:coverDate'] || null,
     latestTitle: entry['dc:title'] || null,
     publicationName: entry['prism:publicationName'] || null,
+    issn: entry['prism:issn'] || null,
+    eIssn: entry['prism:eIssn'] || null,
   }, 200, 3600);
 };
 

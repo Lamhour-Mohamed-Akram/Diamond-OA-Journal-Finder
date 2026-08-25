@@ -25,17 +25,17 @@ async function ingest(fileList){
     status('Reading '+f.name+'…');
     let text;
     try{ text=await readFile(f); }catch(e){ status(e.message,true); continue; }
-    if(!registerText(f.name,text)) status('“'+f.name+'” doesn’t look like a DOAJ or SCImago CSV — check the file.',true);
+    if(!registerText(f.name,text)) status('“'+f.name+'” doesn’t look like a DOAJ or SCImago CSV, check the file.',true);
   }
   if(files.doaj && files.sci) processAll();
-  else if(files.doaj||files.sci) status(files.sci?'SCImago loaded ✓ — now drop the DOAJ CSV (step 1).':'DOAJ loaded ✓ — now drop the SCImago CSV (step 2).');
+  else if(files.doaj||files.sci) status(files.sci?'SCImago loaded ✓. Now drop the DOAJ CSV (step 1).':'DOAJ loaded ✓. Now drop the SCImago CSV (step 2).');
 }
 
 /* ---- Built-in snapshots ----
    Served from the GitHub repo (free bandwidth, gzip, CORS) so visitors
    don't consume Netlify bandwidth; the copy deployed with the site is
    only the fallback. Data refreshes reach users as soon as the refresh
-   workflow commits — no redeploy needed. */
+   workflow commits - no redeploy needed. */
 const GH_DATA='https://raw.githubusercontent.com/Lamhour-Mohamed-Akram/Diamond-OA-Journal-Finder/main/';
 const BUNDLED=[
   {url:GH_DATA+'data/doaj.csv',    fallback:'data/doaj.csv',    label:'DOAJ journal list'},
@@ -66,13 +66,13 @@ async function loadBundled(){
   const btn=$('useBundled'); btn.disabled=true;
   try{
     for(const b of BUNDLED){
-      if(files.manual) return;   // user started dropping their own files — stand down
+      if(files.manual) return;   // user started dropping their own files - stand down
       status('Downloading '+b.label+'…');
       const {text,lastMod}=await fetchBundled(b.url,b.label,b.fallback);
       if(files.manual) return;
       const date=lastMod? new Date(lastMod).toLocaleDateString() : '';
       const name=b.label+' (built-in'+(date?', '+date:'')+')';
-      if(!registerText(name,text)) throw new Error('The built-in '+b.label+' file looks corrupted — load the files manually below.');
+      if(!registerText(name,text)) throw new Error('The built-in '+b.label+' file looks corrupted; load the files manually below.');
     }
     if(files.doaj && files.sci) await processAll();
   }catch(e){ status(e.message,true); }
@@ -96,10 +96,10 @@ async function processAll(){
     status('Joining on ISSN…');
     await new Promise(r=>setTimeout(r,30));
     const data=assemble(inters,sciRows);
-    if(data.meta.total===0) throw new Error('Join produced 0 Diamond journals — are these the right files?');
+    if(data.meta.total===0) throw new Error('Join produced 0 Diamond journals. Are these the right files?');
     const stamp=new Date().toLocaleDateString()+' · '+files.doaj.name+' + '+files.sci.name;
-    await cacheSet('dataset5',{data,stamp,ts:Date.now()});
-    cacheDel('dataset4');   // superseded cache format (kept HTML entities)
+    await cacheSet('dataset8',{data,stamp,ts:Date.now()});
+    cacheDel('dataset4'); cacheDel('dataset5'); cacheDel('dataset6'); cacheDel('dataset7');   // superseded cache formats
     startApp(data,stamp);
   }catch(e){ status(e.message,true); }
 }
@@ -112,13 +112,13 @@ $('fileInput').addEventListener('change',e=>ingest([...e.target.files]));
 
 $('confOnly').addEventListener('click',()=>startApp(null,null,'c'));
 
-cacheGet('dataset5').then(c=>{
+cacheGet('dataset8').then(c=>{
   if(c && c.data){
     $('cacheNote').style.display='block';
     $('cacheDate').textContent=c.stamp;
     $('useCache').onclick=()=>startApp(c.data,c.stamp);
-    startApp(c.data,c.stamp);   // returning visitor — straight into the app
+    startApp(c.data,c.stamp);   // returning visitor - straight into the app
   } else {
-    loadBundled();              // first visit — fetch the built-in data right away
+    loadBundled();              // first visit - fetch the built-in data right away
   }
 });

@@ -1,5 +1,5 @@
 /* ================= Scopus check =================
-   Searches the full SCImago source list (built from Scopus data — includes
+   Searches the full SCImago source list (built from Scopus data - includes
    all source types, not only open access). Coverage years reveal journals
    that were dropped from Scopus but still advertise "Scopus indexed". */
 function fmtISSN(n){ return n.slice(0,4)+'-'+n.slice(4); }
@@ -27,20 +27,21 @@ async function openScopusModal(issn,title){
       const yr=d.latestCoverDate?String(d.latestCoverDate).slice(0,4):'';
       const active=yr && (+yr>=(new Date().getFullYear()-1));
       $('modalBody').innerHTML='<div class="mv '+(active?'yes':'warn')+'">'
-        +'<div class="mv-head">'+(active?'✓ Indexed in Scopus':'⚠ In Scopus — check recency')+'</div>'
+        +'<div class="mv-head">'+(active?'✓ Indexed in Scopus':'⚠ In Scopus, check recency')+'</div>'
         +'<div class="mv-body">'
         +issnLine
         +'<div class="mv-row"><span>Documents indexed</span><b>'+d.documentCount.toLocaleString()+'</b></div>'
         +(d.publicationName?'<div class="mv-row"><span>Source name</span><b>'+esc(d.publicationName)+'</b></div>':'')
         +(d.latestCoverDate?'<div class="mv-row"><span>Most recent paper</span><b>'+esc(d.latestCoverDate)+'</b></div>':'')
-        +(snap&&snap.q?'<div class="mv-row"><span>SCImago quartile</span><b>'+esc(snap.q)+'</b></div>':'')
+        +(snap&&snap.q?'<div class="mv-row"><span>SCImago best quartile</span><b>'+esc(snap.q)+'</b></div>':'')
+        +(snap&&snap.cats?'<div class="tags cats" style="margin-top:8px">'+catTags(snap.cats)+'</div>':'')
         +'</div>'+scopusLink
-        +'<div class="modal-foot">Live from Scopus (Elsevier API)'+(active?'':' — latest indexed paper isn’t recent; the journal may have been discontinued from Scopus.')+'</div></div>';
+        +'<div class="modal-foot">Live from Scopus (Elsevier API)'+(active?'':'. Latest indexed paper isn’t recent; the journal may have been discontinued from Scopus.')+'</div></div>';
     } else {
       $('modalBody').innerHTML='<div class="mv no"><div class="mv-head">✗ Not found in Scopus</div>'
         +'<div class="mv-body">'+issnLine
         +'<div class="mv-row"><span>Documents indexed</span><b>0</b></div></div>'
-        +'<div class="mv-body" style="margin-top:6px">This ISSN returned no documents in Scopus — it is most likely <b>not indexed</b>. Be cautious of any “Scopus indexed” claim on the journal’s own site.</div>'
+        +'<div class="mv-body" style="margin-top:6px">This ISSN returned no documents in Scopus. It is most likely <b>not indexed</b>. Be cautious of any “Scopus indexed” claim on the journal’s own site.</div>'
         +scopusLink+'<div class="modal-foot">Live from Scopus (Elsevier API)</div></div>';
     }
     return;
@@ -50,8 +51,9 @@ async function openScopusModal(issn,title){
     const active=covActive(snap.cov);
     $('modalBody').innerHTML='<div class="mv '+(active?'yes':'warn')+'"><div class="mv-head">'+(active?'✓ In Scopus (snapshot)':'⚠ Coverage ended (snapshot)')+'</div>'
       +'<div class="mv-body">'+issnLine
-      +'<div class="mv-row"><span>Scopus coverage</span><b>'+esc(snap.cov||'—')+'</b></div>'
-      +(snap.q?'<div class="mv-row"><span>SCImago quartile</span><b>'+esc(snap.q)+'</b></div>':'')
+      +'<div class="mv-row"><span>Scopus coverage</span><b>'+esc(snap.cov||'–')+'</b></div>'
+      +(snap.q?'<div class="mv-row"><span>SCImago best quartile</span><b>'+esc(snap.q)+'</b></div>':'')
+      +(snap.cats?'<div class="tags cats" style="margin-top:8px">'+catTags(snap.cats)+'</div>':'')
       +'</div>'+scopusLink
       +'<div class="modal-foot">From the offline SCImago snapshot (live check unavailable).</div></div>';
   } else {
@@ -81,16 +83,25 @@ async function liveScopus(kind,val){
   const label=kind==='doi'?'This paper':'This ISSN';
   if(d.indexed){
     const yr=d.latestCoverDate?String(d.latestCoverDate).slice(0,4):'';
+    // SCImago quartile from the offline snapshot: match by ISSN (the queried one
+    // or the ones Scopus returned), else by exact source name
+    const issns=[kind==='issn'?val:'',d.issn,d.eIssn].map(x=>String(x||'').toUpperCase().replace(/[^0-9X]/g,'')).filter(x=>x.length===8);
+    let snap=S.find(s=>s.issns.some(i=>issns.includes(i)));
+    if(!snap && d.publicationName){ const pn=d.publicationName.toLowerCase(); snap=S.find(s=>s.t.toLowerCase()===pn); }
+    const qLine=snap?'<div class="lv-q"><span class="qbadge q-'+(snap.q||'none')+'"><span class="q">'+(snap.q||'–')+'</span><span class="lbl">'+(snap.q?'quartile':'unranked')+'</span></span>'
+      +'<span>SCImago '+(snap.q?'best quartile <b>'+esc(snap.q)+'</b>':'<b>unranked</b>')+(snap.sjr!=null?' · SJR <b>'+snap.sjr.toFixed(3)+'</b>':'')+(snap.h!=null?' · H-index <b>'+snap.h+'</b>':'')+'</span></div>'
+      :(S.length?'<div class="lv-q"><span>No SCImago ranking found for this journal in the snapshot.</span></div>':'');
+    const catLine=snap&&snap.cats?'<div class="tags cats" style="margin-top:8px">'+catTags(snap.cats)+'</div>':'';
     box.innerHTML='<div class="live yes"><div class="lv-top">✓ Indexed in Scopus'
       +'<span class="lv-badge">live</span></div>'
-      +'<div class="lv-body">'+label+' is in Scopus — <b>'+d.documentCount.toLocaleString()+'</b> document'+(d.documentCount===1?'':'s')+' indexed'
+      +'<div class="lv-body">'+label+' is in Scopus: <b>'+d.documentCount.toLocaleString()+'</b> document'+(d.documentCount===1?'':'s')+' indexed'
       +(d.publicationName?' in <b>'+esc(d.publicationName)+'</b>':'')
-      +(yr?'. Most recent indexed: <b>'+esc(d.latestCoverDate)+'</b>'+(+yr>=(new Date().getFullYear()-1)?' — actively covered':'')+'.':'.')
-      +'</div><div class="lv-src">Live from Scopus (Elsevier API) · '+esc(d.query)+'</div></div>';
+      +(yr?'. Most recent indexed: <b>'+esc(d.latestCoverDate)+'</b>'+(+yr>=(new Date().getFullYear()-1)?' (actively covered)':'')+'.':'.')
+      +'</div>'+qLine+catLine+'<div class="lv-src">Live from Scopus (Elsevier API) · '+esc(d.query)+'</div></div>';
   } else {
     box.innerHTML='<div class="live no"><div class="lv-top">✗ Not found in Scopus'
       +'<span class="lv-badge">live</span></div>'
-      +'<div class="lv-body">'+label+' returned <b>0</b> documents in Scopus. It is most likely <b>not indexed</b> — be cautious of any "Scopus indexed" claim.</div>'
+      +'<div class="lv-body">'+label+' returned <b>0</b> documents in Scopus. It is most likely <b>not indexed</b>. Be cautious of any "Scopus indexed" claim.</div>'
       +'<div class="lv-src">Live from Scopus (Elsevier API) · '+esc(d.query)+'</div></div>';
   }
 }
@@ -99,7 +110,7 @@ let sLimit=20, sLastQ='';
 function renderScopus(){
   const box=$('slist'); if(!box) return;
   const raw=($('sq').value||'').trim();
-  if(raw!==sLastQ){ sLastQ=raw; sLimit=20; }   // new search — restart pagination
+  if(raw!==sLastQ){ sLastQ=raw; sLimit=20; }   // new search - restart pagination
   const digits=raw.toUpperCase().replace(/[^0-9X]/g,'');
   const isISSN=/^\d{7}[0-9X]$/.test(digits);
   const isDOI=looksDOI(raw);
@@ -111,7 +122,7 @@ function renderScopus(){
   if(isDOI && !S.length){ $('sresCount').textContent='–'; box.innerHTML=''; return; }
   if(!S.length){
     $('sresCount').textContent='–';
-    box.innerHTML='<div class="empty"><h3>Load journal data first</h3><p>The offline snapshot uses the SCImago file. Go to the <b>Journals</b> tab and load the data once — then come back here. (Live ISSN/DOI checks work without it.)</p></div>';
+    box.innerHTML='<div class="empty"><h3>Load journal data first</h3><p>The offline snapshot uses the SCImago file. Go to the <b>Journals</b> tab and load the data once, then come back here. (Live ISSN/DOI checks work without it.)</p></div>';
     return;
   }
   if(!raw){
@@ -133,25 +144,25 @@ function renderScopus(){
   }
   $('sresCount').textContent=hits.length.toLocaleString();
   if(!hits.length){
-    box.innerHTML='<div class="empty"><h3>✗ Not found in the Scopus source list</h3><p>“'+esc(raw)+'” doesn’t match any of the '+S.length.toLocaleString()+' sources in the SCImago/Scopus snapshot — it is most likely <b>not indexed in Scopus</b>.<br><br>Double-check the exact ISSN on <a href="https://www.scopus.com/sources" target="_blank" rel="noopener" style="color:var(--coral);font-weight:600">scopus.com/sources ↗</a> — and be careful with journals that claim indexing on their own website.</p></div>';
+    box.innerHTML='<div class="empty"><h3>✗ Not found in the Scopus source list</h3><p>“'+esc(raw)+'” doesn’t match any of the '+S.length.toLocaleString()+' sources in the SCImago/Scopus snapshot. It is most likely <b>not indexed in Scopus</b>.<br><br>Double-check the exact ISSN on <a href="https://www.scopus.com/sources" target="_blank" rel="noopener" style="color:var(--coral);font-weight:600">scopus.com/sources ↗</a>, and be careful with journals that claim indexing on their own website.</p></div>';
     return;
   }
   box.innerHTML=hits.slice(0,sLimit).map(s=>{
     const end=covEnd(s.cov);
     const active=covActive(s.cov);
     const verdict=active
-      ?'<span class="tag fee-ok">✓ In Scopus — coverage '+esc(s.cov)+'</span>'
-      :'<span class="tag fee">⚠ Coverage ended '+(end||'?')+' — may be discontinued from Scopus</span>';
+      ?'<span class="tag fee-ok">✓ In Scopus, coverage '+esc(s.cov)+'</span>'
+      :'<span class="tag fee">⚠ Coverage ended '+(end||'?')+', may be discontinued from Scopus</span>';
     const q=s.q||'none';
     const issns=s.issns.map(fmtISSN).join(', ');
     const sjr=s.sjr!=null?'<div class="metric"><div class="v">'+s.sjr.toFixed(3)+'</div><div class="k">SJR</div></div>':'';
     const hix=s.h!=null?'<div class="metric"><div class="v">'+s.h+'</div><div class="k">H-index</div></div>':'';
     const areaT=(s.areas||'').split(';').map(x=>x.trim()).filter(Boolean).slice(0,3).map(a=>'<span class="tag area">'+esc(a)+'</span>').join('');
     return '<div class="jrow">'
-      +'<div class="qbadge q-'+q+'"><span class="q">'+(s.q||'—')+'</span><span class="lbl">'+(s.q?'quartile':'unranked')+'</span></div>'
+      +'<div class="qbadge q-'+q+'"><span class="q">'+(s.q||'–')+'</span><span class="lbl">'+(s.q?'quartile':'unranked')+'</span></div>'
       +'<div class="jmain"><h3 class="jtitle">'+esc(s.t)+' <small>'+esc(s.ty)+(issns?' · ISSN '+esc(issns):'')+'</small></h3>'
-      +'<div class="jmeta"><span class="pub">'+esc(s.pub||'—')+'</span></div>'
-      +'<div class="tags">'+verdict+areaT+'</div></div>'
+      +'<div class="jmeta"><span class="pub">'+esc(s.pub||'–')+'</span></div>'
+      +'<div class="tags">'+verdict+areaT+'</div>'+(s.cats?'<div class="tags cats">'+catTags(s.cats)+'</div>':'')+'</div>'
       +'<div class="jside"><div style="display:flex;gap:16px">'+sjr+hix+'</div>'
       +'<a href="https://www.scopus.com/sources" target="_blank" rel="noopener" style="font-size:11px;color:var(--coral);font-weight:600;text-decoration:none">Verify on scopus.com ↗</a>'
       +'</div></div>';

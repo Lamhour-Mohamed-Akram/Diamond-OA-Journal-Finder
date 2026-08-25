@@ -1,5 +1,5 @@
 /* ================= Conference finder =================
-   Data: https://ccfddl.com/conference/allconf.yml — an open, community-
+   Data: https://ccfddl.com/conference/allconf.yml - an open, community-
    maintained dataset of CS conferences with CCF/CORE ranks and deadlines. */
 const CONF_FEED='https://ccfddl.com/conference/allconf.yml';
 const CONF_TTL=24*3600e3;
@@ -186,7 +186,7 @@ async function loadConfs(force){
       await cacheSet('confs',payload);
       useConfs(payload);
     }catch(e){
-      if(cached){ useConfs(cached,' (offline — using saved copy)'); }
+      if(cached){ useConfs(cached,' (offline, using saved copy)'); }
       else cstatus('Could not load the conference feed: '+e.message,true);
     }
   } finally { confsLoading=false; }
@@ -336,12 +336,12 @@ function renderConfs(){
 /* ================= Morocco events (CNRST) =================
    Source: https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&type=rss
    The CNRST server sends no CORS headers, so the browser cannot fetch it
-   directly — the user saves the RSS file once and drops it in. Each <item>
+   directly - the user saves the RSS file once and drops it in. Each <item>
    carries the event title, page link, discipline (<category>) and the event
    date (<pubDate>). */
 function parseCnrstRss(text){
   const doc=new DOMParser().parseFromString(text,'text/xml');
-  if(doc.querySelector('parsererror')) throw new Error('That file isn’t valid XML/RSS — save the feed page itself (⌘S / Ctrl-S).');
+  if(doc.querySelector('parsererror')) throw new Error('That file isn’t valid XML/RSS. Save the feed page itself (⌘S / Ctrl-S).');
   const norm=s=>s.toLowerCase().replace(/\s+/g,' ').trim();
   const tmp=document.createElement('div');
   const evs=[];
@@ -356,7 +356,7 @@ function parseCnrstRss(text){
     const snip=(tmp.textContent||'').replace(/\s+/g,' ').trim().slice(0,220);
     evs.push({t, url:g('link'), cat, ts:isNaN(ts)?null:ts, snip});
   }
-  if(!evs.length) throw new Error('No events found in this file — is it the CNRST events RSS feed?');
+  if(!evs.length) throw new Error('No events found in this file. Is it the CNRST events RSS feed?');
   return evs;
 }
 /* The app never talks to cnrst.ma directly (no CORS there). A GitHub Action
@@ -392,7 +392,7 @@ async function loadMa(force){
       }catch(e){ /* try the next mirror */ }
     }
     cstatus('');
-    if(cached && cached.evs && cached.evs.length) useMa(cached,' (mirror unreachable — using saved copy)');
+    if(cached && cached.evs && cached.evs.length) useMa(cached,' (mirror unreachable, using saved copy)');
     else if(csrc==='ma'){ $('maSetup').style.display='block'; $('clist').innerHTML=''; $('cpager').innerHTML=''; }
   } finally { maLoading=false; }
 }
@@ -438,7 +438,7 @@ function renderMa(){
   }
   list.innerHTML=shown.map(ev=>{
     const d=ev.ts?new Date(ev.ts):null;
-    const day=d?String(d.getDate()).padStart(2,'0'):'—';
+    const day=d?String(d.getDate()).padStart(2,'0'):'–';
     const mon=d?d.toLocaleDateString('en',{month:'short'}).toUpperCase()+' ’'+String(d.getFullYear()).slice(2):'';
     let due;
     if(d && ev.ts>now){
