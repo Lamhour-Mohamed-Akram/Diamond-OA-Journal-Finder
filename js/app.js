@@ -81,13 +81,15 @@ function switchTab(tab){
   if(tab==='s') renderScopus();
   if(tab==='j' && !R.length){
     // no journal data yet - go back to the loader to get some
-    $('app').style.display='none';
+    $('app').style.display='none'; document.body.classList.remove('app-open');
+    $('loader').classList.remove('waiting');
     $('loader').style.display='flex';
   }
 }
 document.querySelectorAll('.tabbar button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 
 function startApp(data,stamp,tab){
+  document.body.classList.add('app-open');
   $('loader').style.display='none';
   $('app').style.display='block';
   if(data){
@@ -168,7 +170,7 @@ function bindOnce(){
     ['slot-doaj','slot-sci'].forEach(id=>$(id).classList.remove('ok'));
     $('slot-doaj-s').textContent='waiting…'; $('slot-sci-s').textContent='waiting…';
     status('');
-    $('app').style.display='none'; $('loader').style.display='flex';
+    $('app').style.display='none'; document.body.classList.remove('app-open'); $('loader').classList.remove('waiting'); $('loader').style.display='flex';
     $('cacheNote').style.display='none';
     $('backToApp').style.display='inline-block';   // current data stays loaded - one click back
   });

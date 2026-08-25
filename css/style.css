@@ -13,7 +13,51 @@ html,body{margin:0}
 body{background:var(--paper);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 
+/* ============ Guide / FAQ (landing only) ============ */
+#guide{padding:10px 30px 60px}
+.guide-in{max-width:640px;margin:0 auto;border-top:1px solid var(--line);padding-top:36px}
+#guide h2{font-family:Spectral,Georgia,serif;font-weight:700;font-size:24px;line-height:1.2;margin:0 0 12px}
+#guide p{color:var(--ink-2);font-size:14.5px;line-height:1.65;margin:0 0 14px}
+#guide a{color:var(--coral);font-weight:600;text-decoration:none}
+#guide a:hover{text-decoration:underline}
+.faq{display:flex;flex-direction:column;gap:8px;margin:18px 0 20px}
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:0 16px}
+.faq summary{cursor:pointer;font-weight:600;font-size:14.5px;padding:13px 0;list-style:none;display:flex;gap:10px;align-items:center}
+.faq summary::before{content:"+";font-family:"IBM Plex Mono",monospace;color:var(--sea);font-weight:600;width:14px}
+.faq details[open] summary::before{content:"–"}
+.faq details p{margin:0 0 14px;padding-left:24px}
+.guide-foot{font-size:12px;color:var(--muted-2)!important}
+body.app-open #guide{display:none}
+
 /* ============ Landing / data loader ============ */
+/* ---- Wait screen (shown while the built-in data downloads) ---- */
+#loader.waiting .load-card{display:none}
+#loader:not(.waiting) .wait-card{display:none}
+.wait-card{max-width:560px;width:100%;animation:pop .25s ease-out}
+.wait-card .mark{font-family:"IBM Plex Mono",monospace;font-weight:600;letter-spacing:.14em;font-size:12px;color:var(--coral)}
+.wait-card h1{font-family:Spectral,Georgia,serif;font-weight:700;font-size:34px;margin:6px 0 10px;line-height:1.1}
+.wait-card p.lead{color:var(--muted);font-size:15px;margin:0 0 26px;line-height:1.55}
+.wbar{height:10px;background:var(--paper-2);border:1px solid var(--line);border-radius:999px;overflow:hidden;position:relative}
+.wfill{height:100%;width:0;background:linear-gradient(90deg,var(--sea),#2aa37a);border-radius:999px;transition:width .35s ease-out;position:relative;min-width:6px}
+.wfill::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);background-size:200% 100%;animation:wshine 1.4s linear infinite}
+@keyframes wshine{from{background-position:200% 0}to{background-position:-200% 0}}
+.wmsg{margin-top:10px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-2);min-height:18px}
+.wmsg.err{color:var(--coral)}
+.wsteps{list-style:none;margin:22px 0 0;padding:0;display:flex;flex-direction:column;gap:9px}
+.wsteps li{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted-2);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:11px 14px;transition:.2s}
+.wsteps li em{margin-left:auto;font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted-2)}
+.wdot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2);flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.wsteps li.active{color:var(--ink);border-color:#9fccb8;background:#F4FAF7}
+.wsteps li.active .wdot{border-color:var(--sea);border-top-color:transparent;animation:wspin .8s linear infinite}
+@keyframes wspin{to{transform:rotate(360deg)}}
+.wsteps li.done{color:var(--ink-2)}
+.wsteps li.done .wdot{background:var(--sea);border-color:var(--sea);color:#fff}
+.wsteps li.done .wdot::before{content:"✓"}
+.wsteps li.done em{color:var(--sea)}
+.wfoot{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.7}
+.wfoot a{color:var(--coral);font-weight:600;text-decoration:none;cursor:pointer}
+.wfoot a:hover{text-decoration:underline}
+
 #loader{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px}
 .load-card{max-width:640px;width:100%}
 .load-card .mark{font-family:"IBM Plex Mono",monospace;font-weight:600;letter-spacing:.14em;font-size:12px;color:var(--coral)}

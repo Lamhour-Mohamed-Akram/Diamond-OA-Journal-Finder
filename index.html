@@ -3,10 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Open Access Journal & Conference Finder - Live</title>
-<meta name="description" content="Find open access journals that are 100% free to publish (Diamond OA), ranked with SCImago quartiles, plus conference deadlines and a Scopus indexing check. Runs entirely in your browser.">
+<title>Diamond Open Access Journal Finder: Free-to-Publish Journals with SCImago Quartiles</title>
+<meta name="description" content="Search 20,000+ open access journals with no APC (Diamond OA), ranked by SCImago quartile and subject. Check if a journal is indexed in Scopus, track conference deadlines. Free, no sign-up, runs in your browser.">
+<meta name="keywords" content="diamond open access journals, free to publish journals, no APC journals, DOAJ, SCImago quartile, Scopus indexed journals, journal finder, conference deadlines">
+<meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://diaop.de/">
-<meta property="og:title" content="Open Access Journal & Conference Finder">
+<meta property="og:title" content="Diamond Open Access Journal Finder">
+<meta property="og:site_name" content="diaop.de">
 <meta property="og:description" content="Find journals that are 100% free to publish (Diamond OA), ranked with SCImago quartiles. Conference deadlines and Scopus indexing checks included.">
 <meta property="og:url" content="https://diaop.de/">
 <meta property="og:type" content="website">
@@ -19,15 +22,60 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=8">
+<link rel="stylesheet" href="css/style.css?v=9">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Diamond Open Access Journal Finder",
+  "alternateName": "diaop.de",
+  "url": "https://diaop.de/",
+  "description": "Find open access journals that are free to publish in (no APC, Diamond OA), ranked with SCImago quartiles, with a Scopus indexing check and conference deadlines.",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires JavaScript",
+  "isAccessibleForFree": true,
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "image": "https://diaop.de/og-image.png",
+  "author": {"@type": "Person", "name": "Mohamed Akram Lamhour"},
+  "about": ["Open access publishing", "Diamond open access", "Scholarly journals", "SCImago Journal Rank", "Scopus"]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"What is a Diamond open access journal?","acceptedAnswer":{"@type":"Answer","text":"A Diamond (or Platinum) open access journal charges no fee to authors and no fee to readers. Articles are peer reviewed and published under an open licence; costs are covered by an institution, society or public funding instead of APCs."}},
+    {"@type":"Question","name":"How do I find journals with no APC in my field?","acceptedAnswer":{"@type":"Answer","text":"Search by keyword or subject in the Journals tab of diaop.de. Every result is a DOAJ-listed journal with no publication fee, and you can filter by SCImago quartile, language, country and publisher."}},
+    {"@type":"Question","name":"How can I check if a journal is indexed in Scopus?","acceptedAnswer":{"@type":"Answer","text":"In the Scopus tab, enter the journal's ISSN or a paper DOI for a live check against the Scopus API, showing the number of indexed documents and the date of the latest one. Journal names are matched against the full SCImago source list."}},
+    {"@type":"Question","name":"What do Q1, Q2, Q3 and Q4 mean?","acceptedAnswer":{"@type":"Answer","text":"SCImago divides the journals of each subject category into four quartiles by SJR score. Q1 is the top 25% of journals in that category and Q4 the bottom 25%."}},
+    {"@type":"Question","name":"How do I avoid predatory journals?","acceptedAnswer":{"@type":"Answer","text":"Use only DOAJ-listed journals, verify Scopus indexing by ISSN rather than trusting the journal's website, and be wary of journals promising publication within days or soliciting by email."}}
+  ]
+}
+</script>
 </head>
 <body>
 
 <!-- ======== LOADER ======== -->
-<div id="loader">
+<div id="loader" class="waiting">
+  <div class="wait-card" id="wait">
+    <span class="mark">◆ OA · LIVE DATA</span>
+    <h1>Diamond Open Access Journal Finder</h1>
+    <p class="lead">Preparing the journal database. The first visit takes a moment (a few MB are downloaded and matched right here in your browser); after that the finder opens instantly from this device.</p>
+    <div class="wbar"><div class="wfill" id="wfill"></div></div>
+    <div class="wmsg" id="wmsg">Starting…</div>
+    <ol class="wsteps">
+      <li id="ws-doaj"><span class="wdot"></span><span>Download the DOAJ open access journal list</span><em id="ws-doaj-n"></em></li>
+      <li id="ws-sci"><span class="wdot"></span><span>Download the SCImago rankings</span><em id="ws-sci-n"></em></li>
+      <li id="ws-parse"><span class="wdot"></span><span>Match journals by ISSN and rank them</span><em id="ws-parse-n"></em></li>
+      <li id="ws-done"><span class="wdot"></span><span>Open the finder</span><em></em></li>
+    </ol>
+    <div class="wfoot">Nothing is uploaded anywhere. <a id="waitManual">Load the data files manually instead</a> · <a id="waitConf">Just looking for conferences? →</a></div>
+  </div>
   <div class="load-card">
     <span class="mark">◆ OA · LIVE DATA</span>
-    <h1>Open Access Journal Finder</h1>
+    <h1>Diamond Open Access Journal Finder</h1>
     <p class="lead">Find open access journals: Diamond (100% free to publish) by default, or include APC journals with one click. Everything runs right here in your browser (nothing is uploaded anywhere) and the result is remembered for next time.</p>
 
     <button class="backbtn" id="backToApp" style="display:none">← Back to the journals</button>
@@ -73,6 +121,26 @@
 </div>
 
 <!-- ======== APP ======== -->
+
+<!-- ======== GUIDE (crawlable text; shown under the loader only) ======== -->
+<section id="guide" aria-label="Guide">
+  <div class="guide-in">
+    <h2>How to find an open access journal that is free to publish in</h2>
+    <p>Most researchers hear "open access" and think of article processing charges (APCs) of $1,000 to $3,000 or more. But thousands of peer-reviewed journals are <b>Diamond open access</b>: free to read and free to publish, usually funded by universities, societies or public bodies. This finder combines the <a href="https://doaj.org" rel="noopener" target="_blank">DOAJ</a> journal list with <a href="https://www.scimagojr.com" rel="noopener" target="_blank">SCImago</a> rankings so you can search only those journals, filter them by subject, language, country and quartile (Q1 to Q4), and check whether they are indexed in Scopus.</p>
+
+    <div class="faq">
+      <details open><summary>What is a Diamond open access journal?</summary><p>A Diamond (also called Platinum) open access journal charges no fee to authors and no fee to readers. Articles are peer reviewed and published under an open licence, and the journal's costs are covered by an institution, a learned society or public funding rather than by APCs. The DOAJ records for every journal whether it charges APCs; this finder shows the no-APC journals by default.</p></details>
+      <details><summary>How do I find journals with no APC in my field?</summary><p>Load the data (it happens automatically), then type a keyword or pick a subject in the Journals tab. Every result is a DOAJ-listed journal with no publication fee. Narrow it down by SCImago quartile, language, country or publisher, and sort by the journal's ranking. If you also want to see APC journals, switch the fee filter and set your maximum price.</p></details>
+      <details><summary>How can I check if a journal is indexed in Scopus?</summary><p>Open the Scopus tab and type the journal's ISSN, a DOI of one of its papers, or its name. An ISSN or DOI is checked live against the Scopus API and tells you how many documents are indexed and how recent the latest one is, which is the most reliable way to detect journals that claim a Scopus indexing they no longer have. Names are matched against the full SCImago source list of about 30,000 Scopus titles.</p></details>
+      <details><summary>What do Q1, Q2, Q3 and Q4 mean?</summary><p>SCImago groups the journals of each subject category into four quartiles by their SJR score. Q1 is the top 25% of journals in that category, Q4 the bottom 25%. A journal can be Q1 in one category and Q2 in another; this finder shows the best quartile it reaches. Journals not covered by Scopus have no quartile and appear as "unranked".</p></details>
+      <details><summary>How do I avoid predatory journals?</summary><p>Stick to journals listed in the DOAJ (every journal here is), verify Scopus indexing through the ISSN rather than the journal's own website, and be suspicious of any journal that promises publication in days or contacts you by email. Look-alike names are common: two journals can share a title while only one has the real ISSN.</p></details>
+      <details><summary>Where do the conference deadlines come from?</summary><p>The Conferences tab lists computer science conference deadlines with CCF and CORE ranks from the open ccfddl dataset, and research events in Morocco from the CNRST agenda. Both feeds refresh automatically.</p></details>
+      <details><summary>Is the data up to date, and is anything uploaded?</summary><p>The bundled DOAJ and SCImago snapshots are refreshed twice a month, and you can drop in a fresh DOAJ or SCImago export at any time. Everything runs in your browser: no account, no tracking, and your searches never leave your device.</p></details>
+    </div>
+    <p class="guide-foot">Free tool built by Mohamed-Akram Lamhour. Data: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus API (Elsevier), ccfddl, CNRST.</p>
+  </div>
+</section>
+
 <div id="app">
 <div class="wrap">
 <aside>
@@ -314,7 +382,7 @@
 <script src="js/journals.js?v=9"></script>
 <script src="js/scopus.js?v=9"></script>
 <script src="js/confs.js?v=5"></script>
-<script src="js/app.js?v=9"></script>
-<script src="js/loader.js?v=9"></script>
+<script src="js/app.js?v=10"></script>
+<script src="js/loader.js?v=10"></script>
 </body>
 </html>

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /.netlify/
+
+Sitemap: https://diaop.de/sitemap.xml
