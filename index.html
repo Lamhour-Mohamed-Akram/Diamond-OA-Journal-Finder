@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=16">
+<link rel="stylesheet" href="css/style.css?v=18">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -62,61 +62,61 @@
   <div class="wait-card" id="wait">
     <span class="mark">◆ OA · LIVE DATA</span>
     <h1>Diamond Open Access Journal Finder</h1>
-    <p class="lead">Preparing the journal database. The first visit takes a moment (a few MB are downloaded and matched right here in your browser); after that the finder opens instantly from this device.</p>
+    <p class="lead" data-i18n>Preparing the journal database. The first visit takes a moment (a few MB are downloaded and matched right here in your browser); after that the finder opens instantly from this device.</p>
     <div class="wbar"><div class="wfill" id="wfill"></div></div>
     <div class="wmsg" id="wmsg">Starting…</div>
     <ol class="wsteps">
-      <li id="ws-doaj"><span class="wdot"></span><span>Download the DOAJ open access journal list</span><em id="ws-doaj-n"></em></li>
-      <li id="ws-sci"><span class="wdot"></span><span>Download the SCImago rankings</span><em id="ws-sci-n"></em></li>
-      <li id="ws-parse"><span class="wdot"></span><span>Match journals by ISSN and rank them</span><em id="ws-parse-n"></em></li>
-      <li id="ws-done"><span class="wdot"></span><span>Open the finder</span><em></em></li>
+      <li id="ws-doaj"><span class="wdot"></span><span data-i18n>Download the DOAJ open access journal list</span><em id="ws-doaj-n"></em></li>
+      <li id="ws-sci"><span class="wdot"></span><span data-i18n>Download the SCImago rankings</span><em id="ws-sci-n"></em></li>
+      <li id="ws-parse"><span class="wdot"></span><span data-i18n>Match journals by ISSN and rank them</span><em id="ws-parse-n"></em></li>
+      <li id="ws-done"><span class="wdot"></span><span data-i18n>Open the finder</span><em></em></li>
     </ol>
-    <div class="wfoot">Nothing is uploaded anywhere. <a id="waitManual">Load the data files manually instead</a> · <a id="waitConf">Just looking for conferences? →</a> · <a href="/subjects/">Browse journals by subject →</a></div>
+    <div class="wfoot" data-i18n="wfoot">Nothing is uploaded anywhere. <a id="waitManual">Load the data files manually instead</a> · <a id="waitConf">Just looking for conferences? →</a> · <a href="/subjects/">Browse journals by subject →</a></div>
   </div>
   <div class="load-card">
     <span class="mark">◆ OA · LIVE DATA</span>
     <h1>Diamond Open Access Journal Finder</h1>
-    <p class="lead">Find open access journals: Diamond (100% free to publish) by default, or include APC journals with one click. Everything runs right here in your browser (nothing is uploaded anywhere) and the result is remembered for next time.</p>
+    <p class="lead" data-i18n>Find open access journals: Diamond (100% free to publish) by default, or include APC journals with one click. Everything runs right here in your browser (nothing is uploaded anywhere) and the result is remembered for next time.</p>
 
-    <button class="backbtn" id="backToApp" style="display:none">← Back to the journals</button>
+    <button class="backbtn" id="backToApp" style="display:none" data-i18n>← Back to the journals</button>
 
     <div class="quickload">
-      <button id="useBundled">⚡ Load the built-in data</button>
-      <span class="sub">One click: uses the DOAJ + SCImago snapshots shipped with the app (a few MB, then cached on this device). Want the very latest data instead? Follow steps 1–2 below.</span>
+      <button id="useBundled" data-i18n>⚡ Load the built-in data</button>
+      <span class="sub" data-i18n>One click: uses the DOAJ + SCImago snapshots shipped with the app (a few MB, then cached on this device). Want the very latest data instead? Follow steps 1–2 below.</span>
     </div>
 
-    <div class="or-sep">or load fresh files yourself</div>
+    <div class="or-sep" data-i18n>or load fresh files yourself</div>
 
     <div class="steps">
       <div class="step" id="slot-doaj">
-        <div class="step-head"><span class="stepnum">1</span><b>Journal data (DOAJ)</b><span class="sstat" id="slot-doaj-s">waiting…</span></div>
-        <a class="linkbtn" href="https://doaj.org/csv" target="_blank" rel="noopener">⬇ Download the DOAJ journal CSV</a>
-        <div class="alt">The download starts by itself when you open the link (~25 MB, all open access journals). Then drop the file in the box below.</div>
+        <div class="step-head"><span class="stepnum">1</span><b data-i18n>Journal data (DOAJ)</b><span class="sstat" id="slot-doaj-s" data-i18n>waiting…</span></div>
+        <a class="linkbtn" href="https://doaj.org/csv" target="_blank" rel="noopener" data-i18n>⬇ Download the DOAJ journal CSV</a>
+        <div class="alt" data-i18n="step1.alt">The download starts by itself when you open the link (~25 MB, all open access journals). Then drop the file in the box below.</div>
       </div>
 
       <div class="step" id="slot-sci">
-        <div class="step-head"><span class="stepnum">2</span><b>Rankings (SCImago)</b><span class="sstat" id="slot-sci-s">waiting…</span></div>
-        <a class="linkbtn" href="https://www.scimagojr.com/journalrank.php" target="_blank" rel="noopener">↗ Open scimagojr.com/journalrank.php</a>
-        <div class="alt">On that page, click the <b>“⬇ Download”</b> button at the top right. It saves a file like <b>“scimagojr 2025.csv”</b>. Then drop that file in the box below.<br>💡 <b>Tip:</b> for the best results, download the <b>full default list (no filters)</b>; you can filter inside this app afterwards. Filtered downloads (one category, one region…) also work, but journals outside your filter will show as “unranked”.</div>
+        <div class="step-head"><span class="stepnum">2</span><b data-i18n>Rankings (SCImago)</b><span class="sstat" id="slot-sci-s" data-i18n>waiting…</span></div>
+        <a class="linkbtn" href="https://www.scimagojr.com/journalrank.php" target="_blank" rel="noopener" data-i18n>↗ Open scimagojr.com/journalrank.php</a>
+        <div class="alt" data-i18n="step2.alt">On that page, click the <b>“⬇ Download”</b> button at the top right. It saves a file like <b>“scimagojr 2025.csv”</b>. Then drop that file in the box below.<br>💡 <b>Tip:</b> for the best results, download the <b>full default list (no filters)</b>; you can filter inside this app afterwards. Filtered downloads (one category, one region…) also work, but journals outside your filter will show as “unranked”.</div>
       </div>
     </div>
 
     <label class="dropzone" id="dz">
       <input type="file" id="fileInput" multiple accept=".csv">
-      <div class="big">Drop the downloaded file(s) here</div>
-      <div class="sub">or click to choose; the app recognizes DOAJ and SCImago files automatically, in any order</div>
+      <div class="big" data-i18n>Drop the downloaded file(s) here</div>
+      <div class="sub" data-i18n>or click to choose; the app recognizes DOAJ and SCImago files automatically, in any order</div>
     </label>
 
     <div class="status" id="status"></div>
 
     <div class="cache-note" id="cacheNote">
-      Data from <b id="cacheDate"></b> is saved on this device.
-      <button id="useCache">Open with saved data</button>
+      <span data-i18n>Data from</span> <b id="cacheDate"></b> <span data-i18n>is saved on this device.</span>
+      <button id="useCache" data-i18n>Open with saved data</button>
     </div>
 
-    <div class="conf-link">Just looking for conferences? <a id="confOnly">Open the Conference Finder →</a></div>
+    <div class="conf-link"><span data-i18n>Just looking for conferences?</span> <a id="confOnly" data-i18n>Open the Conference Finder →</a></div>
 
-    <div class="credit">Made by <b>Mohamed-Akram Lamhour</b> · <a href="https://www.linkedin.com/in/ak2lamhour/" target="_blank" rel="noopener">LinkedIn ↗</a> · <a href="https://github.com/Lamhour-Mohamed-Akram/Diamond-OA-Journal-Finder" target="_blank" rel="noopener">GitHub ↗</a></div>
+    <div class="credit"><span data-i18n>Made by</span> <b>Mohamed-Akram Lamhour</b> · <a href="https://www.linkedin.com/in/ak2lamhour/" target="_blank" rel="noopener">LinkedIn ↗</a> · <a href="https://github.com/Lamhour-Mohamed-Akram/Diamond-OA-Journal-Finder" target="_blank" rel="noopener">GitHub ↗</a></div>
   </div>
 </div>
 
@@ -125,21 +125,21 @@
 <!-- ======== GUIDE (crawlable text; shown under the loader only) ======== -->
 <section id="guide" aria-label="Guide">
   <div class="guide-in">
-    <h2>How to find an open access journal that is free to publish in</h2>
-    <p>Most researchers hear "open access" and think of article processing charges (APCs) of $1,000 to $3,000 or more. But thousands of peer-reviewed journals are <b>Diamond open access</b>: free to read and free to publish, usually funded by universities, societies or public bodies. This finder combines the <a href="https://doaj.org" rel="noopener" target="_blank">DOAJ</a> journal list with <a href="https://www.scimagojr.com" rel="noopener" target="_blank">SCImago</a> rankings so you can search only those journals, filter them by subject, language, country and quartile (Q1 to Q4), and check whether they are indexed in Scopus.</p>
+    <h2 data-i18n>How to find an open access journal that is free to publish in</h2>
+    <p data-i18n="g.intro">Most researchers hear "open access" and think of article processing charges (APCs) of $1,000 to $3,000 or more. But thousands of peer-reviewed journals are <b>Diamond open access</b>: free to read and free to publish, usually funded by universities, societies or public bodies. This finder combines the <a href="https://doaj.org" rel="noopener" target="_blank">DOAJ</a> journal list with <a href="https://www.scimagojr.com" rel="noopener" target="_blank">SCImago</a> rankings so you can search only those journals, filter them by subject, language, country and quartile (Q1 to Q4), and check whether they are indexed in Scopus.</p>
 
     <div class="faq">
-      <details open><summary>What is a Diamond open access journal?</summary><p>A Diamond (also called Platinum) open access journal charges no fee to authors and no fee to readers. Articles are peer reviewed and published under an open licence, and the journal's costs are covered by an institution, a learned society or public funding rather than by APCs. The DOAJ records for every journal whether it charges APCs; this finder shows the no-APC journals by default.</p></details>
-      <details><summary>How do I find journals with no APC in my field?</summary><p>Load the data (it happens automatically), then type a keyword or pick a subject in the Journals tab. Every result is a DOAJ-listed journal with no publication fee. Narrow it down by SCImago quartile, language, country or publisher, and sort by the journal's ranking. If you also want to see APC journals, switch the fee filter and set your maximum price.</p></details>
-      <details><summary>How can I check if a journal is indexed in Scopus?</summary><p>Open the Scopus tab and type the journal's ISSN, a DOI of one of its papers, or its name. An ISSN or DOI is checked live against the Scopus API and tells you how many documents are indexed and how recent the latest one is, which is the most reliable way to detect journals that claim a Scopus indexing they no longer have. Names are matched against the full SCImago source list of about 30,000 Scopus titles.</p></details>
-      <details><summary>What do Q1, Q2, Q3 and Q4 mean?</summary><p>SCImago groups the journals of each subject category into four quartiles by their SJR score. Q1 is the top 25% of journals in that category, Q4 the bottom 25%. A journal can be Q1 in one category and Q2 in another; this finder shows the best quartile it reaches. Journals not covered by Scopus have no quartile and appear as "unranked".</p></details>
-      <details><summary>How do I avoid predatory journals?</summary><p>Stick to journals listed in the DOAJ (every journal here is), verify Scopus indexing through the ISSN rather than the journal's own website, and be suspicious of any journal that promises publication in days or contacts you by email. Look-alike names are common: two journals can share a title while only one has the real ISSN.</p></details>
-      <details><summary>Where do the conference deadlines come from?</summary><p>The Conferences tab lists computer science conference deadlines with CCF and CORE ranks from the open ccfddl dataset, and research events in Morocco from the CNRST agenda. Both feeds refresh automatically.</p></details>
-      <details><summary>Is the data up to date, and is anything uploaded?</summary><p>The bundled DOAJ and SCImago snapshots are refreshed twice a month, and you can drop in a fresh DOAJ or SCImago export at any time. Everything runs in your browser: no account, no tracking, and your searches never leave your device.</p></details>
+      <details open><summary data-i18n>What is a Diamond open access journal?</summary><p data-i18n="faq1">A Diamond (also called Platinum) open access journal charges no fee to authors and no fee to readers. Articles are peer reviewed and published under an open licence, and the journal's costs are covered by an institution, a learned society or public funding rather than by APCs. The DOAJ records for every journal whether it charges APCs; this finder shows the no-APC journals by default.</p></details>
+      <details><summary data-i18n>How do I find journals with no APC in my field?</summary><p data-i18n="faq2">Load the data (it happens automatically), then type a keyword or pick a subject in the Journals tab. Every result is a DOAJ-listed journal with no publication fee. Narrow it down by SCImago quartile, language, country or publisher, and sort by the journal's ranking. If you also want to see APC journals, switch the fee filter and set your maximum price.</p></details>
+      <details><summary data-i18n>How can I check if a journal is indexed in Scopus?</summary><p data-i18n="faq3">Open the Scopus tab and type the journal's ISSN, a DOI of one of its papers, or its name. An ISSN or DOI is checked live against the Scopus API and tells you how many documents are indexed and how recent the latest one is, which is the most reliable way to detect journals that claim a Scopus indexing they no longer have. Names are matched against the full SCImago source list of about 30,000 Scopus titles.</p></details>
+      <details><summary data-i18n>What do Q1, Q2, Q3 and Q4 mean?</summary><p data-i18n="faq4">SCImago groups the journals of each subject category into four quartiles by their SJR score. Q1 is the top 25% of journals in that category, Q4 the bottom 25%. A journal can be Q1 in one category and Q2 in another; this finder shows the best quartile it reaches. Journals not covered by Scopus have no quartile and appear as "unranked".</p></details>
+      <details><summary data-i18n>How do I avoid predatory journals?</summary><p data-i18n="faq5">Stick to journals listed in the DOAJ (every journal here is), verify Scopus indexing through the ISSN rather than the journal's own website, and be suspicious of any journal that promises publication in days or contacts you by email. Look-alike names are common: two journals can share a title while only one has the real ISSN.</p></details>
+      <details><summary data-i18n>Where do the conference deadlines come from?</summary><p data-i18n="faq6">The Conferences tab lists computer science conference deadlines with CCF and CORE ranks from the open ccfddl dataset, and research events in Morocco from the CNRST agenda. Both feeds refresh automatically.</p></details>
+      <details><summary data-i18n>Is the data up to date, and is anything uploaded?</summary><p data-i18n="faq7">The bundled DOAJ and SCImago snapshots are refreshed twice a month, and you can drop in a fresh DOAJ or SCImago export at any time. Everything runs in your browser: no account, no tracking, and your searches never leave your device.</p></details>
     </div>
 <!-- subjects:start (generated by scripts/build-subjects.mjs) -->
-    <h2 style="margin-top:34px">Free-to-publish journals by subject</h2>
-    <p>4,282 Scopus-indexed journals with no APC, grouped by SCImago subject area. <a href="/subjects/">See all 27 areas →</a></p>
+    <h2 style="margin-top:34px" data-i18n>Free-to-publish journals by subject</h2>
+    <p data-i18n="subj.blurb" data-i18n-args='{"n":"4,282","k":27}'>4,282 Scopus-indexed journals with no APC, grouped by SCImago subject area. <a href="/subjects/">See all 27 areas →</a></p>
     <div class="subj-grid">
       <a href="/subjects/social-sciences/">Social Sciences <span>1,864</span></a>
       <a href="/subjects/arts-and-humanities/">Arts and Humanities <span>1,207</span></a>
@@ -170,7 +170,7 @@
       <a href="/subjects/neuroscience/">Neuroscience <span>37</span></a>
     </div>
     <!-- subjects:end -->
-    <p class="guide-foot">Free tool built by Mohamed-Akram Lamhour. Data: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus API (Elsevier), ccfddl, CNRST.</p>
+    <p class="guide-foot" data-i18n>Free tool built by Mohamed-Akram Lamhour. Data: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus API (Elsevier), ccfddl, CNRST.</p>
   </div>
 </section>
 
@@ -178,48 +178,48 @@
 <div class="wrap">
 <aside>
   <div class="brand"><span class="mark">◆ OA</span><h1>Open Access Finder</h1></div>
-  <p class="tagline">Open access journals, ranked conferences & research events, with live data.</p>
+  <p class="tagline" data-i18n>Open access journals, ranked conferences & research events, with live data.</p>
 
   <div class="tabbar">
-    <button data-tab="j" class="on">Journals</button>
-    <button data-tab="c">Conferences</button>
+    <button data-tab="j" class="on" data-i18n>Journals</button>
+    <button data-tab="c" data-i18n>Conferences</button>
     <button data-tab="s">Scopus ✓</button>
   </div>
 
   <!-- ---- Journal filters ---- -->
   <div id="side-j">
-    <div class="datainfo">Data loaded: <b id="dataStamp">–</b><button id="reload">Load newer data…</button></div>
+    <div class="datainfo"><span data-i18n>Data loaded:</span> <b id="dataStamp">–</b><button id="reload" data-i18n>Load newer data…</button></div>
     <div class="stat-row">
-      <div class="stat"><b id="s-total">–</b><span>OA journals</span></div>
-      <div class="stat"><b id="s-idx">–</b><span>Diamond · free</span></div>
+      <div class="stat"><b id="s-total">–</b><span data-i18n>OA journals</span></div>
+      <div class="stat"><b id="s-idx">–</b><span data-i18n>Diamond · free</span></div>
       <div class="stat"><b id="s-q12">–</b><span>Q1 / Q2</span></div>
     </div>
     <a class="subjlink" id="subjLink" href="/subjects/"><span class="ic">▤</span><span><b>Browse journals by subject</b><small>27 areas, each with counts and a ranked top 50</small></span><span class="arr">→</span></a>
 
-    <button class="reset top" id="resetBtn">Reset all filters</button>
+    <button class="reset top" id="resetBtn" data-i18n>Reset all filters</button>
 
     <div class="grp search">
-      <label class="h">Search</label>
+      <label class="h" data-i18n>Search</label>
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input id="q" type="search" placeholder="Title, ISSN, paper DOI, subject…" autocomplete="off">
+      <input id="q" type="search" placeholder="Title, ISSN, paper DOI, subject…" data-i18n-ph autocomplete="off">
     </div>
 
     <div class="grp">
-      <label class="h">Publication fees</label>
+      <label class="h" data-i18n>Publication fees</label>
       <div class="chips" id="fchips">
-        <span class="chip q1 on" data-f="dia">Diamond · free</span>
-        <span class="chip q2" data-f="apc">APC / fees</span>
+        <span class="chip q1 on" data-f="dia" data-i18n>Diamond · free</span>
+        <span class="chip q2" data-f="apc" data-i18n>APC / fees</span>
       </div>
     </div>
 
     <div class="grp">
-      <label class="h">Quartile</label>
+      <label class="h" data-i18n>Quartile</label>
       <div class="chips" id="qchips">
         <span class="chip q1 on" data-q="Q1">Q1</span>
         <span class="chip q2 on" data-q="Q2">Q2</span>
         <span class="chip q3" data-q="Q3">Q3</span>
         <span class="chip q4" data-q="Q4">Q4</span>
-        <span class="chip none" data-q="none">Unranked</span>
+        <span class="chip none" data-q="none" data-i18n>Unranked</span>
       </div>
     </div>
 
@@ -227,32 +227,32 @@
       <label class="toggle">
         <input type="checkbox" id="idxOnly" checked>
         <span class="track"></span>
-        <span>Indexed in SCImago only<span class="sub">hide journals not found in SCImago</span></span>
+        <span data-i18n="idx.toggle">Indexed in SCImago only<span class="sub">hide journals not found in SCImago</span></span>
       </label>
     </div>
 
     <div class="grp">
-      <label class="h">Subject area</label>
-      <select id="area"><option value="">All areas</option></select>
+      <label class="h" data-i18n>Subject area</label>
+      <select id="area"><option value="" data-i18n>All areas</option></select>
     </div>
 
     <div class="grp slider">
-      <label class="h">Turnaround</label>
-      <label>Max weeks to publication <b id="wkVal">Any</b></label>
+      <label class="h" data-i18n>Turnaround</label>
+      <label><span data-i18n>Max weeks to publication</span> <b id="wkVal" data-i18n>Any</b></label>
       <input type="range" id="weeks" min="0" max="52" value="52" step="1">
-      <p class="hint">Self-reported in DOAJ; some journals leave it blank. Blank-week journals are kept unless you drag below 52.</p>
+      <p class="hint" data-i18n="hint.w">Self-reported in DOAJ; some journals leave it blank. Blank-week journals are kept unless you drag below 52.</p>
     </div>
 
     <div class="grp slider">
-      <label class="h">Price (APC)</label>
-      <label>Max article fee <b id="apcVal">Any</b></label>
+      <label class="h" data-i18n>Price (APC)</label>
+      <label><span data-i18n>Max article fee</span> <b id="apcVal" data-i18n>Any</b></label>
       <input type="range" id="apc" min="0" max="5000" value="5000" step="100">
-      <p class="hint">Approximate USD, converted from the journal’s listed currency. Diamond journals count as $0. Journals with fees but no listed amount are hidden when you drag below the max.</p>
+      <p class="hint" data-i18n="hint.p">Approximate USD, converted from the journal’s listed currency. Diamond journals count as $0. Journals with fees but no listed amount are hidden when you drag below the max.</p>
     </div>
 
     <div class="grp">
-      <label class="h">Country</label>
-      <select id="country"><option value="">All countries</option></select>
+      <label class="h" data-i18n>Country</label>
+      <select id="country"><option value="" data-i18n>All countries</option></select>
     </div>
 
   </div>
@@ -260,47 +260,47 @@
   <!-- ---- Conference filters ---- -->
   <div id="side-c" style="display:none">
     <div class="srcbar">
-      <button data-src="ccf" class="on">Worldwide CS</button>
-      <button data-src="ma">Morocco</button>
+      <button data-src="ccf" class="on" data-i18n>Worldwide CS</button>
+      <button data-src="ma" data-i18n>Morocco</button>
     </div>
 
-    <div class="datainfo" id="cinfo-ccf">CS conference deadlines & ranks from the <b>ccfddl</b> open dataset (CCF + CORE ranks).<br>Feed loaded: <b id="confStamp">–</b><button id="confRefresh">Refresh feed</button></div>
-    <div class="datainfo" id="cinfo-ma" style="display:none">Research events in <b>Morocco</b> from the CNRST agenda (all disciplines), mirrored weekly.<br>Feed loaded: <b id="maStamp">–</b><button id="maReload">Refresh feed</button></div>
+    <div class="datainfo" id="cinfo-ccf"><span data-i18n="cinfo.ccf">CS conference deadlines & ranks from the <b>ccfddl</b> open dataset (CCF + CORE ranks).</span><br><span data-i18n>Feed loaded:</span> <b id="confStamp">–</b><button id="confRefresh" data-i18n>Refresh feed</button></div>
+    <div class="datainfo" id="cinfo-ma" style="display:none"><span data-i18n="cinfo.ma">Research events in <b>Morocco</b> from the CNRST agenda (all disciplines), mirrored weekly.</span><br><span data-i18n>Feed loaded:</span> <b id="maStamp">–</b><button id="maReload" data-i18n>Refresh feed</button></div>
 
     <div class="stat-row">
-      <div class="stat"><b id="s-ctotal">–</b><span id="s-ctotal-l">Conferences</span></div>
-      <div class="stat"><b id="s-copen">–</b><span id="s-copen-l">Open calls</span></div>
-      <div class="stat"><b id="s-c30">–</b><span id="s-c30-l">Due ≤ 30 days</span></div>
+      <div class="stat"><b id="s-ctotal">–</b><span id="s-ctotal-l" data-i18n>Conferences</span></div>
+      <div class="stat"><b id="s-copen">–</b><span id="s-copen-l" data-i18n>Open calls</span></div>
+      <div class="stat"><b id="s-c30">–</b><span id="s-c30-l" data-i18n>Due ≤ 30 days</span></div>
     </div>
 
-    <button class="reset top" id="cresetBtn">Reset all filters</button>
+    <button class="reset top" id="cresetBtn" data-i18n>Reset all filters</button>
 
     <div class="grp search">
-      <label class="h">Search</label>
+      <label class="h" data-i18n>Search</label>
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input id="cq" type="search" placeholder="Acronym, name, place…" autocomplete="off">
+      <input id="cq" type="search" placeholder="Acronym, name, place…" data-i18n-ph autocomplete="off">
     </div>
 
     <div id="cflt-ccf">
       <div class="grp">
-        <label class="h">CCF rank</label>
+        <label class="h" data-i18n>CCF rank</label>
         <div class="chips" id="cchips">
           <span class="chip q1 on" data-r="A">A</span>
           <span class="chip q2 on" data-r="B">B</span>
           <span class="chip q3 on" data-r="C">C</span>
-          <span class="chip none on" data-r="N">Not ranked</span>
+          <span class="chip none on" data-r="N" data-i18n>Not ranked</span>
         </div>
       </div>
       <div class="grp">
-        <label class="h">Field</label>
-        <select id="csub"><option value="">All fields</option></select>
+        <label class="h" data-i18n>Field</label>
+        <select id="csub"><option value="" data-i18n>All fields</option></select>
       </div>
     </div>
 
     <div id="cflt-ma" style="display:none">
       <div class="grp">
-        <label class="h">Discipline</label>
-        <select id="macat"><option value="">All disciplines</option></select>
+        <label class="h" data-i18n>Discipline</label>
+        <select id="macat"><option value="" data-i18n>All disciplines</option></select>
       </div>
     </div>
 
@@ -308,7 +308,7 @@
       <label class="toggle">
         <input type="checkbox" id="openOnly" checked>
         <span class="track"></span>
-        <span><span id="openLbl">Open calls only</span><span class="sub" id="openSub">hide conferences with no upcoming deadline</span></span>
+        <span><span id="openLbl" data-i18n>Open calls only</span><span class="sub" id="openSub" data-i18n>hide conferences with no upcoming deadline</span></span>
       </label>
     </div>
 
@@ -316,45 +316,45 @@
 
   <!-- ---- Scopus check ---- -->
   <div id="side-s" style="display:none">
-    <div class="datainfo">Checks any journal against the <b>SCImago</b> file, which is built from <b>Scopus</b> data: all ~30,000 Scopus sources, not only open access.<br>Snapshot: <b id="sciStamp">–</b></div>
+    <div class="datainfo"><span data-i18n="sinfo">Checks any journal against the <b>SCImago</b> file, which is built from <b>Scopus</b> data: all ~30,000 Scopus sources, not only open access.</span><br><span data-i18n>Snapshot:</span> <b id="sciStamp">–</b></div>
     <div class="stat-row">
-      <div class="stat"><b id="s-src">–</b><span>Scopus sources</span></div>
-      <div class="stat"><b id="s-act">–</b><span>Actively covered</span></div>
+      <div class="stat"><b id="s-src">–</b><span data-i18n>Scopus sources</span></div>
+      <div class="stat"><b id="s-act">–</b><span data-i18n>Actively covered</span></div>
     </div>
 
     <div class="grp search">
-      <label class="h">Journal title, ISSN, or paper DOI</label>
+      <label class="h" data-i18n>Journal title, ISSN, or paper DOI</label>
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input id="sq" type="search" placeholder="ISSN, DOI, or journal name…" autocomplete="off">
+      <input id="sq" type="search" placeholder="ISSN, DOI, or journal name…" data-i18n-ph autocomplete="off">
     </div>
-    <p class="hint">Type an <b>ISSN</b> or a paper <b>DOI</b> for a live check straight from Scopus. A journal name does an instant search of the offline snapshot. ISSN/DOI are the most reliable; names can be copied by predatory look-alikes.</p>
+    <p class="hint" data-i18n="shint">Type an <b>ISSN</b> or a paper <b>DOI</b> for a live check straight from Scopus. A journal name does an instant search of the offline snapshot. ISSN/DOI are the most reliable; names can be copied by predatory look-alikes.</p>
   </div>
 
-  <div class="credit">Made by <b>Mohamed-Akram Lamhour</b><br><a href="https://www.linkedin.com/in/ak2lamhour/" target="_blank" rel="noopener">LinkedIn ↗</a> · <a href="https://github.com/Lamhour-Mohamed-Akram/Diamond-OA-Journal-Finder" target="_blank" rel="noopener">GitHub ↗</a></div>
+  <div class="credit"><span data-i18n>Made by</span> <b>Mohamed-Akram Lamhour</b><br><a href="https://www.linkedin.com/in/ak2lamhour/" target="_blank" rel="noopener">LinkedIn ↗</a> · <a href="https://github.com/Lamhour-Mohamed-Akram/Diamond-OA-Journal-Finder" target="_blank" rel="noopener">GitHub ↗</a></div>
 </aside>
 
 <div class="side-backdrop" id="sideBackdrop"></div>
-<button class="side-toggle" id="sideToggle" type="button" aria-label="Hide or show the filters panel" title="Hide / show filters"><span class="ic">‹</span><span class="tx">Filters</span></button>
+<button class="side-toggle" id="sideToggle" type="button" aria-label="Hide or show the filters panel" data-i18n-label title="Hide / show filters" data-i18n-title><span class="ic">‹</span><span class="tx" data-i18n>Filters</span></button>
 <main>
   <!-- ---- Journals ---- -->
   <div id="main-j">
     <div class="topbar">
-      <div class="count"><b id="resCount">0</b><span>journals</span></div>
-      <div class="listsearch"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="lq" type="search" placeholder="Search in this list…" autocomplete="off"></div>
+      <div class="count"><b id="resCount">0</b><span data-i18n>journals</span></div>
+      <div class="listsearch"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="lq" type="search" placeholder="Search in this list…" data-i18n-ph autocomplete="off"></div>
       <div class="tools">
-        <button class="toolbtn" id="shareBtn" title="Copy a link that opens this exact filtered view">🔗 Share view</button>
-        <button class="toolbtn" id="exportBtn" title="Download the current filtered list as a CSV file">⬇ Export CSV</button>
+        <button class="toolbtn" id="shareBtn" title="Copy a link that opens this exact filtered view" data-i18n-title data-i18n>🔗 Share view</button>
+        <button class="toolbtn" id="exportBtn" title="Download the current filtered list as a CSV file" data-i18n-title data-i18n>⬇ Export CSV</button>
       </div>
     </div>
-    <div class="sortbar" id="sortbar" title="Click a key to sort by it; click again to reverse; a third click removes it. Several keys combine in the order you picked them.">
-      <span class="lbl">Sort by</span>
+    <div class="sortbar" id="sortbar" title="Click a key to sort by it; click again to reverse; a third click removes it. Several keys combine in the order you picked them." data-i18n-title>
+      <span class="lbl" data-i18n>Sort by</span>
       <button data-k="q">Quartile</button>
       <button data-k="sjr">SJR</button>
       <button data-k="h">H-index</button>
       <button data-k="w">Turnaround</button>
       <button data-k="usd">Price</button>
       <button data-k="t">Title</button>
-      <button class="sortclear" id="sortClear" type="button" title="Remove all sort keys">✕ Reset sort</button>
+      <button class="sortclear" id="sortClear" type="button" title="Remove all sort keys" data-i18n-title data-i18n>✕ Reset sort</button>
       <span class="sorthint" id="sorthint"></span>
     </div>
     <div class="list" id="list"></div>
@@ -364,9 +364,9 @@
   <!-- ---- Conferences ---- -->
   <div id="main-c" style="display:none">
     <div class="topbar">
-      <div class="count"><b id="cresCount">0</b><span id="cresLbl">conferences</span></div>
+      <div class="count"><b id="cresCount">0</b><span id="cresLbl" data-i18n>conferences</span></div>
       <div class="sortwrap">
-        Sort
+        <span data-i18n>Sort</span>
         <select id="csort">
           <option value="dl">Deadline soonest</option>
           <option value="ccf">CCF rank</option>
@@ -377,14 +377,14 @@
     </div>
     <div class="cstatus" id="cstatus" style="display:none"></div>
     <div class="masetup" id="maSetup" style="display:none">
-      <h3>Load the Morocco events feed</h3>
-      <p>The automatic feed mirror couldn’t be reached (are you offline?). You can load it manually:<br>
+      <h3 data-i18n>Load the Morocco events feed</h3>
+      <p data-i18n="ma.help">The automatic feed mirror couldn’t be reached (are you offline?). You can load it manually:<br>
       1. Open the <a href="https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&amp;type=rss" target="_blank" rel="noopener">CNRST events RSS feed ↗</a> and save the page as a file (⌘S / Ctrl-S).<br>
       2. Drop the saved file below.</p>
       <label class="dropzone" id="madz">
         <input type="file" id="maFile" accept=".rss,.xml,.txt,application/rss+xml,text/xml">
-        <div class="big">Drop the CNRST feed file here</div>
-        <div class="sub">or click to choose: the .xml / .rss file you just saved</div>
+        <div class="big" data-i18n>Drop the CNRST feed file here</div>
+        <div class="sub" data-i18n>or click to choose: the .xml / .rss file you just saved</div>
       </label>
       <div class="status" id="maStatus"></div>
     </div>
@@ -395,7 +395,7 @@
   <!-- ---- Scopus check ---- -->
   <div id="main-s" style="display:none">
     <div class="topbar">
-      <div class="count"><b id="sresCount">–</b><span>matches</span></div>
+      <div class="count"><b id="sresCount">–</b><span data-i18n>matches</span></div>
     </div>
     <div id="slive"></div>
     <div class="list" id="slist"></div>
@@ -407,8 +407,8 @@
 <!-- ======== Scopus popup ======== -->
 <div id="modal" class="modal" style="display:none">
   <div class="modal-card" role="dialog" aria-modal="true">
-    <button class="modal-x" id="modalX" aria-label="Close">×</button>
-    <div class="modal-eyebrow">Scopus indexing check</div>
+    <button class="modal-x" id="modalX" aria-label="Close" data-i18n-label>×</button>
+    <div class="modal-eyebrow" data-i18n>Scopus indexing check</div>
     <h3 class="modal-title" id="modalTitle">–</h3>
     <div id="modalBody"></div>
   </div>
@@ -416,11 +416,12 @@
 
 <!-- bump ?v= together with any JS/CSS change so browsers never mix old and
      new files from cache (symptom: "... is not defined" errors after a deploy) -->
+<script src="js/i18n.js?v=2"></script>
 <script src="js/data.js?v=9"></script>
-<script src="js/journals.js?v=12"></script>
-<script src="js/scopus.js?v=9"></script>
-<script src="js/confs.js?v=5"></script>
-<script src="js/app.js?v=16"></script>
-<script src="js/loader.js?v=12"></script>
+<script src="js/journals.js?v=14"></script>
+<script src="js/scopus.js?v=11"></script>
+<script src="js/confs.js?v=6"></script>
+<script src="js/app.js?v=18"></script>
+<script src="js/loader.js?v=13"></script>
 </body>
 </html>

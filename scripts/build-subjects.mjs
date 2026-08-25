@@ -143,14 +143,15 @@ ${ld.map(o => `<script type="application/ld+json">${JSON.stringify(o)}</script>`
 </head>
 <body>
 <header class="top"><span class="mark">◆ OA</span><a class="brand" href="/">Diamond Open Access Journal Finder</a>
-<nav><a href="/">Search journals</a><a href="/subjects/">All subjects</a><a href="/#tab=s">Scopus check</a></nav></header>
+<nav><a href="/" data-i18n>Search journals</a><a href="/subjects/" data-i18n>All subjects</a><a href="/#tab=s" data-i18n>Scopus check</a></nav></header>
 <main class="wrap">`;
 const foot = () => `</main>
-<footer>Data: <a href="https://doaj.org" rel="noopener">DOAJ</a> (journal list, fees) and <a href="https://www.scimagojr.com" rel="noopener">SCImago Journal Rank</a> (quartiles, SJR, Scopus coverage), snapshot of ${esc(monthYear)}. Pages regenerate automatically with every data refresh. Built by Mohamed-Akram Lamhour · <a href="/">openaccessfinder.de</a></footer>
+<footer data-i18n="sp.foot" data-i18n-args='${JSON.stringify({ m: monthYear })}'>Data: <a href="https://doaj.org" rel="noopener">DOAJ</a> (journal list, fees) and <a href="https://www.scimagojr.com" rel="noopener">SCImago Journal Rank</a> (quartiles, SJR, Scopus coverage), snapshot of ${esc(monthYear)}. Pages regenerate automatically with every data refresh. Built by Mohamed-Akram Lamhour · <a href="/">openaccessfinder.de</a></footer>
+<script src="/js/i18n.js?v=2"></script>
 </body>
 </html>
 `;
-const crumbs = (...items) => `<div class="crumbs">${items.map(([t, h]) => h ? `<a href="${h}">${esc(t)}</a>` : esc(t)).join(' › ')}</div>`;
+const crumbs = (...items) => `<div class="crumbs">${items.map(([t, h]) => h ? `<a href="${h}" data-i18n>${esc(t)}</a>` : `<span data-i18n>${esc(t)}</span>`).join(' › ')}</div>`;
 const breadcrumbLd = items => ({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items.map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, item: url })) });
 
 /* ---- one page per area ---- */
@@ -171,7 +172,7 @@ for (const a of areas) {
 <td class="mono">${r.w != null ? r.w + ' wk' : '–'}</td>
 </tr>`).join('\n');
 
-  const list = (items, label) => items.length ? `<div class="box"><h3>${label}</h3><ol>${items.map(([k, v]) => `<li>${esc(k)} <span>${num(v)}</span></li>`).join('')}</ol></div>` : '';
+  const list = (items, label) => items.length ? `<div class="box"><h3 data-i18n>${label}</h3><ol>${items.map(([k, v]) => `<li>${esc(k)} <span>${num(v)}</span></li>`).join('')}</ol></div>` : '';
   const ld = [
     breadcrumbLd([['Home', SITE + '/'], ['Subjects', SITE + '/subjects/'], [a.area, url]]),
     {
@@ -192,33 +193,33 @@ for (const a of areas) {
   ];
   const html = head({ title, desc, url, ld }) + `
 ${crumbs(['Home', '/'], ['Subjects', '/subjects/'], [a.area])}
-<h1>Diamond open access journals in ${esc(a.area)}</h1>
-<p class="lead">${num(n)} peer-reviewed journals in ${esc(a.area)} are <b>free to publish in</b>: no article processing charge and no other author fees, according to the <a href="https://doaj.org" rel="noopener">DOAJ</a>. All of them are indexed in Scopus and ranked below by their <a href="https://www.scimagojr.com" rel="noopener">SCImago</a> quartile and SJR score. Data snapshot: ${esc(monthYear)}.</p>
+<h1 data-i18n="sp.h1" data-i18n-args='${JSON.stringify({ area: a.area })}'>Diamond open access journals in ${esc(a.area)}</h1>
+<p class="lead" data-i18n="sp.lead" data-i18n-args='${JSON.stringify({ n: num(n), area: a.area, m: monthYear })}'>${num(n)} peer-reviewed journals in ${esc(a.area)} are <b>free to publish in</b>: no article processing charge and no other author fees, according to the <a href="https://doaj.org" rel="noopener">DOAJ</a>. All of them are indexed in Scopus and ranked below by their <a href="https://www.scimagojr.com" rel="noopener">SCImago</a> quartile and SJR score. Data snapshot: ${esc(monthYear)}.</p>
 <div class="stats">
-<div class="stat"><b>${num(n)}</b><span>journals with no APC</span></div>
-<div class="stat"><b>${num(a.q1)}</b><span>ranked Q1 (top 25%)</span></div>
-<div class="stat"><b>${num(a.q2)}</b><span>ranked Q2</span></div>
-<div class="stat"><b>${num(a.q3 + a.q4)}</b><span>ranked Q3 or Q4</span></div>
-<div class="stat"><b>${num(a.apc)}</b><span>more journals charge an APC</span></div>
+<div class="stat"><b>${num(n)}</b><span data-i18n>journals with no APC</span></div>
+<div class="stat"><b>${num(a.q1)}</b><span data-i18n>ranked Q1 (top 25%)</span></div>
+<div class="stat"><b>${num(a.q2)}</b><span data-i18n>ranked Q2</span></div>
+<div class="stat"><b>${num(a.q3 + a.q4)}</b><span data-i18n>ranked Q3 or Q4</span></div>
+<div class="stat"><b>${num(a.apc)}</b><span data-i18n>more journals charge an APC</span></div>
 </div>
-<a class="cta" href="${appLink(a.area)}">Open all ${num(n)} in the finder →</a>
-<a class="cta alt" href="${appLink(a.area, 'qt=Q1,Q2,Q3,Q4,none')}">Include Q3, Q4 and unranked</a>
-<a class="cta alt" href="${appLink(a.area, 'f=apc,dia&qt=Q1,Q2,Q3,Q4,none')}">Include journals with fees</a>
+<a class="cta" href="${appLink(a.area)}" data-i18n="Open all {n} in the finder →" data-i18n-args='${JSON.stringify({ n: num(n) })}'>Open all ${num(n)} in the finder →</a>
+<a class="cta alt" href="${appLink(a.area, 'qt=Q1,Q2,Q3,Q4,none')}" data-i18n>Include Q3, Q4 and unranked</a>
+<a class="cta alt" href="${appLink(a.area, 'f=apc,dia&qt=Q1,Q2,Q3,Q4,none')}" data-i18n>Include journals with fees</a>
 
-<h2>All ${num(n)} free-to-publish journals in ${esc(a.area)}</h2>
-<p>Sorted by best SCImago quartile, then SJR. Click a column header to sort by it; click a second column to add a tiebreak (sort levels combine in the order you pick them). Click a column again to reverse it, a third time to remove it. The search box narrows the list. Publication time is the journal's own DOAJ figure for the average number of weeks from submission to publication.</p>
+<h2 data-i18n="sp.h2all" data-i18n-args='${JSON.stringify({ n: num(n), area: a.area })}'>All ${num(n)} free-to-publish journals in ${esc(a.area)}</h2>
+<p data-i18n="sp.howto">Sorted by best SCImago quartile, then SJR. Click a column header to sort by it; click a second column to add a tiebreak (sort levels combine in the order you pick them). Click a column again to reverse it, a third time to remove it. The search box narrows the list. Publication time is the journal's own DOAJ figure for the average number of weeks from submission to publication.</p>
 <div class="fbar" id="fbar">
-  <input type="search" id="f-q" placeholder="Search by title, publisher, country or ISSN…" autocomplete="off">
-  <button id="f-reset" class="freset" type="button">✕ Reset</button>
+  <input type="search" id="f-q" placeholder="Search by title, publisher, country or ISSN…" data-i18n-ph autocomplete="off">
+  <button id="f-reset" class="freset" type="button" data-i18n>✕ Reset</button>
   <span class="fcount" id="f-count"></span>
   <span class="sorthint" id="sorthint"></span>
 </div>
 <div class="tbl"><table id="jt">
-<thead><tr><th>#</th><th data-sort="t">Journal</th><th data-sort="q">Quartile</th><th data-sort="sjr">SJR</th><th data-sort="h">H-index</th><th data-sort="pub">Publisher</th><th data-sort="c">Country</th><th data-sort="w">Time to publish</th></tr></thead>
+<thead><tr><th>#</th><th data-sort="t" data-i18n>Journal</th><th data-sort="q" data-i18n>Quartile</th><th data-sort="sjr">SJR</th><th data-sort="h">H-index</th><th data-sort="pub" data-i18n>Publisher</th><th data-sort="c" data-i18n>Country</th><th data-sort="w" data-i18n>Time to publish</th></tr></thead>
 <tbody>
 ${rows}
 </tbody></table></div>
-<p class="note" id="more-note"><button id="show-all" class="cta alt" type="button">Show all ${num(n)} journals</button> Showing the first ${Math.min(TOP_N, n)}. The <a href="${appLink(a.area)}">interactive finder</a> adds live Scopus checks, CSV export and shareable filter links.</p>
+<p class="note" id="more-note"><button id="show-all" class="cta alt" type="button" data-i18n="Show all {n} journals" data-i18n-args='${JSON.stringify({ n: num(n) })}'>Show all ${num(n)} journals</button> <span data-i18n="sp.more" data-i18n-args='${JSON.stringify({ k: Math.min(TOP_N, n), href: appLink(a.area) })}'>Showing the first ${Math.min(TOP_N, n)}. The <a href="${appLink(a.area)}">interactive finder</a> adds live Scopus checks, CSV export and shareable filter links.</span></p>
 <script>
 (function(){
   var $=function(id){return document.getElementById(id)};
@@ -230,7 +231,8 @@ ${rows}
       if(!q||r.dataset.t.indexOf(q)>=0){ i++; var vis=showAll||q||i<=LIMIT; r.hidden=!vis; if(vis){ shown++; r.firstElementChild.textContent=i; } }
       else r.hidden=true;
     });
-    $('f-count').textContent=q?(i+' of '+N+' match'):(shown+' of '+N);
+    var T=window.t||function(k,a){return k.replace(/\{(\w+)\}/g,function(m,x){return a&&x in a?a[x]:m})};
+    $('f-count').textContent=q?T('{i} of {n} match',{i:i,n:N}):T('{s} of {n}',{s:shown,n:N});
     $('more-note').style.display=(q||showAll||N<=LIMIT)?'none':'';
   }
   $('f-q').addEventListener('input',apply);
@@ -250,7 +252,8 @@ ${rows}
       th.classList.toggle('on',i>=0);
       th.innerHTML=th.dataset.label+(i>=0?' <span class="pri">'+(i+1)+'</span><span class="dir">'+(sorts[i].d<0?'↓':'↑')+'</span>':'');
     });
-    var h=document.getElementById('sorthint'); if(h) h.textContent=sorts.length?('Sorted by '+sorts.map(function(s){return document.querySelector('#jt th[data-sort="'+s.k+'"]').dataset.label+(s.d<0?' ↓':' ↑')}).join(', then ')):'Click a column to sort; click a second column to add a tiebreak.';
+    var T=window.t||function(k){return k};
+    var h=document.getElementById('sorthint'); if(h) h.textContent=sorts.length?(T('Sorted by ')+sorts.map(function(s){return document.querySelector('#jt th[data-sort="'+s.k+'"]').dataset.label+(s.d<0?' ↓':' ↑')}).join(T(', then '))):T('Click a column to sort; click a second column to add a tiebreak.');
   }
   function resort(){ rows.sort(cmp); var tb=document.querySelector('#jt tbody'); rows.forEach(function(r){ tb.appendChild(r); }); paint(); apply(); }
   [].forEach.call(document.querySelectorAll('#jt th[data-sort]'),function(th){ th.dataset.label=th.textContent.trim(); th.addEventListener('click',function(){
@@ -259,23 +262,24 @@ ${rows}
     resort(); }); });
   paint();
   apply();
+  window.addEventListener('i18n:change',function(){ [].forEach.call(document.querySelectorAll('#jt th[data-sort]'),function(th){ th.dataset.label=th.textContent.trim(); }); paint(); apply(); });
 })();
 </script>
 
-<h2>Where these journals come from</h2>
+<h2 data-i18n>Where these journals come from</h2>
 <div class="cols">
 ${list(a.countries, 'Top countries of publication')}
 ${list(a.publishers, 'Top publishers')}
 ${list(a.langs, 'Main manuscript languages')}
 </div>
 
-<h2>About this list</h2>
-<p><b>Diamond open access</b> (also called Platinum) means the journal is free to read and free to publish in. The journals above are those the DOAJ records with "APC: no" and "other fees: no" and that SCImago lists under the subject area <i>${esc(a.area)}</i> (a journal can belong to several areas). Quartiles come from SCImago's SJR ranking for the latest edition: Q1 is the top 25% of journals in a category, Q4 the bottom 25%. Journals that are in the DOAJ but not in Scopus have no quartile and are not counted here; the finder can show them too.</p>
-<p>Before submitting, always confirm the journal on its own website and in the DOAJ, verify Scopus indexing by ISSN with the <a href="/#tab=s">Scopus check</a> rather than trusting claims on the journal's site, and be wary of look-alike titles.</p>
+<h2 data-i18n>About this list</h2>
+<p data-i18n="sp.about1" data-i18n-args='${JSON.stringify({ area: a.area })}'><b>Diamond open access</b> (also called Platinum) means the journal is free to read and free to publish in. The journals above are those the DOAJ records with "APC: no" and "other fees: no" and that SCImago lists under the subject area <i>${esc(a.area)}</i> (a journal can belong to several areas). Quartiles come from SCImago's SJR ranking for the latest edition: Q1 is the top 25% of journals in a category, Q4 the bottom 25%. Journals that are in the DOAJ but not in Scopus have no quartile and are not counted here; the finder can show them too.</p>
+<p data-i18n="sp.about2">Before submitting, always confirm the journal on its own website and in the DOAJ, verify Scopus indexing by ISSN with the <a href="/#tab=s">Scopus check</a> rather than trusting claims on the journal's site, and be wary of look-alike titles.</p>
 
-<h2>Other subject areas</h2>
+<h2 data-i18n>Other subject areas</h2>
 <div class="grid">
-${areas.filter(o => o !== a).map(o => `<a class="card" href="/subjects/${o.slug}/">${esc(o.area)}<small>${num(o.dia.length)} free-to-publish journals · ${num(o.q1)} Q1</small></a>`).join('\n')}
+${areas.filter(o => o !== a).map(o => `<a class="card" href="/subjects/${o.slug}/">${esc(o.area)}<small data-i18n="{n} free-to-publish journals · {q1} Q1" data-i18n-args='${JSON.stringify({ n: num(o.dia.length), q1: num(o.q1) })}'>${num(o.dia.length)} free-to-publish journals · ${num(o.q1)} Q1</small></a>`).join('\n')}
 </div>
 ` + foot();
   fs.mkdirSync(path.join(ROOT, 'subjects', a.slug), { recursive: true });
@@ -294,16 +298,16 @@ ${areas.filter(o => o !== a).map(o => `<a class="card" href="/subjects/${o.slug}
   const sorted = [...areas].sort((x, y) => y.dia.length - x.dia.length);
   const html = head({ title, desc, url, ld }) + `
 ${crumbs(['Home', '/'], ['Subjects'])}
-<h1>Free-to-publish open access journals by subject</h1>
-<p class="lead">The DOAJ lists ${num(totalDia)} journals that charge no APC and no other author fees. ${num(totalDiaIdx)} of them are also indexed in Scopus and therefore carry a SCImago ranking. Pick a subject area to see how many exist in your field, which are Q1 or Q2, and who publishes them. Data snapshot: ${esc(monthYear)}.</p>
+<h1 data-i18n>Free-to-publish open access journals by subject</h1>
+<p class="lead" data-i18n="hub.lead" data-i18n-args='${JSON.stringify({ t: num(totalDia), n: num(totalDiaIdx), m: monthYear })}'>The DOAJ lists ${num(totalDia)} journals that charge no APC and no other author fees. ${num(totalDiaIdx)} of them are also indexed in Scopus and therefore carry a SCImago ranking. Pick a subject area to see how many exist in your field, which are Q1 or Q2, and who publishes them. Data snapshot: ${esc(monthYear)}.</p>
 <div class="tbl"><table>
-<thead><tr><th>Subject area</th><th>No-APC journals</th><th>Q1</th><th>Q2</th><th>Q3 + Q4</th><th>Share Q1/Q2</th></tr></thead>
+<thead><tr><th data-i18n>Subject area</th><th data-i18n>No-APC journals</th><th>Q1</th><th>Q2</th><th>Q3 + Q4</th><th data-i18n>Share Q1/Q2</th></tr></thead>
 <tbody>
 ${sorted.map(a => `<tr><td><a href="/subjects/${a.slug}/">${esc(a.area)}</a></td><td class="mono">${num(a.dia.length)}</td><td class="mono">${num(a.q1)}</td><td class="mono">${num(a.q2)}</td><td class="mono">${num(a.q3 + a.q4)}</td><td class="mono">${pct(a.q1 + a.q2, a.dia.length)}%</td></tr>`).join('\n')}
 </tbody></table></div>
-<p class="note">A journal can belong to more than one area, so the column does not sum to the total. Q counts use the journal's best quartile across its categories. Journals without a Scopus listing are not counted on these pages but are searchable in the <a href="/">finder</a>.</p>
-<h2>What "Diamond open access" means</h2>
-<p>Diamond (or Platinum) open access journals are free for readers and free for authors: no article processing charge, no submission fee, no page charges. They are typically funded by universities, research institutes, learned societies or public programmes. Publishing in them costs nothing and keeps your work openly available, which is why funders increasingly recommend them. The quality signal to look at is the same as for any journal: peer review process, indexing (Scopus, Web of Science) and the SCImago quartile, all of which the <a href="/">finder</a> shows for every title.</p>
+<p class="note" data-i18n="hub.note">A journal can belong to more than one area, so the column does not sum to the total. Q counts use the journal's best quartile across its categories. Journals without a Scopus listing are not counted on these pages but are searchable in the <a href="/">finder</a>.</p>
+<h2 data-i18n>What "Diamond open access" means</h2>
+<p data-i18n="hub.about">Diamond (or Platinum) open access journals are free for readers and free for authors: no article processing charge, no submission fee, no page charges. They are typically funded by universities, research institutes, learned societies or public programmes. Publishing in them costs nothing and keeps your work openly available, which is why funders increasingly recommend them. The quality signal to look at is the same as for any journal: peer review process, indexing (Scopus, Web of Science) and the SCImago quartile, all of which the <a href="/">finder</a> shows for every title.</p>
 ` + foot();
   fs.mkdirSync(path.join(ROOT, 'subjects'), { recursive: true });
   fs.writeFileSync(path.join(ROOT, 'subjects', 'index.html'), html);
@@ -325,8 +329,8 @@ ${urls.map(([loc, pr]) => `  <url><loc>${loc}</loc><lastmod>${stamp}</lastmod><c
   const p = path.join(ROOT, 'index.html');
   let s = fs.readFileSync(p, 'utf-8');
   const block = `<!-- subjects:start (generated by scripts/build-subjects.mjs) -->
-    <h2 style="margin-top:34px">Free-to-publish journals by subject</h2>
-    <p>${num(totalDiaIdx)} Scopus-indexed journals with no APC, grouped by SCImago subject area. <a href="/subjects/">See all ${areas.length} areas →</a></p>
+    <h2 style="margin-top:34px" data-i18n>Free-to-publish journals by subject</h2>
+    <p data-i18n="subj.blurb" data-i18n-args='${JSON.stringify({ n: num(totalDiaIdx), k: areas.length })}'>${num(totalDiaIdx)} Scopus-indexed journals with no APC, grouped by SCImago subject area. <a href="/subjects/">See all ${areas.length} areas →</a></p>
     <div class="subj-grid">
 ${[...areas].sort((x, y) => y.dia.length - x.dia.length).map(a => `      <a href="/subjects/${a.slug}/">${esc(a.area)} <span>${num(a.dia.length)}</span></a>`).join('\n')}
     </div>

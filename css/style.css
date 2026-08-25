@@ -250,12 +250,19 @@ body:not(.app-open) .side-toggle{display:none}
 .tag.cat.cq-Q4 b{background:#F8DADA;color:#a93a3a}
 .tag.fee-ok{background:var(--sea-soft);color:var(--sea);border-color:#cfe5da;font-weight:600}
 .tag.fee{background:var(--amber-soft);color:var(--amber);border-color:#ecdcb5;font-weight:600}
+/* titles Scopus dropped (official source list): dashed red frame + red badge */
+.jrow.disc{border:1.5px dashed var(--coral);background:#FFF8F6;box-shadow:none}
+.jrow.disc .qbadge{opacity:.55;filter:grayscale(.6)}
+.jrow.disc .jtitle{color:#7a2f22}
+.tag.disc{background:var(--coral-soft);color:#b8402c;border:1px dashed var(--coral);font-weight:700}
+.mv-off,.lv-off{margin:10px 0 6px;padding:10px 12px;border:1.5px dashed var(--coral);border-radius:10px;background:#FFF8F6;font-size:12.5px;color:#7a2f22;line-height:1.5}
+.mv-off .tag,.lv-off .tag{margin-bottom:6px;display:inline-block}
 .jside{display:flex;flex-direction:column;align-items:flex-end;gap:9px;min-width:150px}
 .metric{text-align:right}
 .metric .v{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:15px}
 .metric .k{font-size:10px;letter-spacing:.04em;color:var(--muted-2);text-transform:uppercase}
 .speed{width:150px}
-.speed .stop{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted-2);margin-bottom:3px}
+.speed .stop{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--muted-2);margin-bottom:3px}
 .speed .stop b{font-family:"IBM Plex Mono",monospace;color:var(--ink);font-weight:600;font-size:12px}
 .bar{height:6px;border-radius:4px;background:var(--paper-2);overflow:hidden}
 .bar i{display:block;height:100%;border-radius:4px}
@@ -348,7 +355,8 @@ body:not(.app-open) .side-toggle{display:none}
   main{padding:18px 16px 90px}
   .jrow{grid-template-columns:48px 1fr}
   .jside{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;min-width:0;flex-wrap:wrap}
-  .speed{width:auto;flex:1;max-width:200px}
+  .speed{width:auto;flex:1;min-width:120px;max-width:200px}
+  .qbadge{align-self:start;min-height:60px;padding:10px 4px}
   .slots{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}

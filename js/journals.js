@@ -60,14 +60,17 @@ function sortRecs(a,b){
     if(x==null) return 1; if(y==null) return -1;
     if(x<y) return -d; if(x>y) return d;
   }
+  const da=scopusStatus(a.issns), db=scopusStatus(b.issns);   // titles Scopus dropped sink below everything else
+  const xa=da&&da.st!=='inactive'?1:0, xb=db&&db.st!=='inactive'?1:0;
+  if(xa!==xb) return xa-xb;
   const d=qRank[a.idx&&a.q?a.q:'']-qRank[b.idx&&b.q?b.q:''];   // silent default order: quartile, higher SJR, title
   return d || (b.sjr??-1)-(a.sjr??-1) || a.t.localeCompare(b.t);
 }
 function speedHtml(w){
-  if(w==null) return '<div class="speed na"><div class="stop"><span>Turnaround</span><b class="val">n/a</b></div><div class="bar mid"><i style="width:0"></i></div></div>';
+  if(w==null) return '<div class="speed na"><div class="stop"><span>'+t('Turnaround')+'</span><b class="val">'+t('n/a')+'</b></div><div class="bar mid"><i style="width:0"></i></div></div>';
   const pct=Math.max(4,Math.min(100,(w/52)*100));
   const cls=w<=12?'fast':(w<=26?'mid':'slow');
-  return '<div class="speed"><div class="stop"><span>Turnaround</span><b>'+w+'w</b></div><div class="bar '+cls+'"><i style="width:'+pct+'%"></i></div></div>';
+  return '<div class="speed"><div class="stop"><span>'+t('Turnaround')+'</span><b>'+w+'w</b></div><div class="bar '+cls+'"><i style="width:'+pct+'%"></i></div></div>';
 }
 function render(){
   syncHash();   // keep the URL shareable - it always reflects the current filters
@@ -76,14 +79,14 @@ function render(){
   const shown=filtered.slice(0,state.limit);
   const list=$('list');
   if(!filtered.length){
-    let msg='<div class="empty"><h3>No journals match</h3><p>Try enabling more quartiles, turning off “indexed only”, or widening the turnaround.</p></div>';
-    if(state.qDOI&&doiISSNs===null) msg='<div class="empty"><h3>🔍 Resolving DOI via Scopus…</h3></div>';
-    else if(state.qDOI&&doiISSNs&&!doiISSNs.length) msg='<div class="empty"><h3>DOI not found in Scopus</h3><p>Couldn’t resolve this DOI to a journal. Try the <b>Scopus</b> tab, or search the journal name.</p></div>';
+    let msg='<div class="empty"><h3>'+t('No journals match')+'</h3><p>'+t('Try enabling more quartiles, turning off “indexed only”, or widening the turnaround.')+'</p></div>';
+    if(state.qDOI&&doiISSNs===null) msg='<div class="empty"><h3>'+t('🔍 Resolving DOI via Scopus…')+'</h3></div>';
+    else if(state.qDOI&&doiISSNs&&!doiISSNs.length) msg='<div class="empty"><h3>'+t('DOI not found in Scopus')+'</h3><p>'+t('Couldn’t resolve this DOI to a journal. Try the <b>Scopus</b> tab, or search the journal name.')+'</p></div>';
     else if(state.qDOI||state.qISSN){
-      const what=state.qISSN?'ISSN '+fmtISSN(state.qISSN):(doiName?'<b>'+esc(doiName)+'</b>':'this DOI’s journal');
+      const what=state.qISSN?'ISSN '+fmtISSN(state.qISSN):(doiName?'<b>'+esc(doiName)+'</b>':t('this DOI’s journal'));
       const inS=state.qISSN?S.find(s=>s.issns.includes(state.qISSN)):(doiISSNs&&S.find(s=>s.issns.some(i=>doiISSNs.includes(i))));
-      msg='<div class="empty"><h3>Not in the open-access (DOAJ) list</h3><p>'+what+' isn’t a DOAJ open-access journal'+(inS?', but it <b>is in Scopus</b> (SCImago '+(inS.q?'best quartile <b>'+esc(inS.q)+'</b>':'unranked')+'). ':'. ')
-        +'Check it on the <b>Scopus</b> tab. Also make sure the fee / quartile filters aren’t hiding it.</p></div>';
+      const ins=inS?t(', but it <b>is in Scopus</b> (SCImago {q}). ',{q:inS.q?t('best quartile <b>{q}</b>',{q:esc(inS.q)}):t('unranked')}):'. ';
+      msg='<div class="empty"><h3>'+t('Not in the open-access (DOAJ) list')+'</h3><p>'+(I18N.lang==='en'?what+' isn’t a DOAJ open-access journal'+ins+'Check it on the <b>Scopus</b> tab. Also make sure the fee / quartile filters aren’t hiding it.':t('na.body',{what,ins}))+'</p></div>';
     }
     list.innerHTML=msg;
     $('pager').innerHTML=''; return;
@@ -93,27 +96,28 @@ function render(){
     const link=r.url?'<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.t)+'</a>':esc(r.t);
     const sjr=r.sjr!=null?'<div class="metric"><div class="v">'+r.sjr.toFixed(3)+'</div><div class="k">SJR</div></div>':'';
     const hix=r.h!=null?'<div class="metric"><div class="v">'+r.h+'</div><div class="k">H-index</div></div>':'';
-    const notIdx=!r.idx?'<span class="indexed-no">Not in SCImago</span>':'';
-    const feeT=r.dia?'<span class="tag fee-ok">Diamond · free</span>'
-                    :'<span class="tag fee">'+(r.fee?'APC: '+esc(r.fee)+(r.usd!=null&&!/USD/.test(r.fee)?' (≈ $'+r.usd.toLocaleString()+')':''):'Has fees')+'</span>';
+    const notIdx=!r.idx?'<span class="indexed-no">'+t('Not in SCImago')+'</span>':'';
+    const feeT=r.dia?'<span class="tag fee-ok">'+t('Diamond · free')+'</span>'
+                    :'<span class="tag fee">'+(r.fee?t('APC: ')+esc(r.fee)+(r.usd!=null&&!/USD/.test(r.fee)?' (≈ $'+r.usd.toLocaleString()+')':''):t('Has fees'))+'</span>';
     const areaT=(r.areas||'').split(';').map(s=>s.trim()).filter(Boolean).slice(0,3).map(a=>'<span class="tag area">'+esc(a)+'</span>').join('');
     const catT=catTags(r.cats);
-    return '<div class="jrow">'
-      +'<div class="qbadge q-'+q+'"><span class="q">'+(r.idx?(r.q||'–'):'–')+'</span><span class="lbl">'+(r.idx?'quartile':'unranked')+'</span></div>'
+    const fl=scopusFlag(r.idx?scopusStatus(r.issns):null);
+    return '<div class="jrow'+fl.cls+'">'
+      +'<div class="qbadge q-'+q+'"><span class="q">'+(r.idx?(r.q||'–'):'–')+'</span><span class="lbl">'+(r.idx?t('quartile'):t('unranked'))+'</span></div>'
       +'<div class="jmain"><h3 class="jtitle">'+link+'</h3>'
       +'<div class="jmeta"><span class="pub">'+esc(r.pub||'–')+'</span><span class="dot"></span><span>'+esc(r.c||'')+'</span>'+(r.lang?'<span class="dot"></span><span>'+esc(r.lang)+'</span>':'')+'</div>'
-      +'<div class="tags">'+feeT+areaT+'</div>'+(catT?'<div class="tags cats">'+catT+'</div>':'')+'</div>'
+      +'<div class="tags">'+fl.tag+feeT+areaT+'</div>'+(catT?'<div class="tags cats">'+catT+'</div>':'')+'</div>'
       +'<div class="jside">'+notIdx+'<div style="display:flex;gap:16px">'+sjr+hix+'</div>'+speedHtml(r.w)
       +'<div style="display:flex;gap:12px;align-items:center">'
-      +(r.issn?'<button class="scopus-btn" data-issn="'+esc(r.issn)+'" data-title="'+esc(r.t)+'">✓ Check Scopus</button>':'')
+      +(r.issn?'<button class="scopus-btn" data-issn="'+esc(r.issn)+'" data-title="'+esc(r.t)+'">'+t('✓ Check Scopus')+'</button>':'')
       +(r.doaj?'<a href="'+esc(r.doaj)+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--coral);font-weight:600;text-decoration:none">DOAJ ↗</a>':'')
       +'</div></div></div>';
   }).join('');
   const pager=$('pager');
   if(filtered.length>shown.length){
-    pager.innerHTML='<div class="more">Showing '+shown.length.toLocaleString()+' of '+filtered.length.toLocaleString()+'<br><button id="loadmore">Show 60 more</button></div>';
+    pager.innerHTML='<div class="more">'+t('Showing {a} of {b}',{a:shown.length.toLocaleString(),b:filtered.length.toLocaleString()})+'<br><button id="loadmore">'+t('Show 60 more')+'</button></div>';
     $('loadmore').onclick=()=>{state.limit+=60;render();};
   } else if(filtered.length>60){
-    pager.innerHTML='<div class="more">All '+filtered.length.toLocaleString()+' shown</div>';
+    pager.innerHTML='<div class="more">'+t('All {n} shown',{n:filtered.length.toLocaleString()})+'</div>';
   } else pager.innerHTML='';
 }

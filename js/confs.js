@@ -137,7 +137,7 @@ function curState(){ return csrc==='ma'?mstate:cstate; }
 function refreshC(){ if(csrc==='ma') renderMa(); else renderConfs(); }
 function applyStats(){
   const s=csrc==='ma'?maStats:ccfStats;
-  const L=csrc==='ma'?['Events','Upcoming','Next 30 days']:['Conferences','Open calls','Due ≤ 30 days'];
+  const L=(csrc==='ma'?['Events','Upcoming','Next 30 days']:['Conferences','Open calls','Due ≤ 30 days']).map(k=>t(k));
   $('s-ctotal').textContent=s?s[0].toLocaleString():'–';
   $('s-copen').textContent=s?s[1].toLocaleString():'–';
   $('s-c30').textContent=s?s[2].toLocaleString():'–';
@@ -150,14 +150,14 @@ function setSrc(src){
   $('cinfo-ma').style.display=src==='ma'?'block':'none';
   $('cflt-ccf').style.display=src==='ccf'?'block':'none';
   $('cflt-ma').style.display=src==='ma'?'block':'none';
-  $('cresLbl').textContent=src==='ma'?'events':'conferences';
-  $('openLbl').textContent=src==='ma'?'Upcoming events only':'Open calls only';
-  $('openSub').textContent=src==='ma'?'hide events that already happened':'hide conferences with no upcoming deadline';
-  $('cq').placeholder=src==='ma'?'Title, discipline, keyword…':'Acronym, name, place…';
+  $('cresLbl').textContent=t(src==='ma'?'events':'conferences');
+  $('openLbl').textContent=t(src==='ma'?'Upcoming events only':'Open calls only');
+  $('openSub').textContent=t(src==='ma'?'hide events that already happened':'hide conferences with no upcoming deadline');
+  $('cq').placeholder=t(src==='ma'?'Title, discipline, keyword…':'Acronym, name, place…');
   const sel=$('csort');
   sel.innerHTML= src==='ma'
-    ? '<option value="tl">Date (upcoming first)</option><option value="az">Title A–Z</option>'
-    : '<option value="dl">Deadline soonest</option><option value="ccf">CCF rank</option><option value="core">CORE rank</option><option value="az">Acronym A–Z</option>';
+    ? '<option value="tl">'+t('Date (upcoming first)')+'</option><option value="az">'+t('Title A–Z')+'</option>'
+    : '<option value="dl">'+t('Deadline soonest')+'</option><option value="ccf">'+t('CCF rank')+'</option><option value="core">'+t('CORE rank')+'</option><option value="az">'+t('Acronym A–Z')+'</option>';
   const st=curState();
   if(st){ sel.value=st.sort; $('cq').value=st.q; $('openOnly').checked=st.open; }
   else { $('cq').value=''; $('openOnly').checked=true; }
@@ -176,7 +176,7 @@ async function loadConfs(force){
     if(cached && !force && (Date.now()-cached.ts)<CONF_TTL){
       useConfs(cached); return;
     }
-    cstatus('Loading conference feed…');
+    cstatus(t('Loading conference feed…'));
     try{
       const res=await fetch(CONF_FEED);
       if(!res.ok) throw new Error('feed returned '+res.status);
@@ -186,8 +186,8 @@ async function loadConfs(force){
       await cacheSet('confs',payload);
       useConfs(payload);
     }catch(e){
-      if(cached){ useConfs(cached,' (offline, using saved copy)'); }
-      else cstatus('Could not load the conference feed: '+e.message,true);
+      if(cached){ useConfs(cached,t(' (offline, using saved copy)')); }
+      else cstatus(t('Could not load the conference feed: ')+e.message,true);
     }
   } finally { confsLoading=false; }
 }
@@ -244,9 +244,9 @@ function bindConfsOnce(){
   const maIngest=async f=>{
     const st=$('maStatus');
     try{
-      st.classList.remove('err'); st.textContent='Reading '+f.name+'…';
+      st.classList.remove('err'); st.textContent=t('Reading {f}…',{f:f.name});
       const evs=parseCnrstRss(await readFile(f));
-      const payload={evs,ts:Date.now(),stamp:new Date().toLocaleDateString()+' · '+f.name+' · '+evs.length+' events'};
+      const payload={evs,ts:Date.now(),stamp:new Date().toLocaleDateString()+' · '+f.name+' · '+evs.length+t(' events')};
       await cacheSet('cnrst',payload);
       st.textContent='';
       useMa(payload);
@@ -293,7 +293,7 @@ function renderConfs(){
   const shown=items.slice(0,cstate.limit);
   const list=$('clist');
   if(!items.length){
-    list.innerHTML='<div class="empty"><h3>No conferences match</h3><p>Try enabling more ranks, turning off “open calls only”, or clearing the search.</p></div>';
+    list.innerHTML='<div class="empty"><h3>'+t('No conferences match')+'</h3><p>'+t('Try enabling more ranks, turning off “open calls only”, or clearing the search.')+'</p></div>';
     $('cpager').innerHTML=''; return;
   }
   list.innerHTML=shown.map(({c,next})=>{
@@ -304,15 +304,15 @@ function renderConfs(){
     if(next){
       const days=Math.max(0,Math.ceil((next.ts-now)/86400e3));
       const cls=days<=14?'due-soon':(days<=60?'due-mid':'due-far');
-      dueHtml='<span class="due '+cls+'">in '+days+'d</span>'
-        +'<div class="dueinfo"><b>'+esc(next.typ)+' deadline</b><br>'+esc(fmtDeadline(next.ts))
+      dueHtml='<span class="due '+cls+'">'+t('in {d}d',{d:days})+'</span>'
+        +'<div class="dueinfo"><b>'+t('{t} deadline',{t:esc(next.typ)})+'</b><br>'+esc(fmtDeadline(next.ts))
         +(next.cm?'<br>'+esc(next.cm):'')+'</div>';
     } else {
-      dueHtml='<span class="due due-none">no open call</span>';
+      dueHtml='<span class="due due-none">'+t('no open call')+'</span>';
     }
     const core=c.core?'<div class="metric"><div class="v">'+esc(c.core)+'</div><div class="k">CORE</div></div>':'';
     const links='<div class="extlinks">'
-      +(site?'<a href="'+esc(site)+'" target="_blank" rel="noopener">Website ↗</a>':'')
+      +(site?'<a href="'+esc(site)+'" target="_blank" rel="noopener">'+t('Website ↗')+'</a>':'')
       +(c.dblp?'<a href="https://dblp.org/db/conf/'+esc(c.dblp)+'" target="_blank" rel="noopener">dblp ↗</a>':'')
       +'</div>';
     const when=(ed.date?esc(ed.date):'')+(ed.y&&!String(ed.date).includes(String(ed.y))?' '+esc(String(ed.y)):'');
@@ -326,10 +326,10 @@ function renderConfs(){
   }).join('');
   const pager=$('cpager');
   if(items.length>shown.length){
-    pager.innerHTML='<div class="more">Showing '+shown.length.toLocaleString()+' of '+items.length.toLocaleString()+'<br><button id="cloadmore">Show 60 more</button></div>';
+    pager.innerHTML='<div class="more">'+t('Showing {a} of {b}',{a:shown.length.toLocaleString(),b:items.length.toLocaleString()})+'<br><button id="cloadmore">'+t('Show 60 more')+'</button></div>';
     $('cloadmore').onclick=()=>{cstate.limit+=60;renderConfs();};
   } else if(items.length>60){
-    pager.innerHTML='<div class="more">All '+items.length.toLocaleString()+' shown</div>';
+    pager.innerHTML='<div class="more">'+t('All {n} shown',{n:items.length.toLocaleString()})+'</div>';
   } else pager.innerHTML='';
 }
 
@@ -341,7 +341,7 @@ function renderConfs(){
    date (<pubDate>). */
 function parseCnrstRss(text){
   const doc=new DOMParser().parseFromString(text,'text/xml');
-  if(doc.querySelector('parsererror')) throw new Error('That file isn’t valid XML/RSS. Save the feed page itself (⌘S / Ctrl-S).');
+  if(doc.querySelector('parsererror')) throw new Error(t('That file isn’t valid XML/RSS. Save the feed page itself (⌘S / Ctrl-S).'));
   const norm=s=>s.toLowerCase().replace(/\s+/g,' ').trim();
   const tmp=document.createElement('div');
   const evs=[];
@@ -356,7 +356,7 @@ function parseCnrstRss(text){
     const snip=(tmp.textContent||'').replace(/\s+/g,' ').trim().slice(0,220);
     evs.push({t, url:g('link'), cat, ts:isNaN(ts)?null:ts, snip});
   }
-  if(!evs.length) throw new Error('No events found in this file. Is it the CNRST events RSS feed?');
+  if(!evs.length) throw new Error(t('No events found in this file. Is it the CNRST events RSS feed?'));
   return evs;
 }
 /* The app never talks to cnrst.ma directly (no CORS there). A GitHub Action
@@ -378,13 +378,13 @@ async function loadMa(force){
     if(!force && cached && cached.evs && cached.evs.length && (Date.now()-cached.ts)<MA_TTL){
       useMa(cached); return;
     }
-    if(csrc==='ma') cstatus('Loading Morocco events feed…');
+    if(csrc==='ma') cstatus(t('Loading Morocco events feed…'));
     for(const url of MA_MIRRORS){
       try{
         const res=await fetch(url,{cache:'no-store'});
         if(!res.ok) throw new Error('feed returned '+res.status);
         const evs=parseCnrstRss(await res.text());
-        const payload={evs,ts:Date.now(),stamp:new Date().toLocaleDateString()+' · auto-updated mirror · '+evs.length+' events'};
+        const payload={evs,ts:Date.now(),stamp:new Date().toLocaleDateString()+t(' · auto-updated mirror · ')+evs.length+t(' events')};
         await cacheSet('cnrst',payload);
         cstatus('');
         useMa(payload);
@@ -392,7 +392,7 @@ async function loadMa(force){
       }catch(e){ /* try the next mirror */ }
     }
     cstatus('');
-    if(cached && cached.evs && cached.evs.length) useMa(cached,' (mirror unreachable, using saved copy)');
+    if(cached && cached.evs && cached.evs.length) useMa(cached,t(' (mirror unreachable, using saved copy)'));
     else if(csrc==='ma'){ $('maSetup').style.display='block'; $('clist').innerHTML=''; $('cpager').innerHTML=''; }
   } finally { maLoading=false; }
 }
@@ -402,7 +402,7 @@ function useMa(payload,note){
   const now=Date.now();
   const up=M.filter(e=>e.ts&&e.ts>now);
   maStats=[M.length, up.length, up.filter(e=>(e.ts-now)<30*86400e3).length];
-  const sel=$('macat'); sel.innerHTML='<option value="">All disciplines</option>';
+  const sel=$('macat'); sel.innerHTML='<option value="" data-i18n>'+t('All disciplines')+'</option>';
   const cc={}; M.forEach(e=>{ if(e.cat) cc[e.cat]=(cc[e.cat]||0)+1; });
   Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).forEach(c=>{
     const o=document.createElement('option'); o.value=c; o.textContent=c+' ('+cc[c]+')'; sel.appendChild(o);
@@ -433,19 +433,19 @@ function renderMa(){
   const shown=items.slice(0,mstate.limit);
   const list=$('clist');
   if(!items.length){
-    list.innerHTML='<div class="empty"><h3>No events match</h3><p>Try turning off “upcoming events only” or clearing the search.</p></div>';
+    list.innerHTML='<div class="empty"><h3>'+t('No events match')+'</h3><p>'+t('Try turning off “upcoming events only” or clearing the search.')+'</p></div>';
     $('cpager').innerHTML=''; return;
   }
   list.innerHTML=shown.map(ev=>{
     const d=ev.ts?new Date(ev.ts):null;
     const day=d?String(d.getDate()).padStart(2,'0'):'–';
-    const mon=d?d.toLocaleDateString('en',{month:'short'}).toUpperCase()+' ’'+String(d.getFullYear()).slice(2):'';
+    const mon=d?d.toLocaleDateString(I18N.lang,{month:'short'}).replace('.','').toUpperCase()+' ’'+String(d.getFullYear()).slice(2):'';
     let due;
     if(d && ev.ts>now){
       const days=Math.max(0,Math.ceil((ev.ts-now)/86400e3));
       const cls=days<=14?'due-soon':(days<=60?'due-mid':'due-far');
-      due='<span class="due '+cls+'">in '+days+'d</span>';
-    } else due='<span class="due due-past">past</span>';
+      due='<span class="due '+cls+'">'+t('in {d}d',{d:days})+'</span>';
+    } else due='<span class="due due-past">'+t('past')+'</span>';
     const title=ev.url?'<a href="'+esc(ev.url)+'" target="_blank" rel="noopener">'+esc(ev.t)+'</a>':esc(ev.t);
     const dateLine=d?'<div class="dueinfo"><b>'+esc(d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}))+'</b></div>':'';
     return '<div class="jrow">'
@@ -454,14 +454,14 @@ function renderMa(){
       +(ev.snip?'<p class="jsnip">'+esc(ev.snip)+'</p>':'')
       +'<div class="tags">'+(ev.cat?'<span class="tag area">'+esc(ev.cat)+'</span>':'')+'</div></div>'
       +'<div class="jside">'+due+dateLine
-      +(ev.url?'<div class="extlinks"><a href="'+esc(ev.url)+'" target="_blank" rel="noopener">Details ↗</a></div>':'')
+      +(ev.url?'<div class="extlinks"><a href="'+esc(ev.url)+'" target="_blank" rel="noopener">'+t('Details ↗')+'</a></div>':'')
       +'</div></div>';
   }).join('');
   const pager=$('cpager');
   if(items.length>shown.length){
-    pager.innerHTML='<div class="more">Showing '+shown.length.toLocaleString()+' of '+items.length.toLocaleString()+'<br><button id="mloadmore">Show 60 more</button></div>';
+    pager.innerHTML='<div class="more">'+t('Showing {a} of {b}',{a:shown.length.toLocaleString(),b:items.length.toLocaleString()})+'<br><button id="mloadmore">'+t('Show 60 more')+'</button></div>';
     $('mloadmore').onclick=()=>{mstate.limit+=60;renderMa();};
   } else if(items.length>60){
-    pager.innerHTML='<div class="more">All '+items.length.toLocaleString()+' shown</div>';
+    pager.innerHTML='<div class="more">'+t('All {n} shown',{n:items.length.toLocaleString()})+'</div>';
   } else pager.innerHTML='';
 }

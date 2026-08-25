@@ -62,6 +62,10 @@ jobs:
           head -1 scimago_new.csv | grep -q 'SJR Best Quartile'
           mv scimago_new.csv data/scimago.csv
 
+      - name: Refresh Scopus source status (official Elsevier title list)
+        # flags titles Scopus discontinued; the script refuses to write an incomplete list
+        run: python scripts/build-scopus-status.py
+
       - name: Commit if changed
         # runs even if one source failed — the other file still gets refreshed
         # (the workflow stays red so the failure is visible)
@@ -69,5 +73,5 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/doaj.csv data/scimago.csv
+          git add -f data/doaj.csv data/scimago.csv data/scopus-status.csv
           git diff --cached --quiet || { git commit -m 'Refresh bundled data snapshots'; git push; }

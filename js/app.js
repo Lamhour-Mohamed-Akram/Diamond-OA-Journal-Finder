@@ -4,6 +4,38 @@ let S=[], sciRef=null;   // full Scopus/SCImago source list for the Scopus check
 function covEnd(cov){ const y=(String(cov).match(/\d{4}/g)||[]).map(Number).filter(v=>v>=1900&&v<=2100); return y.length?Math.max(...y):null; }
 function covActive(cov){ const e=covEnd(cov); return e!=null && sciRef!=null && e>=sciRef-1; }
 const qRank={Q1:1,Q2:2,Q3:3,Q4:4,'':9};
+/* ---- Official Scopus source status (data/scopus-status.csv, built monthly
+   from Elsevier's source title list by scripts/build-scopus-status.py).
+   SCImago only carries a coverage range, so a title Scopus dropped for quality
+   reasons can still look covered; this map is the authority. ---- */
+const SCOPUS_ST=new Map();   // issn -> {st:'discontinued'|'policy'|'inactive', y:'2025'}
+let scopusStLoaded=false;
+function scopusStatus(issns){
+  for(const i of (issns||[])){ const v=i&&SCOPUS_ST.get(i); if(v) return v; }
+  return null;
+}
+async function loadScopusStatus(){
+  if(scopusStLoaded) return; scopusStLoaded=true;
+  let text='';
+  for(const url of [GH_DATA+'data/scopus-status.csv','data/scopus-status.csv']){
+    try{ const r=await fetch(url); if(r.ok){ text=await r.text(); break; } }catch(e){}
+  }
+  if(!text){ scopusStLoaded=false; return; }
+  for(const line of text.split('\n').slice(1)){
+    const [a,b,st,y]=line.trim().split(',');
+    if(!st) continue;
+    if(a) SCOPUS_ST.set(a,{st,y}); if(b) SCOPUS_ST.set(b,{st,y});
+  }
+  if(state) render();
+  if($('main-s').style.display!=='none') renderScopus();
+}
+/* badge + card class for a status entry (null → nothing) */
+function scopusFlag(v){
+  if(!v) return {cls:'',tag:''};
+  if(v.st==='discontinued') return {cls:' disc',tag:'<span class="tag disc" title="'+esc(t('Removed from the Scopus index (quality or publication concerns). Its SCImago ranking is historical.'))+'">'+t('⛔ Discontinued by Scopus{y}',{y:v.y?' ('+v.y+')':''})+'</span>'};
+  if(v.st==='policy') return {cls:' disc',tag:'<span class="tag disc" title="'+esc(t('Removed from the Scopus index after a journal policy change.'))+'">'+t('⛔ Removed from Scopus{y}',{y:v.y?' ('+v.y+')':''})+'</span>'};
+  return {cls:' ended',tag:'<span class="tag fee">'+t('⚠ Scopus coverage ended{y}',{y:v.y?' ('+v.y+')':''})+'</span>'};
+}
 function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 /* SCImago "Categories" → one chip per category, coloured by that category's own quartile
    ("Food Science (Q4); History (Q2)" → [Q4 Food Science] [Q2 History]) */
@@ -53,13 +85,12 @@ function applyHash(){
   if(p.has('o')){ const ss=p.get('o').split(',').map(t=>{const m=t.match(/^([a-z]+)(-?)$/);return m&&SORT_KEYS[m[1]]?{k:m[1],d:m[2]?-1:1}:null;}).filter(Boolean);
     if(ss.length) state.sorts=ss; }
   if(p.has('s')) $('lq').value=$('q').value;
-  if(p.has('tab') && ['j','c','s'].includes(p.get('tab'))) switchTab(p.get('tab'));
   document.querySelectorAll('#fchips .chip').forEach(ch=>ch.classList.toggle('on',state.fees.has(ch.dataset.f)));
   document.querySelectorAll('#qchips .chip').forEach(ch=>ch.classList.toggle('on',state.quarts.has(ch.dataset.q==='none'?'':ch.dataset.q)));
 }
 
 /* ---- CSV export of the current filtered view ---- */
-function apcLabel(v){ return v>=APC_MAX?'Any':(v===0?'Free only':'≤ $'+v.toLocaleString()); }
+function apcLabel(v){ return v>=APC_MAX?t('Any'):(v===0?t('Free only'):'≤ $'+v.toLocaleString()); }
 function exportCSV(){
   const rows=R.filter(match).sort(sortRecs);
   const cell=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
@@ -98,17 +129,17 @@ function syncSubjLink(){
   const el=$('subjLink'); if(!el) return;
   const a=state&&state.area;
   el.href=a?'/subjects/'+areaSlug(a)+'/':'/subjects/';
-  el.querySelector('b').textContent=a?a+': ranked page':'Browse journals by subject';
-  el.querySelector('small').textContent=a?'Counts, Q1/Q2 share and the top 50 free-to-publish journals':'27 areas, each with counts and a ranked top 50';
+  el.querySelector('b').textContent=a?t('{a}: ranked page',{a}):t('Browse journals by subject');
+  el.querySelector('small').textContent=a?t('Counts, Q1/Q2 share and the top 50 free-to-publish journals'):t('27 areas, each with counts and a ranked top 50');
 }
 function renderSortBar(){
   document.querySelectorAll('#sortbar button[data-k]').forEach(b=>{
     const i=state.sorts.findIndex(x=>x.k===b.dataset.k);
     b.classList.toggle('on',i>=0);
-    b.innerHTML=(i>=0?'<span class="pri">'+(i+1)+'</span>':'')+SORT_KEYS[b.dataset.k].label+(i>=0?' <span class="dir">'+(state.sorts[i].d<0?'↓':'↑')+'</span>':'');
+    b.innerHTML=(i>=0?'<span class="pri">'+(i+1)+'</span>':'')+t(SORT_KEYS[b.dataset.k].label)+(i>=0?' <span class="dir">'+(state.sorts[i].d<0?'↓':'↑')+'</span>':'');
   });
   document.body.classList.toggle('has-sort',state.sorts.length>0);
-  $('sorthint').textContent=state.sorts.length?state.sorts.map(x=>SORT_KEYS[x.k].label+(x.d<0?' ↓':' ↑')).join(', then '):'default: best quartile first';
+  $('sorthint').textContent=state.sorts.length?state.sorts.map(x=>t(SORT_KEYS[x.k].label)+(x.d<0?' ↓':' ↑')).join(t(', then ')):t('default: best quartile first');
 }
 function startApp(data,stamp,tab){
   document.body.classList.add('app-open'); $('guide').style.display='none';
@@ -131,9 +162,9 @@ function startApp(data,stamp,tab){
     $('s-idx').textContent=(data.meta.dia!=null?data.meta.dia:0).toLocaleString();
     $('s-q12').textContent=data.meta.q12.toLocaleString();
 
-    const areaSel=$('area'); areaSel.innerHTML='<option value="">All areas</option>';
+    const areaSel=$('area'); areaSel.innerHTML='<option value="" data-i18n>'+t('All areas')+'</option>';
     data.areas.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;areaSel.appendChild(o);});
-    const cSel=$('country'); cSel.innerHTML='<option value="">All countries</option>';
+    const cSel=$('country'); cSel.innerHTML='<option value="" data-i18n>'+t('All countries')+'</option>';
     const cc={}; R.forEach(r=>{if(r.c)cc[r.c]=(cc[r.c]||0)+1;});
     Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c+' ('+cc[c]+')';cSel.appendChild(o);});
 
@@ -142,8 +173,11 @@ function startApp(data,stamp,tab){
     syncSubjLink(); renderSortBar();
   }
   bindOnce();
-  switchTab(tab||'j');
+  // #tab=c / #tab=s in the URL (links from the subject pages) wins over the default tab
+  const hashTab=new URLSearchParams(location.hash.slice(1)).get('tab');
+  switchTab(tab||(['j','c','s'].includes(hashTab)?hashTab:'j'));
   if(data) render();
+  loadScopusStatus();
 }
 
 let bound=false;
@@ -192,7 +226,7 @@ function bindOnce(){
   });
   $('weeks').addEventListener('input',e=>{
     state.weeks=+e.target.value;
-    $('wkVal').textContent=state.weeks>=52?'Any':'≤ '+state.weeks+'w';
+    $('wkVal').textContent=state.weeks>=52?t('Any'):'≤ '+state.weeks+'w';
     state.limit=60; render();
   });
   $('apc').addEventListener('input',e=>{
@@ -203,8 +237,8 @@ function bindOnce(){
   $('resetBtn').addEventListener('click',()=>{
     state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,maxUsd:APC_MAX,country:'',sorts:DEFAULT_SORTS.map(x=>({...x})),limit:60};
     $('q').value='';$('lq').value='';renderSortBar();$('idxOnly').checked=true;$('area').value='';syncSubjLink();$('country').value='';
-    $('weeks').value=52;$('wkVal').textContent='Any';
-    $('apc').value=APC_MAX;$('apcVal').textContent='Any';
+    $('weeks').value=52;$('wkVal').textContent=t('Any');
+    $('apc').value=APC_MAX;$('apcVal').textContent=t('Any');
     document.querySelectorAll('#qchips .chip').forEach(ch=>ch.classList.toggle('on',ch.dataset.q==='Q1'||ch.dataset.q==='Q2'));
     document.querySelectorAll('#fchips .chip').forEach(ch=>ch.classList.toggle('on',ch.dataset.f==='dia'));
     render();
@@ -212,7 +246,7 @@ function bindOnce(){
   $('reload').addEventListener('click',()=>{
     files.doaj=files.sci=null;
     ['slot-doaj','slot-sci'].forEach(id=>$(id).classList.remove('ok'));
-    $('slot-doaj-s').textContent='waiting…'; $('slot-sci-s').textContent='waiting…';
+    $('slot-doaj-s').textContent=t('waiting…'); $('slot-sci-s').textContent=t('waiting…');
     status('');
     $('app').style.display='none'; document.body.classList.remove('app-open'); $('guide').style.display=''; $('loader').classList.remove('waiting'); $('loader').style.display='flex';
     $('cacheNote').style.display='none';
@@ -223,8 +257,8 @@ function bindOnce(){
     syncHash();
     const btn=$('shareBtn'), old=btn.textContent;
     try{ await navigator.clipboard.writeText(location.href); }
-    catch(e){ prompt('Copy this link:',location.href); return; }
-    btn.textContent='✓ Link copied'; btn.classList.add('done');
+    catch(e){ prompt(t('Copy this link:'),location.href); return; }
+    btn.textContent=t('✓ Link copied'); btn.classList.add('done');
     setTimeout(()=>{ btn.textContent=old; btn.classList.remove('done'); },1600);
   });
   $('sq').addEventListener('input',renderScopus);
@@ -237,4 +271,11 @@ function bindOnce(){
   $('modal').addEventListener('click',e=>{ if(e.target===$('modal')) closeModal(); });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('modal').style.display!=='none') closeModal(); });
   bindConfsOnce();
+  // language switch: re-render everything JS generates
+  I18N.onChange(()=>{
+    if(state){ renderSortBar(); syncSubjLink(); $('wkVal').textContent=state.weeks>=52?t('Any'):'≤ '+state.weeks+'w'; $('apcVal').textContent=apcLabel(state.maxUsd); render(); }
+    if(typeof setSrc==='function' && $('main-c').style.display!=='none') setSrc(csrc);
+    else if(typeof applyStats==='function') applyStats();
+    if($('main-s').style.display!=='none') renderScopus();
+  });
 }

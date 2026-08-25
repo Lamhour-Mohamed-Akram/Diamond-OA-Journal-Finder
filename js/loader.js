@@ -12,7 +12,7 @@ const EXPECT={doaj:25391034, sci:10876846};   // fallback sizes when Content-Len
 const wait={
   show(){ $('loader').classList.add('waiting'); $('loader').style.display='flex';
           ['doaj','sci','parse','done'].forEach(k=>{ const li=$('ws-'+k); li.classList.remove('active','done'); const n=li.querySelector('em'); if(n) n.textContent=''; });
-          wait.progress(0,'Starting…'); },
+          wait.progress(0,t('Starting…')); },
   hide(){ $('loader').classList.remove('waiting'); },
   on(){ return $('loader').classList.contains('waiting'); },
   step(k,state,note){ const li=$('ws-'+k); if(!li) return; li.classList.remove('active','done'); if(state) li.classList.add(state);
@@ -23,7 +23,7 @@ $('waitManual').addEventListener('click',()=>{ files.manual=true; wait.hide(); s
 $('waitConf').addEventListener('click',()=>startApp(null,null,'c'));
 
 function readFile(f){ return new Promise((res,rej)=>{ const r=new FileReader();
-  r.onload=()=>res(r.result); r.onerror=()=>rej(new Error('Could not read '+f.name)); r.readAsText(f,'utf-8'); });}
+  r.onload=()=>res(r.result); r.onerror=()=>rej(new Error(t('Could not read {f}',{f:f.name}))); r.readAsText(f,'utf-8'); });}
 
 /* Detect DOAJ vs SCImago from the header row and register the file.
    Shared by the drag-and-drop path and the built-in one-click load. */
@@ -41,13 +41,13 @@ function registerText(name, text){
 async function ingest(fileList){
   files.manual=true;   // user-provided files take priority over the auto background load
   for(const f of fileList){
-    status('Reading '+f.name+'…');
+    status(t('Reading {f}…',{f:f.name}));
     let text;
     try{ text=await readFile(f); }catch(e){ status(e.message,true); continue; }
-    if(!registerText(f.name,text)) status('“'+f.name+'” doesn’t look like a DOAJ or SCImago CSV, check the file.',true);
+    if(!registerText(f.name,text)) status(t('“{f}” doesn’t look like a DOAJ or SCImago CSV, check the file.',{f:f.name}),true);
   }
   if(files.doaj && files.sci) processAll();
-  else if(files.doaj||files.sci) status(files.sci?'SCImago loaded ✓. Now drop the DOAJ CSV (step 1).':'DOAJ loaded ✓. Now drop the SCImago CSV (step 2).');
+  else if(files.doaj||files.sci) status(files.sci?t('SCImago loaded ✓. Now drop the DOAJ CSV (step 1).'):t('DOAJ loaded ✓. Now drop the SCImago CSV (step 2).'));
 }
 
 /* ---- Built-in snapshots ----
@@ -65,7 +65,7 @@ async function fetchBundled(url,label,fallback,onProgress){
   let res=null;
   try{ res=await fetch(url); }catch(e){}
   if((!res || !res.ok) && fallback){ res=await fetch(fallback); }
-  if(!res || !res.ok) throw new Error('Couldn’t load the built-in '+label+(res?' ('+res.status+')':'')+'. You can still load the files manually below.');
+  if(!res || !res.ok) throw new Error(t('Couldn’t load the built-in {l}{s}. You can still load the files manually below.',{l:t(label),s:res?' ('+res.status+')':''}));
   const lastMod=res.headers.get('last-modified');
   if(!res.body || !res.body.getReader) return {text:await res.text(), lastMod};
   // Content-Length is the compressed size when the transfer is gzipped, so it can't be trusted then
@@ -76,7 +76,7 @@ async function fetchBundled(url,label,fallback,onProgress){
     const {done,value}=await reader.read();
     if(done) break;
     chunks.push(value); got+=value.length;
-    status('Downloading '+label+'… '+(got/1048576).toFixed(1)+' MB');
+    status(t('Downloading {l}… {mb} MB',{l:t(label),mb:(got/1048576).toFixed(1)}));
     if(onProgress) onProgress(got,total);
   }
   const buf=new Uint8Array(got); let off=0;
@@ -90,18 +90,18 @@ async function loadBundled(){
   try{
     for(const b of BUNDLED){
       if(files.manual) return;   // user started dropping their own files - stand down
-      wait.step(b.key,'active'); wait.progress(b.from,'Downloading '+b.label+'…');
+      wait.step(b.key,'active'); wait.progress(b.from,t('Downloading {l}…',{l:t(b.label)}));
       const {text,lastMod}=await fetchBundled(b.url,b.label,b.fallback,(got,total)=>{
         // cross-origin fetches hide Content-Encoding, so a gzipped transfer reports the compressed size: only trust a total in the ballpark of the known file size
         const known=total>EXPECT[b.key]*0.6&&got<=total; const size=known?total:EXPECT[b.key]; const frac=Math.min(0.98,got/size);
         wait.progress(b.from+(b.to-b.from)*frac);
-        wait.step(b.key,'active',(got/1048576).toFixed(1)+(known?' / '+(total/1048576).toFixed(1):'')+' MB');
+        wait.step(b.key,'active',(got/1048576).toFixed(1)+(known?' / '+(total/1048576).toFixed(1):'')+t(' MB'));
       });
       if(files.manual) return;
       const date=lastMod? new Date(lastMod).toLocaleDateString() : '';
-      const name=b.label+' (built-in'+(date?', '+date:'')+')';
-      if(!registerText(name,text)) throw new Error('The built-in '+b.label+' file looks corrupted; load the files manually below.');
-      wait.step(b.key,'done',(text.length/1048576).toFixed(1)+' MB'+(date?' · '+date:'')); wait.progress(b.to);
+      const name=t(b.label)+' ('+t('built-in')+(date?', '+date:'')+')';
+      if(!registerText(name,text)) throw new Error(t('The built-in {l} file looks corrupted; load the files manually below.',{l:t(b.label)}));
+      wait.step(b.key,'done',(text.length/1048576).toFixed(1)+t(' MB')+(date?' · '+date:'')); wait.progress(b.to);
     }
     if(files.doaj && files.sci) await processAll();
   }catch(e){ wait.hide(); status(e.message,true); }
@@ -118,20 +118,20 @@ $('backToApp').addEventListener('click',()=>{
 async function processAll(){
   try{
     if(wait.on()){ wait.step('parse','active'); wait.progress(80); }
-    status('Parsing DOAJ file… (large file, a few seconds)');
+    status(t('Parsing DOAJ file… (large file, a few seconds)'));
     await new Promise(r=>setTimeout(r,30));
     const doajRows=parseCSV(files.doaj.text, files.doaj.delim);
     const inters=doajCsvToInters(doajRows);
     if(wait.on()) wait.progress(88);
-    status('Parsing SCImago file…');
+    status(t('Parsing SCImago file…'));
     await new Promise(r=>setTimeout(r,30));
     const sciRows=parseCSV(files.sci.text, files.sci.delim);
     if(wait.on()) wait.progress(94);
-    status('Joining on ISSN…');
+    status(t('Joining on ISSN…'));
     await new Promise(r=>setTimeout(r,30));
     const data=assemble(inters,sciRows);
-    if(data.meta.total===0) throw new Error('Join produced 0 Diamond journals. Are these the right files?');
-    if(wait.on()){ wait.step('parse','done',data.meta.total.toLocaleString()+' journals'); wait.step('done','active'); wait.progress(98,'Saving on this device and opening…'); }
+    if(data.meta.total===0) throw new Error(t('Join produced 0 Diamond journals. Are these the right files?'));
+    if(wait.on()){ wait.step('parse','done',t('{n} journals',{n:data.meta.total.toLocaleString()})); wait.step('done','active'); wait.progress(98,t('Saving on this device and opening…')); }
     const stamp=new Date().toLocaleDateString()+' · '+files.doaj.name+' + '+files.sci.name;
     await cacheSet('dataset8',{data,stamp,ts:Date.now()});
     cacheDel('dataset4'); cacheDel('dataset5'); cacheDel('dataset6'); cacheDel('dataset7');   // superseded cache formats
