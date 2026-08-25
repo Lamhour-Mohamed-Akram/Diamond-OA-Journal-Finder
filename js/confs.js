@@ -360,7 +360,7 @@ function parseCnrstRss(text){
   return evs;
 }
 /* The app never talks to cnrst.ma directly (no CORS there). A GitHub Action
-   in this repo mirrors the feed daily; raw.githubusercontent.com serves it
+   in this repo mirrors the feed weekly; raw.githubusercontent.com serves it
    with CORS enabled. A same-directory copy is the second fallback (useful
    when self-hosting), and manual file drop remains the last resort. */
 const MA_MIRRORS=[
