@@ -92,7 +92,8 @@ async function loadBundled(){
       if(files.manual) return;   // user started dropping their own files - stand down
       wait.step(b.key,'active'); wait.progress(b.from,'Downloading '+b.label+'…');
       const {text,lastMod}=await fetchBundled(b.url,b.label,b.fallback,(got,total)=>{
-        const known=total&&got<=total; const size=known?total:EXPECT[b.key]; const frac=Math.min(0.98,got/size);
+        // cross-origin fetches hide Content-Encoding, so a gzipped transfer reports the compressed size: only trust a total in the ballpark of the known file size
+        const known=total>EXPECT[b.key]*0.6&&got<=total; const size=known?total:EXPECT[b.key]; const frac=Math.min(0.98,got/size);
         wait.progress(b.from+(b.to-b.from)*frac);
         wait.step(b.key,'active',(got/1048576).toFixed(1)+(known?' / '+(total/1048576).toFixed(1):'')+' MB');
       });
@@ -110,6 +111,7 @@ $('useBundled').addEventListener('click',loadBundled);
 $('backToApp').addEventListener('click',()=>{
   wait.hide();
   $('loader').style.display='none';
+  document.body.classList.add('app-open'); $('guide').style.display='none';   // same as startApp
   $('app').style.display='block';
 });
 

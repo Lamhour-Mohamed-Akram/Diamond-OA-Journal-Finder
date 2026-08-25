@@ -42,16 +42,26 @@ function classifyQuery(){
   }
 }
 let doiName='';
+/* Multi-key sort: state.sorts is an ordered list of {k,d} (d=1 asc, -1 desc).
+   Missing values always sink to the bottom regardless of direction. */
+const SORT_KEYS={
+  q:  {label:'Quartile',   def:1,  val:r=>r.idx&&r.q?qRank[r.q]:null},
+  sjr:{label:'SJR',        def:-1, val:r=>r.sjr},
+  h:  {label:'H-index',    def:-1, val:r=>r.h},
+  w:  {label:'Turnaround', def:1,  val:r=>r.w},
+  usd:{label:'Price',      def:1,  val:r=>r.usd},
+  t:  {label:'Title',      def:1,  val:r=>r.t.toLowerCase()},
+};
+const DEFAULT_SORTS=[];   // no key active: list falls back to quartile, then SJR, then title
 function sortRecs(a,b){
-  switch(state.sort){
-    case 'sjr': return (b.sjr??-1)-(a.sjr??-1);
-    case 'wk': return (a.w??999)-(b.w??999);
-    case 'h': return (b.h??-1)-(a.h??-1);
-    case 'az': return a.t.localeCompare(b.t);
-    case 'cheap': return (a.usd??1e9)-(b.usd??1e9) || (b.sjr??-1)-(a.sjr??-1);
-    case 'pricey': return (b.usd??-1)-(a.usd??-1) || (b.sjr??-1)-(a.sjr??-1);
-    default:{const d=qRank[a.q||'']-qRank[b.q||''];return d!==0?d:(b.sjr??-1)-(a.sjr??-1);}
+  for(const {k,d} of state.sorts){
+    const f=SORT_KEYS[k].val, x=f(a), y=f(b);
+    if(x==null&&y==null) continue;
+    if(x==null) return 1; if(y==null) return -1;
+    if(x<y) return -d; if(x>y) return d;
   }
+  const d=qRank[a.idx&&a.q?a.q:'']-qRank[b.idx&&b.q?b.q:''];   // silent default order: quartile, higher SJR, title
+  return d || (b.sjr??-1)-(a.sjr??-1) || a.t.localeCompare(b.t);
 }
 function speedHtml(w){
   if(w==null) return '<div class="speed na"><div class="stop"><span>Turnaround</span><b class="val">n/a</b></div><div class="bar mid"><i style="width:0"></i></div></div>';

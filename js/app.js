@@ -28,7 +28,8 @@ function stateToHash(){
   if(state.weeks<52) p.set('w',state.weeks);
   if(state.maxUsd<APC_MAX) p.set('p',state.maxUsd);
   if(state.country) p.set('c',state.country);
-  if(state.sort!=='q') p.set('o',state.sort);
+  const so=state.sorts.map(x=>x.k+(x.d<0?'-':'')).join(',');
+  if(so!==DEFAULT_SORTS.map(x=>x.k+(x.d<0?'-':'')).join(',')) p.set('o',so);
   return p.toString();
 }
 function syncHash(){
@@ -49,7 +50,10 @@ function applyHash(){
   if(p.has('w')){ const w=parseInt(p.get('w')); if(w>=0&&w<52){ state.weeks=w; $('weeks').value=w; $('wkVal').textContent='≤ '+w+'w'; } }
   if(p.has('p')){ const v=parseInt(p.get('p')); if(v>=0&&v<APC_MAX){ state.maxUsd=v; $('apc').value=v; $('apcVal').textContent=apcLabel(v); } }
   if(p.has('c') && hasOpt('country',p.get('c'))){ state.country=p.get('c'); $('country').value=state.country; }
-  if(p.has('o') && hasOpt('sort',p.get('o'))){ state.sort=p.get('o'); $('sort').value=state.sort; }
+  if(p.has('o')){ const ss=p.get('o').split(',').map(t=>{const m=t.match(/^([a-z]+)(-?)$/);return m&&SORT_KEYS[m[1]]?{k:m[1],d:m[2]?-1:1}:null;}).filter(Boolean);
+    if(ss.length) state.sorts=ss; }
+  if(p.has('s')) $('lq').value=$('q').value;
+  if(p.has('tab') && ['j','c','s'].includes(p.get('tab'))) switchTab(p.get('tab'));
   document.querySelectorAll('#fchips .chip').forEach(ch=>ch.classList.toggle('on',state.fees.has(ch.dataset.f)));
   document.querySelectorAll('#qchips .chip').forEach(ch=>ch.classList.toggle('on',state.quarts.has(ch.dataset.q==='none'?'':ch.dataset.q)));
 }
@@ -81,15 +85,33 @@ function switchTab(tab){
   if(tab==='s') renderScopus();
   if(tab==='j' && !R.length){
     // no journal data yet - go back to the loader to get some
-    $('app').style.display='none'; document.body.classList.remove('app-open');
+    $('app').style.display='none'; document.body.classList.remove('app-open'); $('guide').style.display='';
     $('loader').classList.remove('waiting');
     $('loader').style.display='flex';
   }
 }
 document.querySelectorAll('.tabbar button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 
+/* Sidebar link to the generated subject pages (/subjects/<area>/); follows the area filter. */
+const areaSlug=a=>a.toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+function syncSubjLink(){
+  const el=$('subjLink'); if(!el) return;
+  const a=state&&state.area;
+  el.href=a?'/subjects/'+areaSlug(a)+'/':'/subjects/';
+  el.querySelector('b').textContent=a?a+': ranked page':'Browse journals by subject';
+  el.querySelector('small').textContent=a?'Counts, Q1/Q2 share and the top 50 free-to-publish journals':'27 areas, each with counts and a ranked top 50';
+}
+function renderSortBar(){
+  document.querySelectorAll('#sortbar button[data-k]').forEach(b=>{
+    const i=state.sorts.findIndex(x=>x.k===b.dataset.k);
+    b.classList.toggle('on',i>=0);
+    b.innerHTML=(i>=0?'<span class="pri">'+(i+1)+'</span>':'')+SORT_KEYS[b.dataset.k].label+(i>=0?' <span class="dir">'+(state.sorts[i].d<0?'↓':'↑')+'</span>':'');
+  });
+  document.body.classList.toggle('has-sort',state.sorts.length>0);
+  $('sorthint').textContent=state.sorts.length?state.sorts.map(x=>SORT_KEYS[x.k].label+(x.d<0?' ↓':' ↑')).join(', then '):'default: best quartile first';
+}
 function startApp(data,stamp,tab){
-  document.body.classList.add('app-open');
+  document.body.classList.add('app-open'); $('guide').style.display='none';
   $('loader').style.display='none';
   $('app').style.display='block';
   if(data){
@@ -115,8 +137,9 @@ function startApp(data,stamp,tab){
     const cc={}; R.forEach(r=>{if(r.c)cc[r.c]=(cc[r.c]||0)+1;});
     Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c+' ('+cc[c]+')';cSel.appendChild(o);});
 
-    state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,maxUsd:APC_MAX,country:'',sort:'q',limit:60};
+    state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,maxUsd:APC_MAX,country:'',sorts:DEFAULT_SORTS.map(x=>({...x})),limit:60};
     applyHash();   // restore filters from a shared link, if any
+    syncSubjLink(); renderSortBar();
   }
   bindOnce();
   switchTab(tab||'j');
@@ -141,11 +164,32 @@ function bindOnce(){
       state.limit=60; render();
     });
   });
-  $('q').addEventListener('input',e=>{state.q=e.target.value.toLowerCase().trim();classifyQuery();state.limit=60;render();});
+  const setQuery=(v,src)=>{ if(src!=='q') $('q').value=v; if(src!=='lq') $('lq').value=v; state.q=v.toLowerCase().trim(); classifyQuery(); state.limit=60; render(); };
+  $('q').addEventListener('input',e=>setQuery(e.target.value,'q'));
+  $('lq').addEventListener('input',e=>setQuery(e.target.value,'lq'));
   $('idxOnly').addEventListener('change',e=>{state.idxOnly=e.target.checked;state.limit=60;render();});
-  $('area').addEventListener('change',e=>{state.area=e.target.value;state.limit=60;render();});
+  $('area').addEventListener('change',e=>{state.area=e.target.value;state.limit=60;render();syncSubjLink();});
   $('country').addEventListener('change',e=>{state.country=e.target.value;state.limit=60;render();});
-  $('sort').addEventListener('change',e=>{state.sort=e.target.value;render();});
+  $('sortClear').addEventListener('click',()=>{ state.sorts=[]; renderSortBar(); render(); });
+  // Sidebar: collapsible on desktop (preference remembered); off-canvas drawer on mobile (closed by default)
+  const mobile=()=>window.matchMedia('(max-width:860px)').matches;
+  $('sideToggle').addEventListener('click',()=>{
+    const hid=document.body.classList.toggle('side-hidden');
+    if(!mobile()){ try{ localStorage.setItem('sideHidden',hid?'1':''); }catch(e){} }
+  });
+  $('sideBackdrop').addEventListener('click',()=>document.body.classList.add('side-hidden'));
+  if(mobile()) document.body.classList.add('side-hidden');
+  else{ try{ if(localStorage.getItem('sideHidden')==='1') document.body.classList.add('side-hidden'); }catch(e){} }
+  // on mobile, picking a tab closes the drawer so the result is visible
+  document.querySelectorAll('.tabbar button').forEach(b=>b.addEventListener('click',()=>{ if(mobile()) document.body.classList.add('side-hidden'); }));
+  $('sortbar').addEventListener('click',e=>{
+    const b=e.target.closest('button[data-k]'); if(!b) return;
+    const k=b.dataset.k, i=state.sorts.findIndex(x=>x.k===k);
+    if(i<0) state.sorts.push({k,d:SORT_KEYS[k].def});               // 1st click: add with its natural direction
+    else if(state.sorts[i].d===SORT_KEYS[k].def) state.sorts[i].d*=-1;   // 2nd: reverse
+    else state.sorts.splice(i,1);                                    // 3rd: remove
+    renderSortBar(); render();
+  });
   $('weeks').addEventListener('input',e=>{
     state.weeks=+e.target.value;
     $('wkVal').textContent=state.weeks>=52?'Any':'≤ '+state.weeks+'w';
@@ -157,8 +201,8 @@ function bindOnce(){
     state.limit=60; render();
   });
   $('resetBtn').addEventListener('click',()=>{
-    state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,maxUsd:APC_MAX,country:'',sort:state.sort,limit:60};
-    $('q').value='';$('idxOnly').checked=true;$('area').value='';$('country').value='';
+    state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,maxUsd:APC_MAX,country:'',sorts:DEFAULT_SORTS.map(x=>({...x})),limit:60};
+    $('q').value='';$('lq').value='';renderSortBar();$('idxOnly').checked=true;$('area').value='';syncSubjLink();$('country').value='';
     $('weeks').value=52;$('wkVal').textContent='Any';
     $('apc').value=APC_MAX;$('apcVal').textContent='Any';
     document.querySelectorAll('#qchips .chip').forEach(ch=>ch.classList.toggle('on',ch.dataset.q==='Q1'||ch.dataset.q==='Q2'));
@@ -170,7 +214,7 @@ function bindOnce(){
     ['slot-doaj','slot-sci'].forEach(id=>$(id).classList.remove('ok'));
     $('slot-doaj-s').textContent='waiting…'; $('slot-sci-s').textContent='waiting…';
     status('');
-    $('app').style.display='none'; document.body.classList.remove('app-open'); $('loader').classList.remove('waiting'); $('loader').style.display='flex';
+    $('app').style.display='none'; document.body.classList.remove('app-open'); $('guide').style.display=''; $('loader').classList.remove('waiting'); $('loader').style.display='flex';
     $('cacheNote').style.display='none';
     $('backToApp').style.display='inline-block';   // current data stays loaded - one click back
   });
