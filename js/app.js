@@ -114,7 +114,7 @@ function switchTab(tab){
   }
   if(tab==='c'){ if(csrc==='ma') loadMa(); else loadConfs(); }
   if(tab==='s') renderScopus();
-  if(tab==='a') renderAI();
+  if(tab==='a'){ renderAI(); if(R.length) aiWarmUp(); }   // start fetching the model + vectors now, so they're ready by the time the abstract is pasted
   if((tab==='j'||tab==='a') && !R.length){
     // no journal data yet - go back to the loader to get some
     $('app').style.display='none'; document.body.classList.remove('app-open'); $('guide').style.display='';

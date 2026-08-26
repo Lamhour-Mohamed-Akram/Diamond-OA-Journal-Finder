@@ -66,6 +66,10 @@ async function aiEnsure(){
   return AI.loading;
 }
 
+/* warm-up: kicked off when the AI tab is opened; errors are ignored here and
+   reported properly if the visitor clicks "Find" anyway */
+function aiWarmUp(){ if(AI.extractor&&AI.emb) return; aiEnsure().catch(()=>{}); }
+
 /* ---- embed the visitor's text: MiniLM reads ~256 word pieces, so long abstracts
    are split into sentence chunks whose vectors are averaged ---- */
 async function aiEmbed(text){
