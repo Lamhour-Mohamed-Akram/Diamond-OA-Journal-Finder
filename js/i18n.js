@@ -50,7 +50,7 @@
     'Top {k} of {n} journals passing your filters, ranked by scope similarity to your text.': 'Top {k} sur {n} revues correspondant à vos filtres, classées par similarité de périmètre avec votre texte.',
     /* ---- head ---- */
     'meta.title': 'Trouver une revue Diamond Open Access : revues gratuites à publier avec quartiles SCImago',
-    'meta.desc': "Recherchez plus de 20 000 revues en libre accès sans frais de publication (Diamond OA), classées par quartile SCImago et par discipline. Vérifiez si une revue est indexée dans Scopus, suivez les dates limites des conférences. Gratuit, sans inscription, directement dans votre navigateur.",
+    'meta.desc': "Recherchez plus de 20 000 revues en libre accès sans frais de publication (Diamond OA), classées par quartile SCImago et par discipline. Collez votre résumé et une IA locale suggère les revues les plus adaptées. Vérifiez l'indexation Scopus, suivez les dates limites des conférences. Gratuit, sans inscription, directement dans votre navigateur.",
 
     /* ---- wait / loader ---- */
     'Preparing the journal database. The first visit takes a moment (a few MB are downloaded and matched right here in your browser); after that the finder opens instantly from this device.':
@@ -409,7 +409,7 @@
     'Try enabling more quartiles or fee types in the panel.': 'Aktivieren Sie im Panel weitere Quartile oder Gebührenarten.',
     'Top {k} of {n} journals passing your filters, ranked by scope similarity to your text.': 'Top {k} von {n} Zeitschriften, die Ihre Filter passieren, geordnet nach thematischer Ähnlichkeit zu Ihrem Text.',
     'meta.title': 'Diamond-Open-Access-Zeitschriften finden: kostenlos publizieren, mit SCImago-Quartilen',
-    'meta.desc': 'Durchsuchen Sie über 20.000 Open-Access-Zeitschriften ohne Publikationsgebühren (Diamond OA), sortiert nach SCImago-Quartil und Fachgebiet. Prüfen Sie, ob eine Zeitschrift in Scopus indexiert ist, und verfolgen Sie Konferenz-Deadlines. Kostenlos, ohne Anmeldung, direkt im Browser.',
+    'meta.desc': 'Durchsuchen Sie über 20.000 Open-Access-Zeitschriften ohne Publikationsgebühren (Diamond OA), sortiert nach SCImago-Quartil und Fachgebiet. Fügen Sie Ihr Abstract ein und eine KI im Browser schlägt die passendsten Zeitschriften vor. Scopus-Indexierung prüfen, Konferenzfristen verfolgen. Kostenlos, ohne Anmeldung, direkt im Browser.',
 
     'Preparing the journal database. The first visit takes a moment (a few MB are downloaded and matched right here in your browser); after that the finder opens instantly from this device.':
       'Die Zeitschriftendatenbank wird vorbereitet. Der erste Besuch dauert einen Moment (einige MB werden heruntergeladen und direkt in Ihrem Browser abgeglichen); danach öffnet sich der Finder auf diesem Gerät sofort.',
