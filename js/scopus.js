@@ -129,18 +129,18 @@ function renderScopus(){
   else if(isDOI) liveScopus('doi',raw);
   else { $('slive').innerHTML=''; liveSeq++; }
 
-  if(isDOI && !S.length){ $('sresCount').textContent='–'; box.innerHTML=''; return; }
+  if(isDOI && !S.length){ $('sresCount').textContent=''; box.innerHTML=''; return; }
   if(!S.length){
-    $('sresCount').textContent='–';
+    $('sresCount').textContent='';
     box.innerHTML='<div class="empty"><h3>'+t('Load journal data first')+'</h3><p>'+t('The offline snapshot uses the SCImago file. Go to the <b>Journals</b> tab and load the data once, then come back here. (Live ISSN/DOI checks work without it.)')+'</p></div>';
     return;
   }
   if(!raw){
-    $('sresCount').textContent='–';
+    $('sresCount').textContent='';
     box.innerHTML='<div class="empty"><h3>'+t('Is it in Scopus?')+'</h3><p>'+t('Type an <b>ISSN</b> or paper <b>DOI</b> for a live check, or a <b>journal name</b> to search the snapshot.<br>Green = currently covered · amber = coverage ended (possibly discontinued).')+'</p></div>';
     return;
   }
-  if(isDOI){ box.innerHTML='<div class="empty"><p>'+t('DOI checked live above. Search an ISSN or journal name to also browse the offline snapshot.')+'</p></div>'; $('sresCount').textContent='–'; return; }
+  if(isDOI){ box.innerHTML='<div class="empty"><p>'+t('DOI checked live above. Search an ISSN or journal name to also browse the offline snapshot.')+'</p></div>'; $('sresCount').textContent=''; return; }
   let hits;
   if(isISSN){
     hits=S.filter(s=>s.issns.includes(digits));

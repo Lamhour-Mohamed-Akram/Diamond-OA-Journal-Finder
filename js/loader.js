@@ -133,8 +133,8 @@ async function processAll(){
     if(data.meta.total===0) throw new Error(t('Join produced 0 Diamond journals. Are these the right files?'));
     if(wait.on()){ wait.step('parse','done',t('{n} journals',{n:data.meta.total.toLocaleString()})); wait.step('done','active'); wait.progress(98,t('Saving on this device and opening…')); }
     const stamp=new Date().toLocaleDateString()+' · '+files.doaj.name+' + '+files.sci.name;
-    await cacheSet('dataset8',{data,stamp,ts:Date.now()});
-    cacheDel('dataset4'); cacheDel('dataset5'); cacheDel('dataset6'); cacheDel('dataset7');   // superseded cache formats
+    await cacheSet('dataset9',{data,stamp,ts:Date.now()});
+    cacheDel('dataset5'); cacheDel('dataset6'); cacheDel('dataset7'); cacheDel('dataset8');   // superseded cache formats
     if(wait.on()){ wait.step('done','done'); wait.progress(100); await new Promise(r=>setTimeout(r,250)); }
     startApp(data,stamp);
   }catch(e){ wait.hide(); status(e.message,true); }
@@ -148,7 +148,7 @@ $('fileInput').addEventListener('change',e=>ingest([...e.target.files]));
 
 $('confOnly').addEventListener('click',()=>startApp(null,null,'c'));
 
-cacheGet('dataset8').then(c=>{
+cacheGet('dataset9').then(c=>{
   if(c && c.data){
     $('cacheNote').style.display='block';
     $('cacheDate').textContent=c.stamp;

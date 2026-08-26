@@ -111,7 +111,8 @@ function doajCsvToInters(doajRows){
       w: wRaw && !isNaN(parseFloat(wRaw)) ? Math.round(parseFloat(wRaw)) : null,
       rev:row[di['Review process']]||'', pub:row[di['Publisher']]||'', c:row[di['Country of publisher']]||'',
       lang:row[di['Languages in which the journal accepts manuscripts']]||'', dsub:row[di['Subjects']]||'',
-      url:row[di['Journal URL']]||'', doaj:row[di['URL in DOAJ']]||''
+      url:row[di['Journal URL']]||'', doaj:row[di['URL in DOAJ']]||'',
+      kw:('Keywords' in di)?(row[di['Keywords']]||''):''   // DOAJ keywords (used by the AI matcher's "why" line)
     });
   }
   return inters;
@@ -138,7 +139,7 @@ function assemble(inters, sciRows){
       t:it.t, idx:!!sci, q, sjr, h, cats, areas, w:it.w, dia:it.dia, fee:it.fee, usd:it.usd,
       issn:normISSN(it.eissn)||normISSN(it.pissn)||'',
       issns:[normISSN(it.pissn),normISSN(it.eissn)].filter(Boolean),
-      rev:it.rev, pub:it.pub, c:it.c, lang:it.lang, dsub:it.dsub, url:it.url, doaj:it.doaj
+      rev:it.rev, pub:it.pub, c:it.c, lang:it.lang, dsub:it.dsub, url:it.url, doaj:it.doaj, kw:it.kw
     });
   }
   const areaSet=new Set();

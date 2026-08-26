@@ -66,6 +66,12 @@ jobs:
         # flags titles Scopus discontinued; the script refuses to write an incomplete list
         run: python scripts/build-scopus-status.py
 
+      - name: Rebuild journal embeddings for the AI match tab
+        # one MiniLM vector per DOAJ journal (data/embeddings.bin); the script
+        # refuses to write a truncated file. Takes a few minutes on CPU.
+        run: |
+          cd scripts && npm install --no-audit --no-fund && npm run build:embeddings
+
       - name: Commit if changed
         # runs even if one source failed — the other file still gets refreshed
         # (the workflow stays red so the failure is visible)
@@ -73,5 +79,5 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -f data/doaj.csv data/scimago.csv data/scopus-status.csv
+          git add -f data/doaj.csv data/scimago.csv data/scopus-status.csv data/embeddings.bin
           git diff --cached --quiet || { git commit -m 'Refresh bundled data snapshots'; git push; }

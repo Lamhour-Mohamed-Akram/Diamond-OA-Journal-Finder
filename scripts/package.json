@@ -1,0 +1,13 @@
+{
+  "name": "oa-finder-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Offline helpers for openaccessfinder.de (not shipped to the site). `npm run build:embeddings` recomputes data/embeddings.bin for the AI journal matcher.",
+  "scripts": {
+    "build:subjects": "node build-subjects.mjs",
+    "build:embeddings": "node build-embeddings.mjs"
+  },
+  "devDependencies": {
+    "@huggingface/transformers": "^3.7.0"
+  }
+}

@@ -91,7 +91,17 @@ function render(){
     list.innerHTML=msg;
     $('pager').innerHTML=''; return;
   }
-  list.innerHTML=shown.map(r=>{
+  list.innerHTML=shown.map(jrowHtml).join('');
+  const pager=$('pager');
+  if(filtered.length>shown.length){
+    pager.innerHTML='<div class="more">'+t('Showing {a} of {b}',{a:shown.length.toLocaleString(),b:filtered.length.toLocaleString()})+'<br><button id="loadmore">'+t('Show 60 more')+'</button></div>';
+    $('loadmore').onclick=()=>{state.limit+=60;render();};
+  } else if(filtered.length>60){
+    pager.innerHTML='<div class="more">'+t('All {n} shown',{n:filtered.length.toLocaleString()})+'</div>';
+  } else pager.innerHTML='';
+}
+/* one journal card (shared by the Journals list and the AI match tab) */
+function jrowHtml(r){
     const q=r.q||'none';
     const link=r.url?'<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.t)+'</a>':esc(r.t);
     const sjr=r.sjr!=null?'<div class="metric"><div class="v">'+r.sjr.toFixed(3)+'</div><div class="k">SJR</div></div>':'';
@@ -112,12 +122,4 @@ function render(){
       +(r.issn?'<button class="scopus-btn" data-issn="'+esc(r.issn)+'" data-title="'+esc(r.t)+'">'+t('✓ Check Scopus')+'</button>':'')
       +(r.doaj?'<a href="'+esc(r.doaj)+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--coral);font-weight:600;text-decoration:none">DOAJ ↗</a>':'')
       +'</div></div></div>';
-  }).join('');
-  const pager=$('pager');
-  if(filtered.length>shown.length){
-    pager.innerHTML='<div class="more">'+t('Showing {a} of {b}',{a:shown.length.toLocaleString(),b:filtered.length.toLocaleString()})+'<br><button id="loadmore">'+t('Show 60 more')+'</button></div>';
-    $('loadmore').onclick=()=>{state.limit+=60;render();};
-  } else if(filtered.length>60){
-    pager.innerHTML='<div class="more">'+t('All {n} shown',{n:filtered.length.toLocaleString()})+'</div>';
-  } else pager.innerHTML='';
 }

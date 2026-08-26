@@ -464,4 +464,10 @@ function renderMa(){
   } else if(items.length>60){
     pager.innerHTML='<div class="more">'+t('All {n} shown',{n:items.length.toLocaleString()})+'</div>';
   } else pager.innerHTML='';
+  // the feed is mostly past events: say so, and offer them in one click
+  if(mstate.open){
+    const hidden=M.filter(ev=>!(ev.ts&&ev.ts>now)).length;
+    if(hidden) pager.innerHTML+='<div class="more">'+t('{n} past events hidden by “upcoming events only”.',{n:hidden.toLocaleString()})+'<br><button id="mshowpast">'+t('Show past events too')+'</button></div>';
+    const b=$('mshowpast'); if(b) b.onclick=()=>{ mstate.open=false; $('openOnly').checked=false; mstate.limit=60; renderMa(); };
+  }
 }

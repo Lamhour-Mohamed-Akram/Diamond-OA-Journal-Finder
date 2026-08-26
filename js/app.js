@@ -91,30 +91,31 @@ function applyHash(){
 
 /* ---- CSV export of the current filtered view ---- */
 function apcLabel(v){ return v>=APC_MAX?t('Any'):(v===0?t('Free only'):'≤ $'+v.toLocaleString()); }
-function exportCSV(){
-  const rows=R.filter(match).sort(sortRecs);
+const CSV_HEAD=['Title','ISSN','Fees','APC','APC approx USD','Quartile','SJR','H-index','Weeks to publication','Publisher','Country','Languages','Areas','Categories','Journal URL','DOAJ URL'];
+const csvRow=r=>[r.t,r.issn,r.dia?'Diamond (free)':'Has fees',r.fee,r.usd??'',(r.idx?r.q:'')||'',r.sjr??'',r.h??'',r.w??'',r.pub,r.c,r.lang,r.areas,r.cats,r.url,r.doaj];
+/* head: column names; rows: arrays of cells; name: file prefix. Shared by the Journals and AI match exports. */
+function downloadCSV(head,rows,name){
   const cell=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
-  const head=['Title','ISSN','Fees','APC','APC approx USD','Quartile','SJR','H-index','Weeks to publication','Publisher','Country','Languages','Areas','Categories','Journal URL','DOAJ URL'];
-  const lines=[head.join(',')];
-  for(const r of rows)
-    lines.push([r.t,r.issn,r.dia?'Diamond (free)':'Has fees',r.fee,r.usd??'',(r.idx?r.q:'')||'',r.sjr??'',r.h??'',r.w??'',r.pub,r.c,r.lang,r.areas,r.cats,r.url,r.doaj].map(cell).join(','));
+  const lines=[head.join(','),...rows.map(r=>r.map(cell).join(','))];
   const blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}); // BOM so Excel opens UTF-8 correctly
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='oa-journals-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.download=name+'-'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
   URL.revokeObjectURL(a.href);
 }
+function exportCSV(){ downloadCSV(CSV_HEAD,R.filter(match).sort(sortRecs).map(csvRow),'oa-journals'); }
 
 function switchTab(tab){
   document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
-  for(const t of ['j','c','s']){
+  for(const t of ['j','a','c','s']){
     $('side-'+t).style.display = t===tab?'block':'none';
     $('main-'+t).style.display = t===tab?'block':'none';
   }
   if(tab==='c'){ if(csrc==='ma') loadMa(); else loadConfs(); }
   if(tab==='s') renderScopus();
-  if(tab==='j' && !R.length){
+  if(tab==='a') renderAI();
+  if((tab==='j'||tab==='a') && !R.length){
     // no journal data yet - go back to the loader to get some
     $('app').style.display='none'; document.body.classList.remove('app-open'); $('guide').style.display='';
     $('loader').classList.remove('waiting');
@@ -164,6 +165,8 @@ function startApp(data,stamp,tab){
 
     const areaSel=$('area'); areaSel.innerHTML='<option value="" data-i18n>'+t('All areas')+'</option>';
     data.areas.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;areaSel.appendChild(o);});
+    const aSel=$('aiArea'); aSel.innerHTML='<option value="" data-i18n>'+t('Any subject area')+'</option>';
+    data.areas.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;aSel.appendChild(o);});
     const cSel=$('country'); cSel.innerHTML='<option value="" data-i18n>'+t('All countries')+'</option>';
     const cc={}; R.forEach(r=>{if(r.c)cc[r.c]=(cc[r.c]||0)+1;});
     Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c+' ('+cc[c]+')';cSel.appendChild(o);});
@@ -175,7 +178,7 @@ function startApp(data,stamp,tab){
   bindOnce();
   // #tab=c / #tab=s in the URL (links from the subject pages) wins over the default tab
   const hashTab=new URLSearchParams(location.hash.slice(1)).get('tab');
-  switchTab(tab||(['j','c','s'].includes(hashTab)?hashTab:'j'));
+  switchTab(tab||(['j','a','c','s'].includes(hashTab)?hashTab:'j'));
   if(data) render();
   loadScopusStatus();
 }
@@ -271,11 +274,13 @@ function bindOnce(){
   $('modal').addEventListener('click',e=>{ if(e.target===$('modal')) closeModal(); });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('modal').style.display!=='none') closeModal(); });
   bindConfsOnce();
+  bindAI();
   // language switch: re-render everything JS generates
   I18N.onChange(()=>{
     if(state){ renderSortBar(); syncSubjLink(); $('wkVal').textContent=state.weeks>=52?t('Any'):'≤ '+state.weeks+'w'; $('apcVal').textContent=apcLabel(state.maxUsd); render(); }
     if(typeof setSrc==='function' && $('main-c').style.display!=='none') setSrc(csrc);
     else if(typeof applyStats==='function') applyStats();
     if($('main-s').style.display!=='none') renderScopus();
+    if($('main-a').style.display!=='none') renderAI();
   });
 }

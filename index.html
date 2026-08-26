@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=18">
+<link rel="stylesheet" href="css/style.css?v=20">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -182,6 +182,7 @@
 
   <div class="tabbar">
     <button data-tab="j" class="on" data-i18n>Journals</button>
+    <button data-tab="a" class="ai" data-i18n>✦ AI match</button>
     <button data-tab="c" data-i18n>Conferences</button>
     <button data-tab="s">Scopus ✓</button>
   </div>
@@ -255,6 +256,67 @@
       <select id="country"><option value="" data-i18n>All countries</option></select>
     </div>
 
+  </div>
+
+  <!-- ---- AI match ---- -->
+  <div id="side-a" style="display:none">
+    <div class="datainfo"><span data-i18n="ainfo">Describe your paper and a small language model (<b>MiniLM</b>, ~23 MB) ranks every open access journal by how close its scope is to your text. It runs <b>inside your browser</b>: nothing is uploaded, no account, no API.</span></div>
+
+    <div class="grp">
+      <label class="h" data-i18n>Subject or title</label>
+      <input id="aiSubj" type="text" placeholder="e.g. Deep learning for irrigation scheduling" data-i18n-ph autocomplete="off" maxlength="300">
+    </div>
+    <div class="grp">
+      <label class="h" data-i18n>Abstract</label>
+      <textarea id="aiAbs" rows="9" placeholder="Paste your abstract here…" data-i18n-ph maxlength="6000"></textarea>
+    </div>
+    <div class="airun">
+      <button id="aiRun" data-i18n>✦ Find journals with AI</button>
+      <button class="ghost" id="aiClear" data-i18n>Clear</button>
+    </div>
+    <div class="aistatus" id="aiStatus" style="display:none"></div>
+
+    <div class="grp" style="margin-top:18px">
+      <label class="h" data-i18n>Publication fees</label>
+      <div class="chips" id="afchips">
+        <span class="chip q1 on" data-f="dia" data-i18n>Diamond · free</span>
+        <span class="chip q2" data-f="apc" data-i18n>APC / fees</span>
+      </div>
+    </div>
+    <div class="grp">
+      <label class="h" data-i18n>Quartile</label>
+      <div class="chips" id="aqchips">
+        <span class="chip q1 on" data-q="Q1">Q1</span>
+        <span class="chip q2 on" data-q="Q2">Q2</span>
+        <span class="chip q3" data-q="Q3">Q3</span>
+        <span class="chip q4" data-q="Q4">Q4</span>
+        <span class="chip none" data-q="none" data-i18n>Unranked</span>
+      </div>
+    </div>
+    <div class="grp">
+      <label class="toggle">
+        <input type="checkbox" id="aiIdxOnly">
+        <span class="track"></span>
+        <span data-i18n="idx.toggle">Indexed in SCImago only<span class="sub">hide journals not found in SCImago</span></span>
+      </label>
+    </div>
+    <div class="grp">
+      <label class="h" data-i18n>Subject area</label>
+      <select id="aiArea"><option value="" data-i18n>Any subject area</option></select>
+      <p class="hint" data-i18n="hint.ai">Optional. Journals in this SCImago area get a bonus; leave it on “Any” to let the model decide.</p>
+    </div>
+    <div class="grp slider">
+      <label class="h" data-i18n>Turnaround</label>
+      <label><span data-i18n>Max weeks to publication</span> <b id="aiWkVal" data-i18n>Any</b></label>
+      <input type="range" id="aiWeeks" min="0" max="52" value="52" step="1">
+      <p class="hint" data-i18n="hint.w">Self-reported in DOAJ; some journals leave it blank. Blank-week journals are kept unless you drag below 52.</p>
+    </div>
+    <div class="grp slider">
+      <label class="h" data-i18n>Price (APC)</label>
+      <label><span data-i18n>Max article fee</span> <b id="aiApcVal" data-i18n>Any</b></label>
+      <input type="range" id="aiApc" min="0" max="5000" value="5000" step="100">
+      <p class="hint" data-i18n="hint.p">Approximate USD, converted from the journal’s listed currency. Diamond journals count as $0. Journals with fees but no listed amount are hidden when you drag below the max.</p>
+    </div>
   </div>
 
   <!-- ---- Conference filters ---- -->
@@ -361,6 +423,27 @@
     <div id="pager"></div>
   </div>
 
+  <!-- ---- AI match ---- -->
+  <div id="main-a" style="display:none">
+    <div class="topbar">
+      <div class="count"><b id="aresCount"></b><span data-i18n>suggested journals</span></div>
+      <div class="tools"><button class="toolbtn" id="aiExport" style="display:none" title="Download all scored matches (current sort) as a CSV file" data-i18n-title data-i18n>⬇ Export CSV</button></div>
+    </div>
+    <div class="aipriv"><svg class="ic-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10.5" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg><span data-i18n>On-device AI · nothing leaves your browser</span></div>
+    <div class="sortbar" id="aisortbar" title="Click a key to sort by it; click again to reverse." data-i18n-title>
+      <span class="lbl" data-i18n>Sort by</span>
+      <button data-k="score">Match</button>
+      <button data-k="q">Quartile</button>
+      <button data-k="sjr">SJR</button>
+      <button data-k="h">H-index</button>
+      <button data-k="w">Turnaround</button>
+      <button data-k="usd">Price</button>
+      <button data-k="t">Title</button>
+      <span class="sorthint" id="aisorthint"></span>
+    </div>
+    <div class="list" id="alist"></div>
+  </div>
+
   <!-- ---- Conferences ---- -->
   <div id="main-c" style="display:none">
     <div class="topbar">
@@ -395,7 +478,7 @@
   <!-- ---- Scopus check ---- -->
   <div id="main-s" style="display:none">
     <div class="topbar">
-      <div class="count"><b id="sresCount">–</b><span data-i18n>matches</span></div>
+      <div class="count"><b id="sresCount"></b><span data-i18n>matches</span></div>
     </div>
     <div id="slive"></div>
     <div class="list" id="slist"></div>
@@ -416,12 +499,13 @@
 
 <!-- bump ?v= together with any JS/CSS change so browsers never mix old and
      new files from cache (symptom: "... is not defined" errors after a deploy) -->
-<script src="js/i18n.js?v=2"></script>
-<script src="js/data.js?v=9"></script>
-<script src="js/journals.js?v=14"></script>
-<script src="js/scopus.js?v=11"></script>
-<script src="js/confs.js?v=6"></script>
-<script src="js/app.js?v=18"></script>
-<script src="js/loader.js?v=13"></script>
+<script src="js/i18n.js?v=4"></script>
+<script src="js/data.js?v=10"></script>
+<script src="js/journals.js?v=15"></script>
+<script src="js/scopus.js?v=12"></script>
+<script src="js/confs.js?v=7"></script>
+<script src="js/app.js?v=20"></script>
+<script src="js/ai.js?v=7"></script>
+<script src="js/loader.js?v=14"></script>
 </body>
 </html>

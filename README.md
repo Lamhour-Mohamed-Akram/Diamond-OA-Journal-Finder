@@ -5,6 +5,7 @@
 A **lightweight static web app** (plain HTML/CSS/JS, no build step, no frameworks) for researchers deciding where to publish:
 
 - **Journals tab** — find **open access journals**: **Diamond OA** (free to publish *and* free to read — no APC, no hidden fees) by default, with one click to include APC journals (fees shown on each card). All cross-referenced with **SCImago** rankings (quartile, SJR, H-index) and DOAJ metadata (turnaround time, peer-review type, country, languages, subjects). Every journal card has a **"Check Scopus"** button that opens a popup with a **live verdict from the Scopus API** (indexed or not, document count, most recent indexed paper).
+- **✦ AI match tab** — paste your abstract (and a subject) and get the journals whose scope is closest to your paper, each with a match score and a one-line "why". A tiny sentence-embedding model (all-MiniLM-L6-v2, ~23 MB) runs **inside your browser** via Transformers.js and is compared against precomputed vectors of every DOAJ journal — no API key, no server, no cost, nothing uploaded. Same fee / quartile / subject filters as the Journals tab.
 - **Conferences tab** — two sources:
   - **Worldwide CS** — ranked computer-science conferences (CCF + CORE ranks) with live upcoming **submission deadlines**, dates, locations, and links.
   - **Morocco** — research events in Morocco from the **CNRST** agenda (all disciplines), with event dates, countdowns, and discipline filters.
@@ -39,6 +40,14 @@ The **Morocco** source loads automatically too: the CNRST server doesn't allow c
 - Sort by quartile, SJR, H-index, turnaround, or title
 - Direct links to each journal's website and DOAJ record
 
+### AI match
+
+- Paste an abstract (long abstracts are split into chunks and averaged) plus an optional subject line
+- Top 15 journals ranked by **match score** = 60 % semantic similarity + 15 % SCImago quartile (unranked = 0) + 10 % subject-area bonus + 10 % keyword overlap + 5 % free-to-publish
+- Each result shows the score, a label (excellent / strong / good / possible), the DOAJ keywords it shares with your text, its SCImago categories, and the usual journal card with the Scopus check
+- Filters: Diamond / APC, quartiles, indexed-only, SCImago subject area
+- 100 % on-device: the model is fetched once from a CDN and cached by the browser; the journal vectors (`data/embeddings.bin`, ~9 MB) come from GitHub and are cached in IndexedDB
+
 ### Conferences — Worldwide CS
 
 - 350+ CCF-listed CS conferences with CCF rank (A/B/C) and CORE rank (A*–C)
@@ -68,8 +77,9 @@ To self-host the live checks: get a free API key at [dev.elsevier.com](https://d
 - **Join:** DOAJ records are matched to SCImago rows by normalized print/electronic ISSN.
 - **SCImago files:** both the full export (`SJR Best Quartile` column) and filtered per-category/region exports (`SJR Quartile` column) are accepted; the file type is detected automatically from its header.
 - **Conference feed:** a small built-in YAML parser reads the ccfddl dataset; deadlines are converted from their announced timezone (AoE, UTC±N, PT) and compared against your clock.
+- **AI match:** [`scripts/build-embeddings.mjs`](scripts/build-embeddings.mjs) embeds every DOAJ journal offline (title + DOAJ keywords + DOAJ subjects + SCImago categories — DOAJ has no aims & scope text, only a link) with `Xenova/all-MiniLM-L6-v2` and writes them as int8 vectors to [`data/embeddings.bin`](data/embeddings.bin) (23k × 384, ~9 MB; run `cd scripts && npm install && npm run build:embeddings` after a DOAJ refresh — the refresh workflow does this automatically). In the browser, [`js/ai.js`](js/ai.js) loads the same model through [Transformers.js](https://huggingface.co/docs/transformers.js) (jsDelivr CDN, ONNX int8 weights from the Hugging Face hub), embeds only the visitor's text, and ranks journals by cosine similarity plus the rule-based bonuses above.
 - **Live Scopus checks:** a tiny [Netlify serverless function](netlify/functions/scopus.mjs) proxies the Elsevier Scopus Search API so the API key stays server-side (env var `SCOPUS_API_KEY`, never shipped to the browser or committed to this repo). When the proxy is unreachable (e.g. opening the HTML file locally), the app falls back to the offline SCImago snapshot.
-- No frameworks, no build step, no dependencies — plain HTML ([`index.html`](index.html)), one stylesheet ([`css/`](css/)) and six small vanilla-JS modules ([`js/`](js/)), plus one optional serverless function for the live Scopus checks.
+- No frameworks, no build step, no bundled dependencies — plain HTML ([`index.html`](index.html)), one stylesheet ([`css/`](css/)) and seven small vanilla-JS modules ([`js/`](js/)), plus one optional serverless function for the live Scopus checks. The only runtime library is Transformers.js, loaded lazily from a CDN when the AI tab is first used.
 
 ## Data sources & credits
 
@@ -81,6 +91,7 @@ To self-host the live checks: get a free API key at [dev.elsevier.com](https://d
 | [ccf-deadlines (ccfddl)](https://github.com/ccfddl/ccf-deadlines) | CS conference deadlines & CCF/CORE ranks | MIT, community-maintained |
 | [CNRST](https://www.cnrst.ma/fr/liste-des-evenements) | Research events in Morocco (RSS) | Public feed from Morocco's National Center for Scientific and Technical Research |
 | [Elsevier Scopus API](https://dev.elsevier.com) | Live journal/paper indexing checks | Free API key; requests proxied server-side, key never exposed |
+| [all-MiniLM-L6-v2](https://huggingface.co/Xenova/all-MiniLM-L6-v2) via [Transformers.js](https://github.com/huggingface/transformers.js) | On-device sentence embeddings for the AI match | Apache 2.0 |
 
 Bundled snapshots for the one-click load live in [`data/`](data/) and refresh themselves: a [GitHub Action](.github/workflows/refresh-data.yml) runs twice a month (1st and 15th), re-downloading `doaj.csv` from doaj.org and rebuilding `scimago.csv` from [our fork](https://github.com/Lamhour-Mohamed-Akram/sjrdata) of the [sjrdata](https://github.com/ikashnitsky/sjrdata) mirror (MIT, by Ilya Kashnitsky) — scimagojr.com itself blocks scripted downloads, so [`scripts/scimago_from_sjrdata.py`](scripts/scimago_from_sjrdata.py) converts the mirror's latest yearly export back to the official CSV format (verified identical to the official download, all 32k rows). Once a year, when the new SCImago edition lands upstream, hit **"Sync fork"** on the fork so the workflow picks it up. Every replacement is sanity-checked so a bad download never overwrites good data, and the app shows each snapshot's date automatically. Any other CSV in the repo stays untracked.
 
