@@ -20,7 +20,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build extra-journals.csv
-        run: python3 scripts/build-extra-journals.py
+        # scheduled runs re-check only journals older than 30 days (cache);
+        # a manual "Run workflow" does a full pass
+        run: python3 scripts/build-extra-journals.py ${{ github.event_name == 'workflow_dispatch' && '--fresh' || '' }}
 
       - name: Commit if changed
         run: |

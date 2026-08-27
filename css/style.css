@@ -132,8 +132,9 @@ aside{background:var(--ink);color:#EAF0EE;padding:22px 20px 40px;position:sticky
 .brand h1{font-family:Spectral,Georgia,serif;font-weight:700;font-size:21px;line-height:1.1;margin:0;color:#F4F7F5}
 .tagline{color:#9DB0AD;font-size:12px;margin:2px 0 14px;line-height:1.4}
 .tabbar{display:grid;grid-template-columns:1fr 1fr;background:#0a1e24;border:1px solid #17343c;border-radius:10px;padding:4px;gap:4px;margin-bottom:16px}
-.tabbar button{white-space:nowrap;background:transparent;border:0;border-radius:7px;color:#8fa5a2;font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 6px;cursor:pointer;transition:.12s}
-.tabbar button.on{background:var(--coral);color:#fff}
+.tabbar button{white-space:nowrap;background:#12313a;border:1px solid #24454d;border-radius:7px;color:#8fa5a2;font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 6px;cursor:pointer;transition:.12s}
+.tabbar button.on{background:var(--coral);border-color:var(--coral);color:#fff}
+.tabbar button:not(.on):hover{background:#18404a;border-color:#3d6069}
 .tabbar button:not(.on):hover{color:#dfe8e6}
 .subjlink{display:flex;align-items:center;gap:10px;background:#0a1e24;border:1px solid #17343c;border-radius:9px;padding:9px 11px;margin:-6px 0 16px;color:#c6d4d1;text-decoration:none;transition:.12s}
 .subjlink:hover{border-color:var(--coral);color:#fff}
@@ -157,12 +158,16 @@ aside{background:var(--ink);color:#EAF0EE;padding:22px 20px 40px;position:sticky
 .search input:focus{outline:none;border-color:var(--coral);box-shadow:0 0 0 3px rgba(224,86,62,.18)}
 .search svg{position:absolute;left:11px;bottom:13px;width:15px;height:15px;stroke:#6f8582;pointer-events:none}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
+/* quartile row: always one line - 4 equal Q cells + a wider "Unranked" cell, text shrinks instead of wrapping */
+#qchips,#aqchips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.9fr);gap:5px}
+#qchips .chip,#aqchips .chip{padding:6px 4px;text-align:center;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .chip{cursor:pointer;user-select:none;font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:12px;padding:6px 11px;border-radius:20px;border:1px solid #2a4c54;background:#0a1e24;color:#c6d4d1;transition:.12s}
 .chip:hover{border-color:#3d6069}
 .chip.on{color:#0E2A33;border-color:transparent}
 .chip.q1.on{background:#3FCB94}.chip.q2.on{background:#EAC15E}
 .chip.q3.on,.chip.q4.on{background:#AEBAB8}.chip.none.on{background:#8f9c9a}
-.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;padding:2px 0}
+.toggle{display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:2px 0}
+.toggle .track{flex:none;margin-top:1px}   /* switch stays level with the title line, not centred on the help text */
 .toggle input{position:absolute;opacity:0;pointer-events:none}
 .track{width:38px;height:22px;border-radius:20px;background:#24454d;position:relative;flex:none;transition:.15s}
 .track::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#c6d4d1;top:3px;left:3px;transition:.15s}
@@ -185,6 +190,9 @@ input[type=range]{width:100%;accent-color:var(--coral);cursor:pointer}
 .reset{width:100%;margin-top:6px;background:transparent;border:1px solid #2a4c54;color:#c6d4d1;border-radius:9px;padding:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
 .reset:hover{border-color:var(--coral);color:#fff}
 .reset.top{margin:0 0 16px}
+/* small heading row with an inline reset link (AI sidebar) */
+.fhead{display:flex;justify-content:space-between;align-items:center;margin:22px 0 10px;padding-bottom:8px;border-bottom:1px solid #17343c;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#7FA79E;font-weight:600}
+.reset.small{width:auto;margin:0;padding:4px 10px;font-size:11px;letter-spacing:0;text-transform:none;border-radius:6px;color:#9fb3b0}
 main{padding:26px 30px 60px;min-width:0}
 .topbar{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
 .count{font-family:Spectral,serif}

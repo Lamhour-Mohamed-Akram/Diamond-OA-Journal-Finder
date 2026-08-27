@@ -121,20 +121,29 @@ def valid_issn(n):
 MARC = '{http://www.loc.gov/MARC21/slim}'
 def check(host, spec, name):
     """2-3 requests per journal, cheapest first, early exit:
-       1. OAI ListIdentifiers since 2 years ago -> recency (+ one article id)
+       1. OAI ListRecords since 2 years ago -> recency, article keywords, languages
        2. journal /about page                   -> ISSN, review / fee wording
        3. OAI GetRecord marcxml (only if the page shows no ISSN) -> ISSN 022, language 041"""
     base = f'{host}/index.php/{spec}'
-    root, err = oai(host, f'verb=ListIdentifiers&metadataPrefix=oai_dc&set={urllib.parse.quote(spec)}&from={SINCE}')
-    ident = root.find(f'.//{OAI}identifier') if not err else None
+    # recent articles (one request): recency + article keywords (dc:subject) + languages
+    root, err = oai(host, f'verb=ListRecords&metadataPrefix=oai_dc&set={urllib.parse.quote(spec)}&from={SINCE}')
+    ident = root.find(f'.//{OAI}header/{OAI}identifier') if not err else None
     if ident is None or not ident.text:
         return 'no article in last 2 years', None
+    kw_count, langs = {}, set()
+    for el in root.iter(DC + 'subject'):
+        for k in re.split(r'[;,]', el.text or ''):
+            k = re.sub(r'\s+', ' ', k).strip(' .').lower()
+            if 3 <= len(k) <= 60: kw_count[k] = kw_count.get(k, 0) + 1
+    for el in root.iter(DC + 'language'):
+        code = (el.text or '').strip().lower()[:3]
+        if code in LANG: langs.add(LANG[code])
+    keywords = ', '.join(k for k, _ in sorted(kw_count.items(), key=lambda x: (-x[1], x[0]))[:40])
     try: txt = text_of(get(base + '/about', timeout=45, tries=2))
     except Exception: txt = ''
     if not REVIEW_RE.search(txt):      return 'no peer-review statement', None
     if FEE_RE.search(txt) and not FREE_RE.search(txt): return 'fee wording found', None
     issns = {norm(m) for m in ISSN_RE.findall(txt) if valid_issn(norm(m))}
-    langs = set()
     if not issns:
         try:
             rec, err = oai(host, f'verb=GetRecord&metadataPrefix=marcxml&identifier={urllib.parse.quote(ident.text.strip())}')
@@ -159,7 +168,7 @@ def check(host, spec, name):
         'Journal title': name or spec, 'Journal URL': base,
         'ISSN (print)': fmt(issns[0]), 'EISSN': fmt(issns[1]) if len(issns) > 1 else '',
         'Publisher': f'hosted on {hostname}' + (' (IMIST / CNRST)' if 'imist.ma' in hostname else ''),
-        'Country': COUNTRY, 'Languages': ', '.join(sorted(langs)),
+        'Country': COUNTRY, 'Languages': ', '.join(sorted(langs)), 'Keywords': keywords,
         'Review process': 'Peer review (policy stated on the journal site)',
         'APC': 'No', 'Has other fees': 'No', 'Source': f'{hostname}-auto', 'Verified on': TODAY.isoformat(),
         'Notes': 'Automatic checks passed: ISSN found · peer-review statement · no fee wording · articles in the last 2 years.',

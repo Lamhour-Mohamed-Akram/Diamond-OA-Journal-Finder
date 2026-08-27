@@ -17,7 +17,7 @@ const AI_EMB_TTL=15*86400e3;               // refetch after 15 days (data refres
 const AI_TOP=15;                            // shown at first; "Show more" adds 15 at a time
 const AI_POOL=300;                          // best candidates by similarity that get the full score
 const AI={extractor:null,emb:null,loading:null,results:null,ran:false,limit:AI_TOP};
-let aiState={fees:new Set(['dia']),quarts:new Set(['Q1','Q2','Q3','Q4','']),idxOnly:false,area:'',weeks:52,maxUsd:APC_MAX,sort:{k:'score',d:-1}};
+let aiState={fees:new Set(['dia']),quarts:new Set(['Q1','Q2','Q3','Q4','']),idxOnly:false,extra:false,area:'',weeks:52,maxUsd:APC_MAX,sort:{k:'score',d:-1}};
 const AI_SORT={score:{label:'Match',def:-1,val:x=>x.score},q:{label:'Quartile',def:1,val:x=>x.r.idx&&x.r.q?qRank[x.r.q]:null},sjr:{label:'SJR',def:-1,val:x=>x.r.sjr},h:{label:'H-index',def:-1,val:x=>x.r.h},w:{label:'Turnaround',def:1,val:x=>x.r.w},usd:{label:'Price',def:1,val:x=>x.r.usd},t:{label:'Title',def:1,val:x=>x.r.t.toLowerCase()}};
 
 /* ---- loading: model (CDN + HF hub, browser-cached) and journal vectors (GitHub raw, IndexedDB-cached) ---- */
@@ -94,8 +94,11 @@ async function aiEmbed(text){
 const AI_QS={Q1:1,Q2:.75,Q3:.5,Q4:.25,'':0};
 function aiMatch(r){
   if(!aiState.fees.has(r.dia?'dia':'apc')) return false;
-  if(aiState.idxOnly&&!r.idx) return false;
-  if(!aiState.quarts.has(r.idx&&r.q?r.q:'')) return false;
+  if(r.src){ if(!aiState.extra) return false; }   // journals not in DOAJ: only via their own toggle, never ranked
+  else {
+    if(aiState.idxOnly&&!r.idx) return false;
+    if(!aiState.quarts.has(r.idx&&r.q?r.q:'')) return false;
+  }
   if(aiState.area&&!(r.areas||'').includes(aiState.area)) return false;
   if(aiState.weeks<52){ if(r.w==null||r.w>aiState.weeks) return false; }
   if(aiState.maxUsd<APC_MAX){ if(r.usd==null||r.usd>aiState.maxUsd) return false; }
@@ -110,7 +113,24 @@ function aiKeywordHits(r,low){
   }
   return hits;
 }
-async function aiRun(){
+/* Journals not in DOAJ have no precomputed vector (embeddings.bin covers DOAJ
+   only), so they are embedded here in the browser, once per dataset, from the
+   same kind of text the build script uses (title + keywords + subjects). */
+async function aiExtraVecs(){
+  const extra=R.filter(r=>r.src);
+  const key=extra.map(r=>r.issn).join('|');
+  if(AI.extraKey===key) return AI.extraVecs;
+  const texts=extra.map(r=>[r.t,r.kw,(r.dsub||'').replace(/\|/g,'; ')].filter(Boolean).join('. '));
+  const vecs=[];
+  for(let i=0;i<texts.length;i+=16){
+    const out=await AI.extractor(texts.slice(i,i+16),{pooling:'mean',normalize:true});
+    const dim=out.dims[1];
+    for(let c=0;c<out.dims[0];c++) vecs.push(out.data.slice(c*dim,(c+1)*dim));
+  }
+  AI.extraKey=key; AI.extraVecs=extra.map((r,i)=>({r,v:vecs[i]}));
+  return AI.extraVecs;
+}
+async function aiRun(fromButton){
   const subj=$('aiSubj').value.trim(), abs=$('aiAbs').value.trim();
   if(!abs&&!subj) return;
   const text=[subj,abs].filter(Boolean).join('. ');
@@ -130,6 +150,14 @@ async function aiRun(){
       const cos=s*scale;
       out.push({r,cos});
     }
+    if(aiState.extra&&R.some(r=>r.src)){
+      aiProgress(100,t('Matching…'));
+      for(const {r,v} of await aiExtraVecs()){
+        if(!aiMatch(r)) continue;
+        let s=0; for(let d=0;d<v.length;d++) s+=v[d]*q[d];
+        out.push({r,cos:s});
+      }
+    }
     out.sort((a,b)=>b.cos-a.cos);
     const top=out.slice(0,AI_POOL).map(({r,cos})=>{
       const sem=Math.max(0,Math.min(1,(cos-0.10)/0.45));   // journal texts are short keyword lists, so cosines of ~0.5 already mean a very close scope
@@ -145,7 +173,7 @@ async function aiRun(){
     AI.ran=true;
     renderAI();
     aiProgress(100,t('Ready: {n} journals indexed. Everything stays on this device.',{n:AI.emb.n.toLocaleString()}));
-    if(window.matchMedia('(max-width:860px)').matches) document.body.classList.add('side-hidden');   // phone: close the drawer so the results are visible
+    if(fromButton && window.matchMedia('(max-width:860px)').matches) document.body.classList.add('side-hidden');   // phone: after pressing the button, close the drawer so the results are visible (filter changes keep it open)
   }catch(e){ console.error(e); aiProgress(0,e.message||String(e)); $('aiStatus').classList.add('err'); return; }
   finally{ btn.disabled=false; }
   $('aiStatus').classList.remove('err');
@@ -217,8 +245,8 @@ function bindAI(){
   });
   $('aiWeeks').addEventListener('input',e=>{ aiState.weeks=+e.target.value; $('aiWkVal').textContent=aiState.weeks>=52?t('Any'):'≤ '+aiState.weeks+'w'; if(AI.ran) aiRun(); });
   $('aiApc').addEventListener('input',e=>{ aiState.maxUsd=+e.target.value; $('aiApcVal').textContent=apcLabel(aiState.maxUsd); if(AI.ran) aiRun(); });
-  $('aiRun').addEventListener('click',aiRun);
-  $('aiAbs').addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='Enter') aiRun(); });
+  $('aiRun').addEventListener('click',()=>aiRun(true));
+  $('aiAbs').addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='Enter') aiRun(true); });
   document.querySelectorAll('#afchips .chip').forEach(ch=>ch.addEventListener('click',()=>{
     ch.classList.toggle('on'); if(ch.classList.contains('on')) aiState.fees.add(ch.dataset.f); else aiState.fees.delete(ch.dataset.f);
     if(AI.ran) aiRun();
@@ -229,6 +257,15 @@ function bindAI(){
     if(AI.ran) aiRun();
   }));
   $('aiIdxOnly').addEventListener('change',e=>{ aiState.idxOnly=e.target.checked; if(AI.ran) aiRun(); });
+  $('aiExtraOn').addEventListener('change',e=>{ aiState.extra=e.target.checked; if(AI.ran) aiRun(); });
+  $('aiResetBtn').addEventListener('click',()=>{
+    aiState={fees:new Set(['dia']),quarts:new Set(['Q1','Q2','Q3','Q4','']),idxOnly:false,extra:false,area:'',weeks:52,maxUsd:APC_MAX,sort:{k:'score',d:-1}};
+    document.querySelectorAll('#afchips .chip').forEach(ch=>ch.classList.toggle('on',ch.dataset.f==='dia'));
+    document.querySelectorAll('#aqchips .chip').forEach(ch=>ch.classList.add('on'));
+    $('aiIdxOnly').checked=false; $('aiExtraOn').checked=false; $('aiArea').value='';
+    $('aiWeeks').value=52; $('aiWkVal').textContent=t('Any'); $('aiApc').value=APC_MAX; $('aiApcVal').textContent=apcLabel(APC_MAX);
+    if(AI.ran) aiRun();
+  });
   $('aiArea').addEventListener('change',e=>{ aiState.area=e.target.value; if(AI.ran) aiRun(); });
   $('aiClear').addEventListener('click',()=>{ $('aiSubj').value=''; $('aiAbs').value=''; AI.ran=false; AI.results=null; renderAI(); });
   renderAISort();

@@ -174,7 +174,7 @@ function startApp(data,stamp,tab){
     Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c+' ('+cc[c]+')';cSel.appendChild(o);});
 
     state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2','Q3','Q4','']),idxOnly:false,extra:false,area:'',weeks:52,maxUsd:APC_MAX,country:'',sorts:DEFAULT_SORTS.map(x=>({...x})),limit:60};
-    const nx=data.meta.extra||0; $('s-extra').textContent=nx.toLocaleString(); $('extraGrp').style.display=nx?'':'none';
+    setExtraCount(data.meta.extra||0);
     applyHash();   // restore filters from a shared link, if any
     syncSubjLink(); renderSortBar();
   }
@@ -186,6 +186,11 @@ function startApp(data,stamp,tab){
   loadScopusStatus();
 }
 
+/* count + visibility of the "Include journals not in DOAJ" toggles (Journals and AI sidebars) */
+function setExtraCount(n){
+  document.querySelectorAll('.s-extra').forEach(el=>el.textContent=n.toLocaleString());
+  document.querySelectorAll('.extraGrp').forEach(el=>el.style.display=n?'':'none');
+}
 let bound=false;
 function bindOnce(){
   if(bound) return; bound=true;
@@ -221,8 +226,7 @@ function bindOnce(){
   $('sideBackdrop').addEventListener('click',()=>document.body.classList.add('side-hidden'));
   if(mobile()) document.body.classList.add('side-hidden');
   else{ try{ if(localStorage.getItem('sideHidden')==='1') document.body.classList.add('side-hidden'); }catch(e){} }
-  // on mobile, picking a tab closes the drawer so the result is visible
-  document.querySelectorAll('.tabbar button').forEach(b=>b.addEventListener('click',()=>{ if(mobile()) document.body.classList.add('side-hidden'); }));
+  // switching tabs keeps the drawer open on mobile: the user usually wants to set filters next
   $('sortbar').addEventListener('click',e=>{
     const b=e.target.closest('button[data-k]'); if(!b) return;
     const k=b.dataset.k, i=state.sorts.findIndex(x=>x.k===k);

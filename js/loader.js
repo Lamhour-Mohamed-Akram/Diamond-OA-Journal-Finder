@@ -194,7 +194,7 @@ async function refreshExtra(c){
     data.records=data.records.filter(r=>!r.src).concat(fresh);
     data.meta.total=data.records.length; data.meta.dia=data.records.filter(r=>r.dia).length; data.meta.extra=fresh.length;
     await cacheSet('dataset10',{...c,data,extraHash:h});
-    if(typeof R!=='undefined' && R.length){ R=data.records; $('s-extra').textContent=fresh.length.toLocaleString(); $('extraGrp').style.display=fresh.length?'':'none'; $('s-total').textContent=data.meta.total.toLocaleString(); if(state) render(); }
+    if(typeof R!=='undefined' && R.length){ R=data.records; setExtraCount(fresh.length); $('s-total').textContent=data.meta.total.toLocaleString(); if(state) render(); }
   }catch(e){ console.warn('extra-journals refresh skipped',e); }
 }
 
