@@ -169,13 +169,19 @@ aside{background:var(--ink);color:#EAF0EE;padding:22px 20px 40px;position:sticky
 .toggle input:checked+.track{background:var(--coral)}
 .toggle input:checked+.track::after{left:19px;background:#fff}
 .toggle span{font-size:13px;color:#dfe8e6}
-.toggle .sub{display:block;font-size:11px;color:#7f9591}
+.toggle .tt{display:block;font-weight:600;color:#fff;font-size:13px;margin-bottom:1px}
+.toggle .sub,.toggle .sub span{display:block;font-size:11px;color:#7f9591;line-height:1.4;margin-top:2px}
+.toggle .sub b{color:#9fb3b0}
+/* toggle help text follows the switch state */
+.toggle input:checked~span .when-off,.toggle input:not(:checked)~span .when-on{display:none}
 aside select{width:100%;background:#0a1e24;border:1px solid #24454d;color:#F4F7F5;border-radius:9px;padding:10px 12px;font-size:13px;font-family:inherit;cursor:pointer}
 aside select:focus{outline:none;border-color:var(--coral)}
 .slider label{display:flex;justify-content:space-between;font-size:12px;color:#9DB0AD;margin-bottom:8px}
 .slider label b{font-family:"IBM Plex Mono",monospace;color:#F4F7F5;font-weight:600}
 input[type=range]{width:100%;accent-color:var(--coral);cursor:pointer}
 .hint{font-size:11px;color:#6f8582;margin-top:6px;line-height:1.4}
+.hint b{color:#9fb3b0;font-weight:600}
+.hint.top{margin:0 0 2px;color:#9fb3b0}
 .reset{width:100%;margin-top:6px;background:transparent;border:1px solid #2a4c54;color:#c6d4d1;border-radius:9px;padding:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
 .reset:hover{border-color:var(--coral);color:#fff}
 .reset.top{margin:0 0 16px}
@@ -271,6 +277,13 @@ body:not(.app-open) .side-toggle{display:none}
 .speed.na .bar{opacity:.5}
 .speed.na .val{color:var(--muted-2);font-style:italic}
 .indexed-no{font-size:11px;color:var(--muted-2);background:#EFEDE6;padding:3px 8px;border-radius:6px;align-self:flex-end}
+ /* sidebar: the two "which journals" toggles share one dashed frame */
+.grp.tgroup{border:1.5px dashed #5b3fa3;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:12px}
+/* journals not in DOAJ (auto-checked): violet tag + plain "Not in DOAJ" label in the right-hand section */
+.tag.comm{background:#EEE9F8;color:#5b3fa3;border-color:#dcd2f0;font-weight:600}
+.nodoaj{display:inline-flex;align-items:center;font-size:11px;font-weight:700;color:#5b3fa3;background:#EEE9F8;border:1.5px dashed #5b3fa3;border-radius:16px;padding:3px 10px;cursor:default}
+.jrow.comm{border-color:#dcd2f0}
+.jrow.comm .qbadge{background:#F3F0FA;color:#5b3fa3}
 .due{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:12.5px;padding:4px 10px;border-radius:16px}
 .due-soon{background:var(--coral-soft);color:var(--coral)}
 .due-mid{background:var(--amber-soft);color:var(--amber)}

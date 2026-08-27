@@ -28,7 +28,7 @@
 <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <link rel="dns-prefetch" href="https://huggingface.co">
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20">
+<link rel="stylesheet" href="css/style.css?v=27">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -217,6 +217,7 @@
         <span class="chip q1 on" data-f="dia" data-i18n>Diamond · free</span>
         <span class="chip q2" data-f="apc" data-i18n>APC / fees</span>
       </div>
+      <p class="hint" data-i18n="hint.fees">Click a button to show or hide those journals. <b>Diamond</b> = free to publish and free to read. <b>APC</b> = the journal charges authors a fee.</p>
     </div>
 
     <div class="grp">
@@ -224,18 +225,28 @@
       <div class="chips" id="qchips">
         <span class="chip q1 on" data-q="Q1">Q1</span>
         <span class="chip q2 on" data-q="Q2">Q2</span>
-        <span class="chip q3" data-q="Q3">Q3</span>
-        <span class="chip q4" data-q="Q4">Q4</span>
-        <span class="chip none" data-q="none" data-i18n>Unranked</span>
+        <span class="chip q3 on" data-q="Q3">Q3</span>
+        <span class="chip q4 on" data-q="Q4">Q4</span>
+        <span class="chip none on" data-q="none" data-i18n>Unranked</span>
       </div>
+      <p class="hint" data-i18n="hint.quart">Click to show or hide each level. <b>Q1</b> = top 25% of its field in SCImago, <b>Q4</b> = bottom 25%. <b>Unranked</b> = not in Scopus / SCImago (no quartile).</p>
     </div>
 
-    <div class="grp">
+    <div class="grp tgroup">
+      <p class="hint top" data-i18n="hint.tgroup">Two switches decide which journals appear in the list:</p>
       <label class="toggle">
-        <input type="checkbox" id="idxOnly" checked>
+        <input type="checkbox" id="idxOnly">
         <span class="track"></span>
-        <span data-i18n="idx.toggle">Indexed in SCImago only<span class="sub">hide journals not found in SCImago</span></span>
+        <span data-i18n="idx.toggle2"><b class="tt">Indexed in SCImago only</b><span class="sub"><span class="when-on">ON: only journals ranked in SCImago / Scopus. Switch off to also see unranked DOAJ journals.</span><span class="when-off">OFF: unranked DOAJ journals are shown too. Switch on to keep only SCImago-ranked journals.</span></span></span>
       </label>
+
+      <div id="extraGrp" style="display:none">
+      <label class="toggle">
+        <input type="checkbox" id="extraOn">
+        <span class="track"></span>
+        <span><span data-i18n="extra.toggle"><b class="tt">Include journals not in DOAJ</b><span class="sub"><span class="when-on">ON: also shows free, peer-reviewed OA journals not yet in DOAJ, auto-checked (ISSN, peer review, no fees, recent articles) and marked <b>Not in DOAJ</b>. Confirm on the journal's site.</span><span class="when-off">OFF: DOAJ-listed journals only. Switch on to add auto-checked journals not yet in DOAJ (marked <b>Not in DOAJ</b>).</span></span></span><span class="sub"><b id="s-extra">0</b> journals</span></span>
+      </label>
+      </div>
     </div>
 
     <div class="grp">
@@ -294,9 +305,9 @@
       <div class="chips" id="aqchips">
         <span class="chip q1 on" data-q="Q1">Q1</span>
         <span class="chip q2 on" data-q="Q2">Q2</span>
-        <span class="chip q3" data-q="Q3">Q3</span>
-        <span class="chip q4" data-q="Q4">Q4</span>
-        <span class="chip none" data-q="none" data-i18n>Unranked</span>
+        <span class="chip q3 on" data-q="Q3">Q3</span>
+        <span class="chip q4 on" data-q="Q4">Q4</span>
+        <span class="chip none on" data-q="none" data-i18n>Unranked</span>
       </div>
     </div>
     <div class="grp">
@@ -505,13 +516,13 @@
 
 <!-- bump ?v= together with any JS/CSS change so browsers never mix old and
      new files from cache (symptom: "... is not defined" errors after a deploy) -->
-<script src="js/i18n.js?v=4"></script>
-<script src="js/data.js?v=10"></script>
-<script src="js/journals.js?v=15"></script>
+<script src="js/i18n.js?v=10"></script>
+<script src="js/data.js?v=11"></script>
+<script src="js/journals.js?v=19"></script>
 <script src="js/scopus.js?v=12"></script>
 <script src="js/confs.js?v=7"></script>
-<script src="js/app.js?v=21"></script>
-<script src="js/ai.js?v=8"></script>
-<script src="js/loader.js?v=14"></script>
+<script src="js/app.js?v=26"></script>
+<script src="js/ai.js?v=9"></script>
+<script src="js/loader.js?v=16"></script>
 </body>
 </html>

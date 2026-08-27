@@ -24,6 +24,7 @@ function detectKind(headerRow){
   const h=headerRow.map(x=>x.trim().toLowerCase());
   // full export uses "SJR Best Quartile"; filtered per-category exports use "SJR Quartile"
   if(h.some(x=>x==='sjr best quartile'||x==='sjr quartile')) return 'sci';
+  if(h.some(x=>x==='evidence url') && h.some(x=>x==='source')) return 'extra';
   if(h.some(x=>x==='apc') && h.some(x=>x.includes('journal title'))) return 'doaj';
   return null;
 }
@@ -117,6 +118,35 @@ function doajCsvToInters(doajRows){
   }
   return inters;
 }
+/* ---- Community-verified journals (data/extra-journals.csv) ----
+   Peer-reviewed open-access journals that are NOT (yet) in DOAJ, checked by
+   hand against a short checklist (see data/extra-journals.README.md). They
+   are mapped to the same intermediate shape as DOAJ rows and tagged with
+   src:'community' so the UI can flag them and the filter can hide them. */
+function extraCsvToInters(rows){
+  if(!rows || rows.length<2) return [];
+  const h=rows[0].map(c=>c.trim()), i=Object.fromEntries(h.map((c,k)=>[c,k]));
+  const need=['Journal title','Journal URL','Source','Evidence URL'];
+  for(const c of need) if(!(c in i)) throw new Error('extra-journals.csv: missing column “'+c+'”');
+  const g=(row,c)=>(c in i)?String(row[i[c]]||'').trim():'';
+  const out=[];
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r]; if(!row || row.length<3 || !g(row,'Journal title')) continue;
+    const apc=g(row,'APC').toLowerCase(), fees=g(row,'Has other fees').toLowerCase();
+    const dia=(apc===''||apc==='no') && (fees===''||fees==='no');
+    const feeAll=g(row,'APC amount');
+    const wRaw=g(row,'Weeks to publication');
+    out.push({
+      dia, fee:dia?'':feeAll.split(';')[0].trim(), usd:dia?0:apcUSD(feeAll),
+      t:g(row,'Journal title'), pissn:g(row,'ISSN (print)'), eissn:g(row,'EISSN'),
+      w:wRaw&&!isNaN(parseFloat(wRaw))?Math.round(parseFloat(wRaw)):null,
+      rev:g(row,'Review process'), pub:g(row,'Publisher'), c:g(row,'Country'),
+      lang:g(row,'Languages'), dsub:g(row,'Subjects'), url:g(row,'Journal URL'), doaj:'', kw:g(row,'Keywords'),
+      src:g(row,'Source')||'community', ver:g(row,'Verified on'), note:g(row,'Notes'), ev:g(row,'Evidence URL')
+    });
+  }
+  return out;
+}
 function assemble(inters, sciRows){
   const {si,smap,list}=buildSci(sciRows);
   const records=[];
@@ -139,7 +169,9 @@ function assemble(inters, sciRows){
       t:it.t, idx:!!sci, q, sjr, h, cats, areas, w:it.w, dia:it.dia, fee:it.fee, usd:it.usd,
       issn:normISSN(it.eissn)||normISSN(it.pissn)||'',
       issns:[normISSN(it.pissn),normISSN(it.eissn)].filter(Boolean),
-      rev:it.rev, pub:it.pub, c:it.c, lang:it.lang, dsub:it.dsub, url:it.url, doaj:it.doaj, kw:it.kw
+      rev:it.rev, pub:it.pub, c:it.c, lang:it.lang, dsub:it.dsub, url:it.url, doaj:it.doaj, kw:it.kw,
+      // community-verified (not in DOAJ) entries only; DOAJ records leave these undefined
+      src:it.src, ver:it.ver, note:it.note, ev:it.ev
     });
   }
   const areaSet=new Set();
@@ -151,6 +183,7 @@ function assemble(inters, sciRows){
     meta:{
       total:records.length,
       dia:records.filter(r=>r.dia).length,
+      extra:records.filter(r=>r.src).length,
       q12:records.filter(r=>r.q==='Q1'||r.q==='Q2').length
     }
   };

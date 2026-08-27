@@ -1,5 +1,5 @@
 /* ================= Loader UI ================= */
-const files={doaj:null,sci:null};
+const files={doaj:null,sci:null,extra:null};
 const $=id=>document.getElementById(id);
 const status=(msg,err)=>{ const el=$('status'); el.textContent=msg; el.classList.toggle('err',!!err);
   const w=$('wmsg'); if(w && msg){ w.textContent=msg; w.classList.toggle('err',!!err); } };
@@ -35,6 +35,7 @@ function registerText(name, text){
   const kind=detectKind(header);
   if(kind==='doaj'){ files.doaj={name,text,delim}; $('slot-doaj').classList.add('ok'); $('slot-doaj-s').textContent=name; }
   else if(kind==='sci'){ files.sci={name,text,delim}; $('slot-sci').classList.add('ok'); $('slot-sci-s').textContent=name; }
+  else if(kind==='extra'){ files.extra={name,text,delim}; }
   return kind;
 }
 
@@ -61,6 +62,14 @@ const BUNDLED=[
   {key:'sci',  url:GH_DATA+'data/scimago.csv', fallback:'data/scimago.csv', label:'SCImago rankings',  from:55, to:80},
 ];
 
+/* Small optional file: community-verified journals not in DOAJ. Never blocks
+   the app - if it can't be fetched the list is simply DOAJ-only. */
+async function fetchExtra(){
+  if(files.extra) return;
+  for(const u of [GH_DATA+'data/extra-journals.csv','data/extra-journals.csv']){
+    try{ const r=await fetch(u); if(r.ok){ const text=await r.text(); if(registerText('extra-journals.csv',text)==='extra') return; } }catch(e){}
+  }
+}
 async function fetchBundled(url,label,fallback,onProgress){
   let res=null;
   try{ res=await fetch(url); }catch(e){}
@@ -122,6 +131,14 @@ async function processAll(){
     await new Promise(r=>setTimeout(r,30));
     const doajRows=parseCSV(files.doaj.text, files.doaj.delim);
     const inters=doajCsvToInters(doajRows);
+    await fetchExtra();
+    if(files.extra){
+      // skip anything DOAJ already lists (by ISSN) so a journal accepted into DOAJ later never shows twice
+      const have=new Set(); inters.forEach(it=>[it.pissn,it.eissn].map(normISSN).filter(Boolean).forEach(n=>have.add(n)));
+      const extra=extraCsvToInters(parseCSV(files.extra.text,files.extra.delim))
+        .filter(it=>![it.pissn,it.eissn].map(normISSN).filter(Boolean).some(n=>have.has(n)));
+      inters.push(...extra);
+    }
     if(wait.on()) wait.progress(88);
     status(t('Parsing SCImago file…'));
     await new Promise(r=>setTimeout(r,30));
@@ -133,8 +150,8 @@ async function processAll(){
     if(data.meta.total===0) throw new Error(t('Join produced 0 Diamond journals. Are these the right files?'));
     if(wait.on()){ wait.step('parse','done',t('{n} journals',{n:data.meta.total.toLocaleString()})); wait.step('done','active'); wait.progress(98,t('Saving on this device and opening…')); }
     const stamp=new Date().toLocaleDateString()+' · '+files.doaj.name+' + '+files.sci.name;
-    await cacheSet('dataset9',{data,stamp,ts:Date.now()});
-    cacheDel('dataset5'); cacheDel('dataset6'); cacheDel('dataset7'); cacheDel('dataset8');   // superseded cache formats
+    await cacheSet('dataset10',{data,stamp,ts:Date.now(),extraHash:files.extra?hashText(files.extra.text):''});
+    cacheDel('dataset5'); cacheDel('dataset6'); cacheDel('dataset7'); cacheDel('dataset8'); cacheDel('dataset9');   // superseded cache formats
     if(wait.on()){ wait.step('done','done'); wait.progress(100); await new Promise(r=>setTimeout(r,250)); }
     startApp(data,stamp);
   }catch(e){ wait.hide(); status(e.message,true); }
@@ -148,12 +165,46 @@ $('fileInput').addEventListener('change',e=>ingest([...e.target.files]));
 
 $('confOnly').addEventListener('click',()=>startApp(null,null,'c'));
 
-cacheGet('dataset9').then(c=>{
+/* ---- Keep community-verified journals fresh for returning visitors ----
+   The DOAJ/SCImago snapshot stays cached (25 MB), but extra-journals.csv is
+   tiny, so it is re-fetched on every visit. If it changed since the cache
+   was written, the community records are rebuilt in place (no SCImago join
+   needed - these journals are not in SCImago), the cache is updated and the
+   list re-renders. Silent on any failure. */
+function hashText(t){ let h=0; for(let i=0;i<t.length;i++){ h=(h*31+t.charCodeAt(i))|0; } return t.length+':'+h; }
+async function refreshExtra(c){
+  try{
+    let text=null;
+    for(const u of [GH_DATA+'data/extra-journals.csv','data/extra-journals.csv']){
+      try{ const r=await fetch(u,{cache:'no-cache'}); if(r.ok){ text=await r.text(); break; } }catch(e){}
+    }
+    if(text==null) return;
+    const h=hashText(text);
+    if(h===c.extraHash) return;
+    const rows=parseCSV(text,sniffDelim(text.slice(0,text.indexOf('\n'))));
+    if(detectKind(rows[0])!=='extra') return;
+    const data=c.data;
+    const have=new Set(); data.records.forEach(r=>{ if(!r.src) (r.issns||[]).forEach(n=>have.add(n)); });
+    const fresh=extraCsvToInters(rows)
+      .filter(it=>![it.pissn,it.eissn].map(normISSN).filter(Boolean).some(n=>have.has(n)))
+      .map(it=>({t:it.t, idx:false, q:'', sjr:null, h:null, cats:'', areas:'', w:it.w, dia:it.dia, fee:it.fee, usd:it.usd,
+        issn:normISSN(it.eissn)||normISSN(it.pissn)||'', issns:[normISSN(it.pissn),normISSN(it.eissn)].filter(Boolean),
+        rev:it.rev, pub:it.pub, c:it.c, lang:it.lang, dsub:it.dsub, url:it.url, doaj:'', kw:it.kw,
+        src:it.src, ver:it.ver, note:it.note, ev:it.ev}));
+    data.records=data.records.filter(r=>!r.src).concat(fresh);
+    data.meta.total=data.records.length; data.meta.dia=data.records.filter(r=>r.dia).length; data.meta.extra=fresh.length;
+    await cacheSet('dataset10',{...c,data,extraHash:h});
+    if(typeof R!=='undefined' && R.length){ R=data.records; $('s-extra').textContent=fresh.length.toLocaleString(); $('extraGrp').style.display=fresh.length?'':'none'; $('s-total').textContent=data.meta.total.toLocaleString(); if(state) render(); }
+  }catch(e){ console.warn('extra-journals refresh skipped',e); }
+}
+
+cacheGet('dataset10').then(c=>{
   if(c && c.data){
     $('cacheNote').style.display='block';
     $('cacheDate').textContent=c.stamp;
     $('useCache').onclick=()=>startApp(c.data,c.stamp);
     startApp(c.data,c.stamp);   // returning visitor - straight into the app
+    refreshExtra(c);            // …then quietly pick up any new community-verified journals
   } else {
     loadBundled();              // first visit - fetch the built-in data right away
   }

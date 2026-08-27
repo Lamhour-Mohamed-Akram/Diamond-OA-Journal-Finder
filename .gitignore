@@ -5,6 +5,7 @@
 # To refresh them, overwrite data/doaj.csv and data/scimago.csv with new downloads.
 !data/doaj.csv
 !data/scimago.csv
+!data/extra-journals.csv
 
 .DS_Store
 node_modules/

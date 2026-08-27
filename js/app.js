@@ -54,8 +54,9 @@ function stateToHash(){
   const f=[...state.fees].sort().join(',');
   if(f!=='dia') p.set('f',f);
   const qt=[...state.quarts].map(v=>v||'none').sort().join(',');
-  if(qt!=='Q1,Q2') p.set('qt',qt);
-  if(!state.idxOnly) p.set('x','0');
+  if(qt!=='Q1,Q2,Q3,Q4,none') p.set('qt',qt);
+  if(state.idxOnly) p.set('x','1');
+  if(state.extra) p.set('e','1');
   if(state.area) p.set('a',state.area);
   if(state.weeks<52) p.set('w',state.weeks);
   if(state.maxUsd<APC_MAX) p.set('p',state.maxUsd);
@@ -78,6 +79,7 @@ function applyHash(){
   if(p.has('f')) state.fees=new Set(p.get('f').split(',').filter(v=>v==='dia'||v==='apc'));
   if(p.has('qt')) state.quarts=new Set(p.get('qt').split(',').filter(v=>['Q1','Q2','Q3','Q4','none'].includes(v)).map(v=>v==='none'?'':v));
   if(p.has('x')){ state.idxOnly=p.get('x')!=='0'; $('idxOnly').checked=state.idxOnly; }
+  if(p.has('e')){ state.extra=p.get('e')!=='0'; $('extraOn').checked=state.extra; }
   if(p.has('a') && hasOpt('area',p.get('a'))){ state.area=p.get('a'); $('area').value=state.area; }
   if(p.has('w')){ const w=parseInt(p.get('w')); if(w>=0&&w<52){ state.weeks=w; $('weeks').value=w; $('wkVal').textContent='≤ '+w+'w'; } }
   if(p.has('p')){ const v=parseInt(p.get('p')); if(v>=0&&v<APC_MAX){ state.maxUsd=v; $('apc').value=v; $('apcVal').textContent=apcLabel(v); } }
@@ -171,7 +173,8 @@ function startApp(data,stamp,tab){
     const cc={}; R.forEach(r=>{if(r.c)cc[r.c]=(cc[r.c]||0)+1;});
     Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c+' ('+cc[c]+')';cSel.appendChild(o);});
 
-    state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,maxUsd:APC_MAX,country:'',sorts:DEFAULT_SORTS.map(x=>({...x})),limit:60};
+    state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2','Q3','Q4','']),idxOnly:false,extra:false,area:'',weeks:52,maxUsd:APC_MAX,country:'',sorts:DEFAULT_SORTS.map(x=>({...x})),limit:60};
+    const nx=data.meta.extra||0; $('s-extra').textContent=nx.toLocaleString(); $('extraGrp').style.display=nx?'':'none';
     applyHash();   // restore filters from a shared link, if any
     syncSubjLink(); renderSortBar();
   }
@@ -205,6 +208,7 @@ function bindOnce(){
   $('q').addEventListener('input',e=>setQuery(e.target.value,'q'));
   $('lq').addEventListener('input',e=>setQuery(e.target.value,'lq'));
   $('idxOnly').addEventListener('change',e=>{state.idxOnly=e.target.checked;state.limit=60;render();});
+  $('extraOn').addEventListener('change',e=>{state.extra=e.target.checked;state.limit=60;render();});
   $('area').addEventListener('change',e=>{state.area=e.target.value;state.limit=60;render();syncSubjLink();});
   $('country').addEventListener('change',e=>{state.country=e.target.value;state.limit=60;render();});
   $('sortClear').addEventListener('click',()=>{ state.sorts=[]; renderSortBar(); render(); });
@@ -238,11 +242,11 @@ function bindOnce(){
     state.limit=60; render();
   });
   $('resetBtn').addEventListener('click',()=>{
-    state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2']),idxOnly:true,area:'',weeks:52,maxUsd:APC_MAX,country:'',sorts:DEFAULT_SORTS.map(x=>({...x})),limit:60};
-    $('q').value='';$('lq').value='';renderSortBar();$('idxOnly').checked=true;$('area').value='';syncSubjLink();$('country').value='';
+    state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2','Q3','Q4','']),idxOnly:false,extra:false,area:'',weeks:52,maxUsd:APC_MAX,country:'',sorts:DEFAULT_SORTS.map(x=>({...x})),limit:60};
+    $('q').value='';$('lq').value='';renderSortBar();$('idxOnly').checked=false;$('extraOn').checked=false;$('area').value='';syncSubjLink();$('country').value='';
     $('weeks').value=52;$('wkVal').textContent=t('Any');
     $('apc').value=APC_MAX;$('apcVal').textContent=t('Any');
-    document.querySelectorAll('#qchips .chip').forEach(ch=>ch.classList.toggle('on',ch.dataset.q==='Q1'||ch.dataset.q==='Q2'));
+    document.querySelectorAll('#qchips .chip').forEach(ch=>ch.classList.add('on'));
     document.querySelectorAll('#fchips .chip').forEach(ch=>ch.classList.toggle('on',ch.dataset.f==='dia'));
     render();
   });

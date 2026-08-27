@@ -2,8 +2,12 @@
 const APC_MAX=5000;   // slider ceiling - at max the price filter is off
 function match(r){
   if(!state.fees.has(r.dia?'dia':'apc')) return false;
-  if(state.idxOnly && !r.idx) return false;
-  if(!state.quarts.has(r.q||'')) return false;
+  if(r.src){                      // community-verified (not in DOAJ): shown only by their own toggle,
+    if(!state.extra) return false; //   and never in SCImago, so the index / quartile filters don't apply
+  } else {
+    if(state.idxOnly && !r.idx) return false;
+    if(!state.quarts.has(r.q||'')) return false;
+  }
   if(state.area && !(r.areas||'').includes(state.area)) return false;
   if(state.country && r.c!==state.country) return false;
   if(state.weeks<52){ if(r.w==null||r.w>state.weeks) return false; }
@@ -107,17 +111,19 @@ function jrowHtml(r){
     const sjr=r.sjr!=null?'<div class="metric"><div class="v">'+r.sjr.toFixed(3)+'</div><div class="k">SJR</div></div>':'';
     const hix=r.h!=null?'<div class="metric"><div class="v">'+r.h+'</div><div class="k">H-index</div></div>':'';
     const notIdx=!r.idx?'<span class="indexed-no">'+t('Not in SCImago')+'</span>':'';
+    const info=r.src?'<span class="nodoaj"'+(r.ver?' title="'+t('Checked automatically on ')+esc(r.ver)+'"':'')+'>'+t('Not in DOAJ')+'</span>':'';
+    const commT=r.src?'<span class="tag comm">'+t('Not in DOAJ · auto-checked')+'</span>':'';
     const feeT=r.dia?'<span class="tag fee-ok">'+t('Diamond · free')+'</span>'
                     :'<span class="tag fee">'+(r.fee?t('APC: ')+esc(r.fee)+(r.usd!=null&&!/USD/.test(r.fee)?' (≈ $'+r.usd.toLocaleString()+')':''):t('Has fees'))+'</span>';
     const areaT=(r.areas||'').split(';').map(s=>s.trim()).filter(Boolean).slice(0,3).map(a=>'<span class="tag area">'+esc(a)+'</span>').join('');
     const catT=catTags(r.cats);
     const fl=scopusFlag(r.idx?scopusStatus(r.issns):null);
-    return '<div class="jrow'+fl.cls+'">'
+    return '<div class="jrow'+fl.cls+(r.src?' comm':'')+'">'
       +'<div class="qbadge q-'+q+'"><span class="q">'+(r.idx?(r.q||'–'):'–')+'</span><span class="lbl">'+(r.idx?t('quartile'):t('unranked'))+'</span></div>'
       +'<div class="jmain"><h3 class="jtitle">'+link+'</h3>'
       +'<div class="jmeta"><span class="pub">'+esc(r.pub||'–')+'</span><span class="dot"></span><span>'+esc(r.c||'')+'</span>'+(r.lang?'<span class="dot"></span><span>'+esc(r.lang)+'</span>':'')+'</div>'
-      +'<div class="tags">'+fl.tag+feeT+areaT+'</div>'+(catT?'<div class="tags cats">'+catT+'</div>':'')+'</div>'
-      +'<div class="jside">'+notIdx+'<div style="display:flex;gap:16px">'+sjr+hix+'</div>'+speedHtml(r.w)
+      +'<div class="tags">'+fl.tag+feeT+commT+areaT+'</div>'+(catT?'<div class="tags cats">'+catT+'</div>':'')+'</div>'
+      +'<div class="jside'+(r.src?' comm':'')+'">'+info+notIdx+'<div style="display:flex;gap:16px">'+sjr+hix+'</div>'+speedHtml(r.w)
       +'<div style="display:flex;gap:12px;align-items:center">'
       +(r.issn?'<button class="scopus-btn" data-issn="'+esc(r.issn)+'" data-title="'+esc(r.t)+'">'+t('✓ Check Scopus')+'</button>':'')
       +(r.doaj?'<a href="'+esc(r.doaj)+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--coral);font-weight:600;text-decoration:none">DOAJ ↗</a>':'')

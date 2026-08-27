@@ -1,0 +1,30 @@
+name: Update community-verified journals
+
+# Weekly: scan the IMIST/CNRST journal platforms for peer-reviewed, fee-free
+# journals that DOAJ does not list yet, run the automatic checks in
+# scripts/build-extra-journals.py and commit data/extra-journals.csv.
+# The site picks the file up on the next visit - no deploy needed.
+
+on:
+  schedule:
+    - cron: '41 4 * * 2'   # weekly, Tuesdays 04:41 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build extra-journals.csv
+        run: python3 scripts/build-extra-journals.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/extra-journals.csv data/extra-journals.cache.json
+          git diff --cached --quiet || { git commit -m 'Update community-verified journals'; git push; }

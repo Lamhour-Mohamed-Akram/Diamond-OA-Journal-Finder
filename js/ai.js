@@ -17,7 +17,7 @@ const AI_EMB_TTL=15*86400e3;               // refetch after 15 days (data refres
 const AI_TOP=15;                            // shown at first; "Show more" adds 15 at a time
 const AI_POOL=300;                          // best candidates by similarity that get the full score
 const AI={extractor:null,emb:null,loading:null,results:null,ran:false,limit:AI_TOP};
-let aiState={fees:new Set(['dia']),quarts:new Set(['Q1','Q2']),idxOnly:false,area:'',weeks:52,maxUsd:APC_MAX,sort:{k:'score',d:-1}};
+let aiState={fees:new Set(['dia']),quarts:new Set(['Q1','Q2','Q3','Q4','']),idxOnly:false,area:'',weeks:52,maxUsd:APC_MAX,sort:{k:'score',d:-1}};
 const AI_SORT={score:{label:'Match',def:-1,val:x=>x.score},q:{label:'Quartile',def:1,val:x=>x.r.idx&&x.r.q?qRank[x.r.q]:null},sjr:{label:'SJR',def:-1,val:x=>x.r.sjr},h:{label:'H-index',def:-1,val:x=>x.r.h},w:{label:'Turnaround',def:1,val:x=>x.r.w},usd:{label:'Price',def:1,val:x=>x.r.usd},t:{label:'Title',def:1,val:x=>x.r.t.toLowerCase()}};
 
 /* ---- loading: model (CDN + HF hub, browser-cached) and journal vectors (GitHub raw, IndexedDB-cached) ---- */
