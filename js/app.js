@@ -158,12 +158,8 @@ function startApp(data,stamp,tab){
     const thresh=Math.max(20,S.length*0.01);
     sciRef=Math.max(...Object.keys(endCounts).filter(y=>endCounts[y]>=thresh).map(Number));
     $('sciStamp').textContent=stamp;
-    $('s-src').textContent=S.length.toLocaleString();
-    $('s-act').textContent=S.filter(s=>covActive(s.cov)).length.toLocaleString();
     $('dataStamp').textContent=stamp;
-    $('s-total').textContent=data.meta.total.toLocaleString();
-    $('s-idx').textContent=(data.meta.dia!=null?data.meta.dia:0).toLocaleString();
-    $('s-q12').textContent=data.meta.q12.toLocaleString();
+    renderStats();
 
     const areaSel=$('area'); areaSel.innerHTML='<option value="" data-i18n>'+t('All areas')+'</option>';
     data.areas.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;areaSel.appendChild(o);});
@@ -174,7 +170,6 @@ function startApp(data,stamp,tab){
     Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c+' ('+cc[c]+')';cSel.appendChild(o);});
 
     state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2','Q3','Q4','']),idxOnly:false,extra:false,area:'',weeks:52,maxUsd:APC_MAX,country:'',sorts:DEFAULT_SORTS.map(x=>({...x})),limit:60};
-    setExtraCount(data.meta.extra||0);
     applyHash();   // restore filters from a shared link, if any
     syncSubjLink(); renderSortBar();
   }
@@ -186,6 +181,16 @@ function startApp(data,stamp,tab){
   loadScopusStatus();
 }
 
+/* sidebar counters (Journals + Scopus tabs); re-run on language switch so the number format follows the language */
+function renderStats(){
+  if(!R.length) return;
+  $('s-src').textContent=S.length.toLocaleString();
+  $('s-act').textContent=S.filter(s=>covActive(s.cov)).length.toLocaleString();
+  $('s-total').textContent=R.length.toLocaleString();
+  $('s-idx').textContent=R.filter(r=>r.dia).length.toLocaleString();
+  $('s-q12').textContent=R.filter(r=>r.q==='Q1'||r.q==='Q2').length.toLocaleString();
+  setExtraCount(R.filter(r=>r.src).length);
+}
 /* count + visibility of the "Include journals not in DOAJ" toggles (Journals and AI sidebars) */
 function setExtraCount(n){
   document.querySelectorAll('.s-extra').forEach(el=>el.textContent=n.toLocaleString());
@@ -285,6 +290,7 @@ function bindOnce(){
   bindAI();
   // language switch: re-render everything JS generates
   I18N.onChange(()=>{
+    renderStats();
     if(state){ renderSortBar(); syncSubjLink(); $('wkVal').textContent=state.weeks>=52?t('Any'):'≤ '+state.weeks+'w'; $('apcVal').textContent=apcLabel(state.maxUsd); render(); }
     if(typeof setSrc==='function' && $('main-c').style.display!=='none') setSrc(csrc);
     else if(typeof applyStats==='function') applyStats();

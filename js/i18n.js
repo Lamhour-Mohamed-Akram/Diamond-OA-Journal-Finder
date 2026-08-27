@@ -818,4 +818,9 @@
 
   window.t = t;
   window.I18N = { t, setLang, apply, get lang(){ return lang; }, onChange: fn => hooks.push(fn), D };
+  // Numbers follow the chosen language, not the browser locale: 23,204 (EN) / 23 204 (FR) / 23.204 (DE).
+  // Every n.toLocaleString() call without an explicit locale goes through here.
+  const LOCALES = { en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
+  const numTLS = Number.prototype.toLocaleString;
+  Number.prototype.toLocaleString = function(loc, opt){ return numTLS.call(this, loc || LOCALES[lang] || 'en-US', opt); };
 })();
