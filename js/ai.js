@@ -23,6 +23,7 @@ const AI_SORT={score:{label:'Match',def:-1,val:x=>x.score},q:{label:'Quartile',d
 /* ---- loading: model (CDN + HF hub, browser-cached) and journal vectors (GitHub raw, IndexedDB-cached) ---- */
 function aiProgress(pct,msg){
   const el=$('aiStatus'); if(!el) return;
+  AI.status={pct,msg};
   el.style.display='block';
   el.innerHTML='<div class="aibar"><i style="width:'+Math.max(0,Math.min(100,pct))+'%"></i></div><span>'+esc(msg)+'</span>';
 }
@@ -60,7 +61,7 @@ async function aiEnsure(){
           aiProgress(5+avg*0.85,t('Loading the AI model… {p}%',{p:Math.round(avg)})); }
       }});
       AI.emb=await embP;
-      aiProgress(100,t('Ready: {n} journals indexed. Everything stays on this device.',{n:AI.emb.n.toLocaleString()}));
+      aiProgress(100,t('Ready: {n} journals indexed. Everything stays on this device.',{n:AI.emb.n.toLocaleString()})); AI.status.ready=true;
     }catch(e){ AI.loading=null; AI.extractor=AI.extractor||null; throw e; }
   })();
   return AI.loading;
@@ -173,6 +174,7 @@ async function aiRun(fromButton){
     AI.ran=true;
     renderAI();
     aiProgress(100,t('Ready: {n} journals indexed. Everything stays on this device.',{n:AI.emb.n.toLocaleString()}));
+    AI.status.ready=true;
     if(fromButton && window.matchMedia('(max-width:860px)').matches) document.body.classList.add('side-hidden');   // phone: after pressing the button, close the drawer so the results are visible (filter changes keep it open)
   }catch(e){ console.error(e); aiProgress(0,e.message||String(e)); $('aiStatus').classList.add('err'); return; }
   finally{ btn.disabled=false; }
@@ -271,3 +273,6 @@ function bindAI(){
   renderAISort();
   $('alist').addEventListener('click',e=>{ const b=e.target.closest('.scopus-btn'); if(b) openScopusModal(b.dataset.issn,b.dataset.title); });
 }
+
+/* language switch: re-render the status line (it is JS-generated, not data-i18n) */
+if(typeof I18N!=='undefined'&&I18N.onChange) I18N.onChange(()=>{ if(AI.status&&AI.status.ready&&AI.emb) aiProgress(100,t('Ready: {n} journals indexed. Everything stays on this device.',{n:AI.emb.n.toLocaleString()})); });
