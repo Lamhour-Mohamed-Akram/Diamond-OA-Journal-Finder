@@ -276,6 +276,7 @@ body:not(.app-open) .side-toggle{display:none}
 .bar.fast i{background:var(--sea)}.bar.mid i{background:var(--amber)}.bar.slow i{background:var(--coral)}
 .speed.na .bar{opacity:.5}
 .speed.na .val{color:var(--muted-2);font-style:italic}
+.scopus-ok{font-size:11px;font-weight:700;color:var(--sea);background:var(--sea-soft);padding:3px 8px;border-radius:6px;white-space:nowrap}
 .indexed-no{font-size:11px;color:var(--muted-2);background:#EFEDE6;padding:3px 8px;border-radius:6px;align-self:flex-end}
  /* sidebar: the two "which journals" toggles share one dashed frame */
 .grp.tgroup{border:1.5px dashed #5b3fa3;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:12px}

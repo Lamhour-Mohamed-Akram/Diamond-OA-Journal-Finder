@@ -118,13 +118,15 @@ function jrowHtml(r){
     const areaT=(r.areas||'').split(';').map(s=>s.trim()).filter(Boolean).slice(0,3).map(a=>'<span class="tag area">'+esc(a)+'</span>').join('');
     const catT=catTags(r.cats);
     const fl=scopusFlag(r.idx?scopusStatus(r.issns):null);
+    // already known from the offline data (SCImago source list + Elsevier status): no live check needed
+    const inScopus=r.idx&&!fl.cls?'<span class="scopus-ok" title="'+esc(t('Listed in the Scopus source list (SCImago snapshot). Use the button for a live check.'))+'">'+t('✓ In Scopus')+'</span>':'';
     return '<div class="jrow'+fl.cls+(r.src?' comm':'')+'">'
       +'<div class="qbadge q-'+q+'"><span class="q">'+(r.idx?(r.q||'–'):'–')+'</span><span class="lbl">'+(r.idx?t('quartile'):t('unranked'))+'</span></div>'
       +'<div class="jmain"><h3 class="jtitle">'+link+'</h3>'
       +'<div class="jmeta"><span class="pub">'+esc(r.pub||'–')+'</span><span class="dot"></span><span>'+esc(r.c||'')+'</span>'+(r.lang?'<span class="dot"></span><span>'+esc(r.lang)+'</span>':'')+'</div>'
       +'<div class="tags">'+fl.tag+feeT+commT+areaT+'</div>'+(catT?'<div class="tags cats">'+catT+'</div>':'')+'</div>'
       +'<div class="jside'+(r.src?' comm':'')+'">'+info+notIdx+'<div style="display:flex;gap:16px">'+sjr+hix+'</div>'+speedHtml(r.w)
-      +'<div style="display:flex;gap:12px;align-items:center">'
+      +'<div style="display:flex;gap:12px;align-items:center">'+inScopus
       +(r.issn?'<button class="scopus-btn" data-issn="'+esc(r.issn)+'" data-title="'+esc(r.t)+'">'+t('✓ Check Scopus')+'</button>':'')
       +(r.doaj?'<a href="'+esc(r.doaj)+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--coral);font-weight:600;text-decoration:none">DOAJ ↗</a>':'')
       +'</div></div></div>';
