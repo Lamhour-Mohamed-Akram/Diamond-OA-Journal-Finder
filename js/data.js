@@ -113,7 +113,8 @@ function doajCsvToInters(doajRows){
       rev:row[di['Review process']]||'', pub:row[di['Publisher']]||'', c:row[di['Country of publisher']]||'',
       lang:row[di['Languages in which the journal accepts manuscripts']]||'', dsub:row[di['Subjects']]||'',
       url:row[di['Journal URL']]||'', doaj:row[di['URL in DOAJ']]||'',
-      kw:('Keywords' in di)?(row[di['Keywords']]||''):''   // DOAJ keywords (used by the AI matcher's "why" line)
+      kw:('Keywords' in di)?(row[di['Keywords']]||''):'',   // DOAJ keywords (used by the AI matcher's "why" line)
+      alt:('Alternative title' in di)?(row[di['Alternative title']]||''):''
     });
   }
   return inters;
@@ -147,6 +148,19 @@ function extraCsvToInters(rows){
   }
   return out;
 }
+/* Acronyms people actually type ("REMSES", "JMSR"): the slug in the journal
+   URL (…?journal=REMSES, …/index.php/REMSES/) plus the initials of the
+   title's significant words. Stored on each record and searched with it. */
+const ACR_STOP=new Set(['de','des','du','la','le','les','et','en','of','the','and','for','in','on','a','an','di','e','y','der','die','das','und','für','al','wa','fi','l','d']);
+function acronyms(t,url){
+  const out=new Set();
+  const m=String(url||'').match(/(?:[?&]journal=|\/index\.php\/)([A-Za-z][A-Za-z0-9_-]{1,30})(?=[\/&?#]|$)/);
+  if(m && !/^(index|journals?)$/i.test(m[1])) out.add(m[1].toUpperCase());
+  const words=String(t||'').replace(/[’']/g,' ').split(/[\s\-:,.()]+/).filter(Boolean);
+  const ini=words.filter(w=>!ACR_STOP.has(w.toLowerCase())).map(w=>w[0].toUpperCase()).join('');
+  if(ini.length>=3) out.add(ini);
+  return [...out].join(' ');
+}
 function assemble(inters, sciRows){
   const {si,smap,list}=buildSci(sciRows);
   const records=[];
@@ -171,7 +185,8 @@ function assemble(inters, sciRows){
       issns:[normISSN(it.pissn),normISSN(it.eissn)].filter(Boolean),
       rev:it.rev, pub:it.pub, c:it.c, lang:it.lang, dsub:it.dsub, url:it.url, doaj:it.doaj, kw:it.kw,
       // community-verified (not in DOAJ) entries only; DOAJ records leave these undefined
-      src:it.src, ver:it.ver, note:it.note, ev:it.ev
+      src:it.src, ver:it.ver, note:it.note, ev:it.ev,
+      alt:it.alt||'', acr:acronyms(it.t,it.url)
     });
   }
   const areaSet=new Set();

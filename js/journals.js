@@ -18,7 +18,7 @@ function match(r){
       if(!doiISSNs) return false;
       return (r.issns||[r.issn]).some(i=>doiISSNs.includes(i));
     }
-    const hay=(r.t+' '+r.pub+' '+r.cats+' '+r.areas+' '+r.dsub+' '+r.c).toLowerCase();
+    const hay=(r.t+' '+(r.alt||'')+' '+(r.acr||'')+' '+r.pub+' '+r.cats+' '+r.areas+' '+r.dsub+' '+r.c+' '+(r.kw||'')).toLowerCase();
     if(!hay.includes(state.q)) return false;
   }
   return true;
