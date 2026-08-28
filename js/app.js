@@ -1,4 +1,28 @@
 /* ================= App shell / tabs ================= */
+/* ---- "Support this free project" footer link (Buy Me a Coffee) ----
+   Rendered only when SUPPORT_LINK_ENABLED is true; otherwise nothing is
+   inserted into the DOM. Currently enabled ONLY for local development
+   (localhost, 127.0.0.1, file://) and therefore absent on openaccessfinder.de.
+   TO ENABLE IT PUBLICLY LATER: replace the value of SUPPORT_LINK_ENABLED
+   below with `true` (one-line change), bump ?v= for app.js in index.html and
+   redeploy. */
+const SUPPORT_LINK_URL='https://buymeacoffee.com/openaccessfinder';
+const SUPPORT_LINK_ENABLED=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)||location.protocol==='file:';
+function supportLinkHtml(){
+  return '<a class="support" href="'+SUPPORT_LINK_URL+'" target="_blank" rel="noopener noreferrer">'
+    +'<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg>'
+    +'<span data-i18n="Support this free project">'+t('Support this free project')+'</span> ↗</a>';
+}
+function renderSupportLink(){
+  if(!SUPPORT_LINK_ENABLED) return;
+  // footers (start screen + sidebar bottom)
+  document.querySelectorAll('.credit').forEach(c=>{ if(!c.querySelector('.support')) c.insertAdjacentHTML('beforeend',' · '+supportLinkHtml()); });
+  // sidebar header, under the tagline: "Free & non-profit · ☕ Support this free project"
+  const tag=document.querySelector('aside .tagline');
+  if(tag && !document.querySelector('.support-line')) tag.insertAdjacentHTML('afterend','<p class="support-line"><span data-i18n="Free & non-profit">'+t('Free & non-profit')+'</span> · '+supportLinkHtml()+'</p>');
+}
+renderSupportLink();
+
 let R=[], state=null;
 let S=[], sciRef=null;   // full Scopus/SCImago source list for the Scopus check tab; sciRef = reference "current" year
 function covEnd(cov){ const y=(String(cov).match(/\d{4}/g)||[]).map(Number).filter(v=>v>=1900&&v<=2100); return y.length?Math.max(...y):null; }

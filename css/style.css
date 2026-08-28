@@ -118,19 +118,30 @@ body.app-open #guide{display:none}
 .credit b{color:var(--muted);font-weight:600}
 .credit a{color:var(--muted);font-weight:600;text-decoration:none}
 .credit a:hover{color:var(--coral)}
+.credit a:focus-visible{outline:2px solid var(--coral);outline-offset:2px;border-radius:3px}
+/* optional "Support this free project" link (see SUPPORT_LINK_ENABLED in app.js) */
+.credit .support{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.credit .support svg{flex:none;opacity:.8}
 aside .credit{border-top:1px solid #17343c;color:#6f8582;text-align:left;font-size:11.5px}
 aside .credit b{color:#9DB0AD}
 aside .credit a{color:#9DB0AD}
 aside .credit a:hover{color:#fff}
+aside .credit a:focus-visible{outline-color:#fff}
 
 /* ============ App ============ */
 #app{display:none}
 .wrap{display:grid;grid-template-columns:308px 1fr;min-height:100vh}
 aside{background:var(--ink);color:#EAF0EE;padding:22px 20px 40px;position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;border-right:1px solid #0a1e24}
-.brand{display:flex;align-items:baseline;gap:9px;margin-bottom:4px}
+.brand{display:flex;align-items:baseline;justify-content:center;gap:9px;margin-bottom:4px}
 .brand .mark{font-family:"IBM Plex Mono",monospace;font-weight:600;letter-spacing:.14em;font-size:11px;color:var(--coral)}
 .brand h1{font-family:Spectral,Georgia,serif;font-weight:700;font-size:21px;line-height:1.1;margin:0;color:#F4F7F5}
-.tagline{color:#9DB0AD;font-size:12px;margin:2px 0 14px;line-height:1.4}
+.tagline{color:#9DB0AD;font-size:12px;margin:2px 0 14px;line-height:1.4;text-align:center}
+/* optional support line under the tagline (rendered only when SUPPORT_LINK_ENABLED in app.js) */
+.support-line{display:block;text-align:center;margin:-8px 0 14px;font-size:11.5px;line-height:1.6;color:#7f9591}
+.support-line .support{display:inline-flex;align-items:center;gap:4px;color:#9DB0AD;font-weight:600;text-decoration:none;white-space:nowrap}
+.support-line .support:hover{color:#fff}
+.support-line .support:focus-visible{outline:2px solid #fff;outline-offset:2px;border-radius:3px}
+.support-line .support svg{flex:none;opacity:.8}
 .tabbar{display:grid;grid-template-columns:1fr 1fr;background:#0a1e24;border:1px solid #17343c;border-radius:10px;padding:4px;gap:4px;margin-bottom:16px}
 .tabbar button{white-space:nowrap;background:#12313a;border:1px solid #24454d;border-radius:7px;color:#8fa5a2;font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 6px;cursor:pointer;transition:.12s}
 .tabbar button.on{background:var(--coral);border-color:var(--coral);color:#fff}
@@ -161,6 +172,9 @@ aside{background:var(--ink);color:#EAF0EE;padding:22px 20px 40px;position:sticky
 /* quartile row: always one line - 4 equal Q cells + a wider "Unranked" cell, text shrinks instead of wrapping */
 #qchips,#aqchips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.9fr);gap:5px}
 #qchips .chip,#aqchips .chip{padding:6px 4px;text-align:center;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+/* fee row: the two buttons always share one line (DE labels are long) */
+#fchips,#afchips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+#fchips .chip,#afchips .chip{padding:6px 4px;text-align:center;white-space:nowrap;min-width:0;font-size:11.5px;letter-spacing:-.01em}
 .chip{cursor:pointer;user-select:none;font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:12px;padding:6px 11px;border-radius:20px;border:1px solid #2a4c54;background:#0a1e24;color:#c6d4d1;transition:.12s}
 .chip:hover{border-color:#3d6069}
 .chip.on{color:#0E2A33;border-color:transparent}

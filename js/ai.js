@@ -275,4 +275,6 @@ function bindAI(){
 }
 
 /* language switch: re-render the status line (it is JS-generated, not data-i18n) */
-if(typeof I18N!=='undefined'&&I18N.onChange) I18N.onChange(()=>{ if(AI.status&&AI.status.ready&&AI.emb) aiProgress(100,t('Ready: {n} journals indexed. Everything stays on this device.',{n:AI.emb.n.toLocaleString()})); });
+if(typeof I18N!=='undefined'&&I18N.onChange) I18N.onChange(()=>{
+  if(AI.status&&AI.status.ready&&AI.emb){ aiProgress(100,t('Ready: {n} journals indexed. Everything stays on this device.',{n:AI.emb.n.toLocaleString()})); AI.status.ready=true; }   // keep the marker so every later switch re-renders too
+});
