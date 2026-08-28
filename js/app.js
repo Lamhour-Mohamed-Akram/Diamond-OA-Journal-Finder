@@ -312,6 +312,12 @@ function bindOnce(){
   document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('modal').style.display!=='none') closeModal(); });
   bindConfsOnce();
   bindAI();
+  bindBasket();
+  // "back to top": appears after scrolling down a screen; sits above the language switcher, bottom-right
+  const tt=$('toTop');
+  const onScroll=()=>tt.classList.toggle('show',window.scrollY>window.innerHeight*0.8);
+  window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
+  tt.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
   // language switch: re-render everything JS generates
   I18N.onChange(()=>{
     renderStats();

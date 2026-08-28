@@ -28,7 +28,7 @@
 <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 <link rel="dns-prefetch" href="https://huggingface.co">
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=38">
+<link rel="stylesheet" href="css/style.css?v=41">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -422,6 +422,17 @@
 </aside>
 
 <div class="side-backdrop" id="sideBackdrop"></div>
+
+<button class="totop" id="toTop" type="button" aria-label="Back to top" data-i18n-label title="Back to top" data-i18n-title>↑</button>
+
+<!-- ---- Shortlist drawer (right side) ---- -->
+<div class="bk-backdrop" id="bkBackdrop"></div>
+<div class="bk" id="bk" role="dialog" aria-modal="true" aria-label="Shortlist" data-i18n-label>
+  <div class="bk-head"><h2><span data-i18n>☆ Shortlist</span> <b class="bk-count">0</b></h2><button class="bk-x" id="bkClose" aria-label="Close" data-i18n-label>✕</button></div>
+  <p class="bk-hint" data-i18n="bk.hint">Journals you added with “+ Add”. Kept on this device until you clear it; exporting downloads every detail as CSV and empties the list.</p>
+  <div class="bk-list" id="bkList"></div>
+  <div class="bk-foot"><button class="reset" id="bkClear" data-i18n>Clear list</button><button class="bk-export" id="bkExport" data-i18n>⬇ Export CSV (all details)</button></div>
+</div>
 <button class="side-toggle" id="sideToggle" type="button" aria-label="Hide or show the filters panel" data-i18n-label title="Hide / show filters" data-i18n-title><span class="ic">‹</span><span class="tx" data-i18n>Filters</span></button>
 <main>
   <!-- ---- Journals ---- -->
@@ -432,6 +443,7 @@
       <div class="tools">
         <button class="toolbtn" id="shareBtn" title="Copy a link that opens this exact filtered view" data-i18n-title data-i18n>🔗 Share view</button>
         <button class="toolbtn" id="exportBtn" title="Download the current filtered list as a CSV file" data-i18n-title data-i18n>⬇ Export CSV</button>
+        <button class="toolbtn basket-btn" title="Open your shortlist of picked journals" data-i18n-title><span data-i18n>☆ Shortlist</span> <b class="bk-count">0</b></button>
       </div>
     </div>
     <div class="sortbar" id="sortbar" title="Click a key to sort by it; click again to reverse; a third click removes it. Several keys combine in the order you picked them." data-i18n-title>
@@ -453,7 +465,7 @@
   <div id="main-a" style="display:none">
     <div class="topbar">
       <div class="count"><b id="aresCount"></b><span data-i18n>suggested journals</span></div>
-      <div class="tools"><button class="toolbtn" id="aiExport" style="display:none" title="Download all scored matches (current sort) as a CSV file" data-i18n-title data-i18n>⬇ Export CSV</button></div>
+      <div class="tools"><button class="toolbtn basket-btn" title="Open your shortlist of picked journals" data-i18n-title><span data-i18n>☆ Shortlist</span> <b class="bk-count">0</b></button><button class="toolbtn" id="aiExport" style="display:none" title="Download all scored matches (current sort) as a CSV file" data-i18n-title data-i18n>⬇ Export CSV</button></div>
     </div>
     <div class="aipriv"><svg class="ic-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10.5" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg><span data-i18n>On-device AI · nothing leaves your browser</span></div>
     <div class="sortbar" id="aisortbar" title="Click a key to sort by it; click again to reverse." data-i18n-title>
@@ -525,12 +537,13 @@
 
 <!-- bump ?v= together with any JS/CSS change so browsers never mix old and
      new files from cache (symptom: "... is not defined" errors after a deploy) -->
-<script src="js/i18n.js?v=17"></script>
+<script src="js/i18n.js?v=19"></script>
 <script src="js/data.js?v=12"></script>
-<script src="js/journals.js?v=21"></script>
+<script src="js/journals.js?v=22"></script>
+<script src="js/basket.js?v=2"></script>
 <script src="js/scopus.js?v=12"></script>
 <script src="js/confs.js?v=7"></script>
-<script src="js/app.js?v=32"></script>
+<script src="js/app.js?v=34"></script>
 <script src="js/ai.js?v=14"></script>
 <script src="js/loader.js?v=19"></script>
 </body>

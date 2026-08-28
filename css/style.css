@@ -437,3 +437,46 @@ body:not(.app-open) .side-toggle{display:none}
 .airow.gd .aiscore small{color:var(--amber)}.airow.gd .aimeter i{background:var(--amber)}
 .airow.ps .aiscore small{color:var(--slate)}.airow.ps .aimeter i{background:var(--slate)}
 @media(max-width:860px){.aihead{grid-template-columns:auto 1fr}.aimeter{grid-column:1/3}.aiwhy{grid-column:1/3}.airank{grid-row:auto}}
+
+/* ---- Shortlist: "+ Add" on cards, counter button, right-side drawer ---- */
+.pick-btn{background:var(--card);border:1px solid var(--line-2);border-radius:7px;padding:6px 10px;font-size:11.5px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;transition:.1s;white-space:nowrap}
+.pick-btn:hover{border-color:var(--coral);color:var(--coral)}
+.pick-btn.on{background:var(--sea-soft);border-color:#9fccb8;color:var(--sea)}
+.basket-btn .bk-count{font-family:"IBM Plex Mono",monospace;font-weight:600;background:var(--paper-2);border-radius:10px;padding:1px 7px;margin-left:2px}
+.basket-btn.has .bk-count{background:var(--coral);color:#fff}
+.bk-backdrop{position:fixed;inset:0;z-index:90;background:rgba(14,42,51,.45);opacity:0;pointer-events:none;transition:opacity .2s}
+.bk-backdrop.open{opacity:1;pointer-events:auto}
+.bk{position:fixed;top:0;right:0;height:100vh;height:100dvh;width:min(420px,92vw);z-index:95;background:var(--card);box-shadow:-20px 0 50px rgba(14,42,51,.25);transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column}
+.bk.open{transform:none}
+.bk,.bk h2,.bk b{color:var(--ink)}
+.bk a{color:var(--ink)}
+.bk-head{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 10px}
+.bk-head h2{font-family:Spectral,Georgia,serif;font-size:20px;margin:0}
+.bk-head .bk-count{font-family:"IBM Plex Mono",monospace;font-size:14px;background:var(--coral);color:#fff;border-radius:10px;padding:1px 8px;vertical-align:middle}
+.bk-x{background:transparent;border:1px solid var(--line-2);border-radius:8px;width:32px;height:32px;cursor:pointer;color:var(--muted);font-size:14px}
+.bk-x:hover{border-color:var(--coral);color:var(--coral)}
+.bk-hint{margin:0 20px 10px;font-size:12px;color:var(--muted);line-height:1.45}
+.bk-list{flex:1;overflow-y:auto;padding:4px 20px}
+.bk-empty{padding:30px 10px;text-align:center;color:var(--muted);font-size:13px;line-height:1.5}
+.bk-item{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--line)}
+.bk-q{border-radius:8px;text-align:center;font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;padding:7px 0}
+.bk-main{min-width:0;display:flex;flex-direction:column;gap:2px}
+.bk-main b{font-family:Spectral,Georgia,serif;font-weight:600;font-size:14px;line-height:1.25}
+.bk-main b a{text-decoration:none}.bk-main b a:hover{text-decoration:underline;text-decoration-color:var(--coral)}
+.bk-main span{font-size:11.5px;color:var(--muted)}
+.bk-del{background:transparent;border:1px solid transparent;border-radius:6px;width:28px;height:28px;cursor:pointer;color:var(--muted-2);font-size:13px}
+.bk-del:hover{border-color:var(--coral);color:var(--coral)}
+.bk-foot{display:flex;gap:10px;padding:14px 20px 18px;border-top:1px solid var(--line);background:var(--paper)}
+.bk-foot .reset{width:auto;margin:0;flex:1;color:var(--ink);border-color:var(--line-2)}
+.bk-foot .reset:hover{color:var(--coral)}
+.bk-export{flex:1.4;background:var(--coral);color:#fff;border:0;border-radius:9px;padding:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
+.bk-export:hover{filter:brightness(.95)}
+.bk-foot button:disabled{opacity:.45;cursor:default;filter:none}
+
+/* ---- back-to-top button (bottom-right, above the language switcher) ---- */
+.totop{position:fixed;right:18px;bottom:64px;z-index:32;width:40px;height:40px;border-radius:50%;border:1px solid var(--line-2);background:var(--card);color:var(--ink);font-size:18px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(14,42,51,.18);opacity:0;visibility:hidden;transform:translateY(8px);transition:.2s}
+.totop.show{opacity:1;visibility:visible;transform:none}
+.totop:hover{border-color:var(--coral);color:var(--coral)}
+.totop:focus-visible{outline:2px solid var(--coral);outline-offset:2px}
+body:not(.app-open) .totop{display:none}
+@media(max-width:860px){.totop{right:14px;bottom:70px}}
