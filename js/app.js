@@ -1,13 +1,13 @@
 /* ================= App shell / tabs ================= */
 /* ---- "Support this free project" footer link (Buy Me a Coffee) ----
    Rendered only when SUPPORT_LINK_ENABLED is true; otherwise nothing is
-   inserted into the DOM. Currently enabled ONLY for local development
-   (localhost, 127.0.0.1, file://) and therefore absent on openaccessfinder.de.
-   TO ENABLE IT PUBLICLY LATER: replace the value of SUPPORT_LINK_ENABLED
-   below with `true` (one-line change), bump ?v= for app.js in index.html and
-   redeploy. */
+   inserted into the DOM. Currently HIDDEN everywhere (false).
+   TO SHOW IT: set SUPPORT_LINK_ENABLED below to `true` (everywhere), or to
+   SUPPORT_LINK_LOCAL_ONLY (localhost / 127.0.0.1 / file:// only), then bump
+   ?v= for app.js in index.html and redeploy. */
 const SUPPORT_LINK_URL='https://buymeacoffee.com/openaccessfinder';
-const SUPPORT_LINK_ENABLED=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)||location.protocol==='file:';
+const SUPPORT_LINK_LOCAL_ONLY=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)||location.protocol==='file:';
+const SUPPORT_LINK_ENABLED=false;
 function supportLinkHtml(){
   return '<a class="support" href="'+SUPPORT_LINK_URL+'" target="_blank" rel="noopener noreferrer">'
     +'<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg>'

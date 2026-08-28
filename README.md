@@ -99,4 +99,6 @@ Bundled snapshots for the one-click load live in [`data/`](data/) and refresh th
 
 Made by **Mohamed-Akram Lamhour** — [LinkedIn](https://www.linkedin.com/in/ak2lamhour/)
 
+<!-- Support link, hidden for now. To show it, remove this comment wrapper:
 This is a free, non-profit side project. If it saves you time, you can [☕ support it on Buy Me a Coffee](https://buymeacoffee.com/openaccessfinder).
+-->
