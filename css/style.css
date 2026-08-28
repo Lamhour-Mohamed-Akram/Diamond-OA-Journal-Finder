@@ -436,6 +436,9 @@ body:not(.app-open) .side-toggle{display:none}
 .airow.st .aiscore small{background:none}
 .airow.gd .aiscore small{color:var(--amber)}.airow.gd .aimeter i{background:var(--amber)}
 .airow.ps .aiscore small{color:var(--slate)}.airow.ps .aimeter i{background:var(--slate)}
+.airow.wk .aiscore small{color:var(--muted-2)}.airow.wk .aimeter i{background:#c9c4b8}
+.aiwhy span{display:block}.aiwhy em{font-style:normal;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);margin-right:4px}
+.aiwhy .aiw-pref{color:var(--muted)}
 @media(max-width:860px){.aihead{grid-template-columns:auto 1fr}.aimeter{grid-column:1/3}.aiwhy{grid-column:1/3}.airank{grid-row:auto}}
 
 /* ---- Shortlist: "+ Add" on cards, counter button, right-side drawer ---- */

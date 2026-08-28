@@ -7,9 +7,11 @@
    title + keywords + subjects + SCImago categories). Nothing is uploaded; the
    model and the vectors are cached on the device after the first use.
 
-   Match score = 60 % semantic similarity + 15 % quartile (unranked = 0) +
-   10 % subject area + 10 % keyword overlap + 5 % free-to-publish, then filtered by the same
-   fee / quartile / indexed toggles as the Journals tab. */
+   Scoring lives in js/ai-score.js: the displayed percentage is topical
+   relevance only (calibrated cosine); quartile / fees / keywords only affect
+   the ORDER of journals that already passed the relevance threshold, after a
+   discipline-compatibility gate. Filters (fee / quartile / indexed / area)
+   restrict the candidates but never add relevance. */
 const AI_CDN='https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
 const AI_MODEL='Xenova/all-MiniLM-L6-v2';
 const AI_EMB_KEY='emb1';                   // IndexedDB key (bump with the .bin layout)
@@ -91,8 +93,7 @@ async function aiEmbed(text){
   return v;
 }
 
-/* ---- scoring ---- */
-const AI_QS={Q1:1,Q2:.75,Q3:.5,Q4:.25,'':0};
+/* ---- filters (restrict candidates only) ---- */
 function aiMatch(r){
   if(!aiState.fees.has(r.dia?'dia':'apc')) return false;
   if(r.src){ if(!aiState.extra) return false; }   // journals not in DOAJ: only via their own toggle, never ranked
@@ -131,6 +132,15 @@ async function aiExtraVecs(){
   AI.extraKey=key; AI.extraVecs=extra.map((r,i)=>({r,v:vecs[i]}));
   return AI.extraVecs;
 }
+/* family descriptors are embedded once per session (11 short texts) */
+async function aiFamilyVecs(){
+  if(AI.famVecs) return AI.famVecs;
+  const keys=Object.keys(AI_FAMILIES);
+  const out=await AI.extractor(keys.map(k=>AI_FAMILIES[k]),{pooling:'mean',normalize:true});
+  const dim=out.dims[1]; AI.famVecs={};
+  keys.forEach((k,i)=>{ AI.famVecs[k]=out.data.slice(i*dim,(i+1)*dim); });
+  return AI.famVecs;
+}
 async function aiRun(fromButton){
   const subj=$('aiSubj').value.trim(), abs=$('aiAbs').value.trim();
   if(!abs&&!subj) return;
@@ -140,6 +150,10 @@ async function aiRun(fromButton){
     await aiEnsure();
     aiProgress(100,t('Matching…'));
     const q=await aiEmbed(text);
+    // discipline gate: which families does the manuscript belong to?
+    const fv=await aiFamilyVecs(); const cosByFam={};
+    for(const k in fv){ let s=0; const v=fv[k]; for(let d=0;d<v.length;d++) s+=v[d]*q[d]; cosByFam[k]=s; }
+    const msFams=manuscriptFamilies(cosByFam);
     const {n,dim,scale,ids,vec}=AI.emb;
     const byIssn=new Map(); for(const r of R) for(const i of (r.issns||[r.issn])) if(i&&!byIssn.has(i)) byIssn.set(i,r);
     const low=' '+text.toLowerCase()+' ';
@@ -159,18 +173,20 @@ async function aiRun(fromButton){
         out.push({r,cos:s});
       }
     }
-    out.sort((a,b)=>b.cos-a.cos);
-    const top=out.slice(0,AI_POOL).map(({r,cos})=>{
-      const sem=Math.max(0,Math.min(1,(cos-0.10)/0.45));   // journal texts are short keyword lists, so cosines of ~0.5 already mean a very close scope
-      const kw=aiKeywordHits(r,low);
-      const areaHit=aiState.area?((r.areas||'').includes(aiState.area)?1:0):sem;
-      const qs=AI_QS[r.idx&&r.q?r.q:''];
-      const score=.6*sem+.1*areaHit+.1*Math.min(1,kw.length/3)+.15*qs+.05*(r.dia?1:.5);
-      return {r,cos,sem,kw,score};
-    }).sort((a,b)=>b.score-a.score||(AI_QS[b.r.idx&&b.r.q?b.r.q:'']-AI_QS[a.r.idx&&a.r.q?a.r.q:'']));
+    // 1. relevance threshold + discipline gate (no metadata can rescue an irrelevant journal)
+    const passed=[]; let gated=0;
+    for(const {r,cos} of out){
+      const scope=scopeFromCos(cos);
+      if(scope<AI_MIN_SCOPE) continue;
+      if(!gatePasses(r,msFams,scope)){ gated++; continue; }
+      passed.push({r,cos,scope});
+    }
+    // 2. order by scope + preferences; the displayed % stays the scope
+    const top=passed.map(x=>{ const kw=aiKeywordHits(x.r,low); return {...x,kw,sem:x.scope,score:rankScore(x.scope,x.r,kw.length)}; })
+      .sort((a,b)=>b.score-a.score||b.scope-a.scope).slice(0,AI_POOL);
     top.forEach((x,i)=>x.rank=i+1);
     AI.limit=AI_TOP;
-    AI.results={top,total:out.length,text};
+    AI.results={top,total:out.length,text,fams:msFams,gated};
     AI.ran=true;
     renderAI();
     aiProgress(100,t('Ready: {n} journals indexed. Everything stays on this device.',{n:AI.emb.n.toLocaleString()}));
@@ -182,17 +198,23 @@ async function aiRun(fromButton){
 }
 
 /* ---- rendering ---- */
-function aiLabel(p){ return p>=80?t('Excellent match'):p>=65?t('Strong match'):p>=50?t('Good match'):t('Possible match'); }
+const AI_BUCKET_LABEL={strong:'Strong match',good:'Good match',possible:'Possible match — check the scope',weak:'Weak match'};
+function aiLabel(p){ return t(AI_BUCKET_LABEL[aiBucket(p)]||'Weak match'); }
+/* two explicit lines: what is topical, and what only influenced the order */
 function aiWhy(x){
-  const bits=[];
-  if(x.kw.length) bits.push(t('Shares your topics: {k}',{k:x.kw.slice(0,4).map(esc).join(', ')}));
-  else if(x.sem>=.6) bits.push(t('Scope closely related to your abstract'));
-  else if(x.sem>=.4) bits.push(t('Scope related to your abstract'));
+  const topic=[];
+  if(x.kw.length) topic.push(t('Shares your topics: {k}',{k:x.kw.slice(0,4).map(esc).join(', ')}));
+  else if(x.scope>=.5) topic.push(t('Scope closely related to your abstract'));
+  else if(x.scope>=.35) topic.push(t('Scope related to your abstract'));
+  else topic.push(t('Only partly related: check the journal’s aims & scope'));
   const cats=(x.r.cats||'').split(';').map(s=>s.trim()).filter(Boolean).slice(0,2);
-  if(cats.length) bits.push(t('Ranked in {c}',{c:cats.map(esc).join(', ')}));
-  else if(x.r.dsub) bits.push(esc(x.r.dsub.split('|')[0].trim()));
-  if(x.r.dia) bits.push(t('free to publish'));
-  return bits.join(' · ');
+  if(cats.length) topic.push(t('Ranked in {c}',{c:cats.map(esc).join(', ')}));
+  else if(x.r.dsub) topic.push(esc(x.r.dsub.split('|')[0].trim()));
+  const pref=[];
+  if(x.r.idx&&x.r.q) pref.push(x.r.q);
+  if(x.r.dia) pref.push(t('free to publish'));
+  return '<span class="aiw-topic"><em>'+t('Topical match')+'</em> '+topic.join(' · ')+'</span>'
+    +(pref.length?'<span class="aiw-pref"><em>'+t('Order by your preferences')+'</em> '+pref.join(' · ')+'</span>':'');
 }
 function renderAI(){
   const list=$('alist'); if(!list) return;
@@ -210,10 +232,10 @@ function renderAI(){
   const top=all.slice(0,AI.limit);
   renderAISort();
   $('aresCount').textContent=top.length.toLocaleString();
-  if(!top.length){ list.innerHTML='<div class="empty"><h3>'+t('No journals match')+'</h3><p>'+t('Try enabling more quartiles or fee types in the panel.')+'</p></div>'; return; }
-  list.innerHTML='<div class="aihint">'+t('Top {k} of {n} journals passing your filters, ranked by scope similarity to your text.',{k:top.length,n:total.toLocaleString()})+'</div>'
+  if(!top.length){ list.innerHTML='<div class="empty"><h3>'+t('No sufficiently relevant journal')+'</h3><p>'+t('No sufficiently relevant journal matches your filters. Widen the budget, the quartiles or the selected disciplines.')+'</p></div>'; return; }
+  list.innerHTML='<div class="aihint">'+t('{k} relevant journals (of {n} passing your filters). The percentage is topical relevance only; quartile and fees only affect the order.',{k:all.length.toLocaleString(),n:total.toLocaleString()})+'</div>'
     +top.map((x,i)=>{
-      const p=Math.round(x.score*100), cls=p>=80?'ex':p>=65?'st':p>=50?'gd':'ps';
+      const p=Math.round(x.scope*100), b=aiBucket(p), cls=b==='strong'?'st':b==='good'?'gd':b==='possible'?'ps':'wk';
       return '<div class="airow '+cls+'"><div class="aihead"><span class="airank">#'+x.rank+'</span>'
         +'<div class="aiscore"><b>'+p+'%</b><small>'+aiLabel(p)+'</small></div>'
         +'<div class="aimeter"><i style="width:'+p+'%"></i></div>'
@@ -234,8 +256,8 @@ function renderAISort(){
 function exportAI(){
   if(!AI.sorted||!AI.sorted.length) return;
   const strip=h=>h.replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
-  downloadCSV(['Match rank','Match score %','Why','Shared keywords',...CSV_HEAD],
-    AI.sorted.map(x=>[x.rank,Math.round(x.score*100),strip(aiWhy(x)),x.kw.join('; '),...csvRow(x.r)]),'ai-journal-matches');
+  downloadCSV(['Rank','Topical match %','Ranking score (with preferences)','Why','Shared keywords',...CSV_HEAD],
+    AI.sorted.map(x=>[x.rank,Math.round(x.scope*100),x.score.toFixed(3),strip(aiWhy(x).replace(/<\/span>/g,' | ')),x.kw.join('; '),...csvRow(x.r)]),'ai-journal-matches');
 }
 function bindAI(){
   $('aiExport').addEventListener('click',exportAI);
