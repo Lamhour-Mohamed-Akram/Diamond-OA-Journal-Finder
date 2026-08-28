@@ -4,13 +4,14 @@
 
    Model: Xenova/all-MiniLM-L6-v2 (384 dims, int8 ONNX, ~23 MB), the same
    model the browser runs through Transformers.js, so both sides live in the
-   same vector space. Each journal is described by its title + DOAJ keywords +
-   DOAJ subjects + SCImago categories (DOAJ has no aims & scope text, only a
-   URL to it). In the app, only the visitor's abstract is embedded live; the
+   same vector space. Each journal's vector is the weighted sum of separate
+   field embeddings - title, DOAJ keywords, DOAJ subjects, SCImago categories,
+   SCImago areas - with explicit weights from js/ai-score.js and generic terms
+   removed (DOAJ has no aims & scope text, only a URL to it). In the app, only the visitor's abstract is embedded live; the
    journals are compared against this file with a cosine similarity.
 
    Binary layout (little-endian):
-     "OAE1"            4 bytes  magic / format version
+     "OAE2"            4 bytes  magic / format version (OAE2 = weighted per-field vectors)
      uint32 n          number of journals
      uint32 dim        vector length (384)
      float32 scale     int8 → float multiplier (vectors are unit-length)
@@ -43,39 +44,41 @@ const { parseCSV, sniffDelim, doajCsvToInters, assemble } = ctx;
 const load = f => { const t = rd(f); return parseCSV(t, sniffDelim(t.slice(0, t.indexOf('\n')))); };
 const R = assemble(doajCsvToInters(load('data/doaj.csv')), load('data/scimago.csv')).records.filter(r => r.issn);
 
-/* ---- the text that stands in for each journal's scope ---- */
-const clean = s => String(s || '').replace(/\s+/g, ' ').trim();
-function journalText(r){
-  const cats = clean(r.cats).split(';').map(c => c.replace(/\s*\(Q[1-4]\)\s*$/, '').trim()).filter(Boolean);
-  const subs = clean(r.dsub).split('|').map(s => s.trim()).filter(Boolean);
-  const parts = [clean(r.t), clean(r.kw), subs.join('; '), cats.join('; ')].filter(Boolean);
-  return parts.join('. ');
-}
+/* ---- the matching document: per-field embeddings combined with explicit
+   weights (AI_FIELD_WEIGHTS in js/ai-score.js), generic terms removed ---- */
+vm.runInContext(rd('js/ai-score.js'), ctx, { filename: 'ai-score.js' });
+const { journalFields, AI_FIELD_WEIGHTS, aiConfidence } = ctx;
+const FIELDS = Object.keys(AI_FIELD_WEIGHTS);
 
 env.allowLocalModels = false;
-console.log(`Embedding ${R.length.toLocaleString()} journals with ${MODEL} …`);
+console.log(`Embedding ${R.length.toLocaleString()} journals × ${FIELDS.length} fields with ${MODEL} …`);
 const extractor = await pipeline('feature-extraction', MODEL, { dtype: 'q8' });
-
 const dimProbe = await extractor('probe', { pooling: 'mean', normalize: true });
 const DIM = dimProbe.dims[1];
 const vecs = new Float32Array(R.length * DIM);
+const conf = { high: 0, medium: 0, low: 0, insufficient: 0 };
 const t0 = Date.now();
 for (let i = 0; i < R.length; i += BATCH) {
   const batch = R.slice(i, i + BATCH);
-  const out = await extractor(batch.map(journalText), { pooling: 'mean', normalize: true });
-  vecs.set(out.data, i * DIM);
+  // embed every non-empty field of every journal in the batch in one call
+  const jobs = [];
+  batch.forEach((r, j) => { const f = journalFields(r); conf[aiConfidence(r)]++; for (const k of FIELDS) if (f[k]) jobs.push({ j, k, text: f[k] }); });
+  const out = jobs.length ? await extractor(jobs.map(x => x.text), { pooling: 'mean', normalize: true }) : null;
+  jobs.forEach((x, n) => { const o = (i + x.j) * DIM, w = AI_FIELD_WEIGHTS[x.k]; for (let d = 0; d < DIM; d++) vecs[o + d] += w * out.data[n * DIM + d]; });
+  for (let j = 0; j < batch.length; j++) { const o = (i + j) * DIM; let nrm = 0; for (let d = 0; d < DIM; d++) nrm += vecs[o + d] * vecs[o + d]; nrm = Math.sqrt(nrm) || 1; for (let d = 0; d < DIM; d++) vecs[o + d] /= nrm; }
   if ((i / BATCH) % 20 === 0 || i + BATCH >= R.length) {
     const done = Math.min(i + BATCH, R.length), s = (Date.now() - t0) / 1000;
     process.stdout.write(`  ${done.toLocaleString()} / ${R.length.toLocaleString()}  (${s.toFixed(0)}s, ETA ${(s / done * (R.length - done)).toFixed(0)}s)\n`);
   }
 }
+console.log('metadata confidence:', JSON.stringify(conf));
 
 /* ---- quantize to int8 with one global scale ---- */
 let maxAbs = 0;
 for (let i = 0; i < vecs.length; i++) { const a = Math.abs(vecs[i]); if (a > maxAbs) maxAbs = a; }
 const scale = maxAbs / 127;
 const head = Buffer.alloc(16);
-head.write('OAE1', 0, 'ascii');
+head.write('OAE2', 0, 'ascii');   // OAE2 = weighted per-field vectors (see js/ai-score.js)
 head.writeUInt32LE(R.length, 4);
 head.writeUInt32LE(DIM, 8);
 head.writeFloatLE(scale, 12);

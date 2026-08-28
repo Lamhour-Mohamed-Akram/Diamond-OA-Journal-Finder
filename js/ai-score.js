@@ -10,18 +10,76 @@
      publish, shared keywords) used ONLY to order journals that already
      passed the relevance threshold. Never displayed as a percentage.
 
-   Calibration (all-MiniLM-L6-v2, journal text = title + keywords + subjects
-   + SCImago categories): for a typical abstract the nearest journals score
-   cos 0.30-0.46, the 99th percentile is ~0.20 and unrelated fields sit
-   below 0.07. scope = (cos - 0.12) / 0.38 maps that to 0-90 %. */
-var AI_COS_LO=0.12, AI_COS_HI=0.50;
-var AI_MIN_SCOPE=0.20;           // below this a journal is not a recommendation at all
+   Calibration (all-MiniLM-L6-v2, OAE2 weighted field vectors): for a typical
+   abstract the nearest journals score cos 0.30-0.45, the 98th percentile is
+   ~0.19, the 95th ~0.135 and unrelated fields sit below 0.08.
+   scope = (cos - 0.13) / 0.33 maps that to 0-95 %; the 20 % floor therefore
+   sits at cos ≈ 0.196 (top ~2 % of journals). Re-check with `npm test`
+   whenever embeddings.bin is rebuilt with another model or weights. */
+/* ---- matching document: explicit per-field weights ----
+   Journal vector = normalize( Σ weight_f · embed(field_f) ) over the topical
+   fields below (built offline by scripts/build-embeddings.mjs and, for the
+   journals not in DOAJ, in the browser). Cosine(manuscript, journal) is then
+   the weighted sum of per-field cosines divided by the combined norm - so the
+   weights are explicit and testable, no field is repeated as a hack, and no
+   non-topical field (publisher, country, language, fees, quartile, SJR,
+   H-index, turnaround, notes, URLs) is ever embedded. */
+var AI_FIELD_WEIGHTS={title:0.15,keywords:0.35,subjects:0.30,categories:0.15,areas:0.05};
+/* generic terms carry no topical evidence on their own; they are removed from
+   the journal fields before embedding (a keyword list left empty after this
+   counts as "no meaningful keywords") */
+var AI_GENERIC=/\b(research|researches|science|sciences|scientific|journal|journals|international|advances|advanced|system|systems|model|models|modeling|modelling|engineering|technology|technologies|analysis|data|intelligent|intelligence|energy|prediction|predictions|control|application|applications|applied|studies|study|review|reviews|general|innovation|innovative|development|management|open access|multidisciplinary|interdisciplinary)\b/gi;
+function aiClean(s){ return String(s||'').replace(/\s*\(Q[1-4]\)\s*/g,' ').replace(/[|;]/g,', ').replace(/\s+/g,' ').trim(); }
+/* item-level normalization: a field is split into items (commas, semicolons,
+   pipes, LCC colons); an item made only of generic terms / connectors is
+   dropped, compound items ("artificial intelligence", "computer science")
+   are kept intact. "(miscellaneous)" and "(Qn)" tags are removed. */
+var AI_CONNECT=/\b(and|of|for|in|the|on|to|with|its|their|general|miscellaneous)\b/gi;
+function aiStripGeneric(s){
+  const items=aiClean(s).replace(/\(miscellaneous\)/gi,' ').split(/[,;|:]+|\.\s+/);
+  const kept=[];
+  for(let it of items){
+    it=it.replace(/\s+/g,' ').trim(); if(!it) continue;
+    const core=it.replace(AI_GENERIC,' ').replace(AI_CONNECT,' ').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+    if(core.length<3) continue;              // nothing but generic words
+    kept.push(it);
+  }
+  return kept.join(', ');
+}
+/* the five topical fields, cleaned; empty string = field absent */
+function journalFields(r){
+  return {
+    title:aiStripGeneric(r.t),
+    keywords:aiStripGeneric(r.kw),
+    subjects:aiStripGeneric(String(r.dsub||'').replace(/\|/g,', ')),
+    categories:aiStripGeneric(r.cats),
+    areas:aiStripGeneric(r.areas),
+  };
+}
+/* metadata confidence: what topical evidence exists for this journal */
+function aiConfidence(r){
+  const f=journalFields(r);
+  const kw=f.keywords.length>=3, sub=f.subjects.length>=3, cat=f.categories.length>=3||f.areas.length>=3, ti=f.title.length>=3;
+  if(kw&&sub&&cat) return 'high';
+  if(kw||sub) return 'medium';
+  if(cat||ti) return 'low';
+  return 'insufficient';
+}
+var AI_COS_LO=0.13, AI_COS_HI=0.46;
+var AI_MIN_SCOPE=0.20;           // below this a journal is not shown at all
+var AI_POSSIBLE=0.35;            // 35-49 %: "possible - verify aims & scope" section
+var AI_MAIN=0.50;                // >= 50 %: a recommendation
 var AI_GATE_BYPASS=0.50;         // strong direct evidence overrides the discipline gate (interdisciplinary work)
 var AI_QS={Q1:1,Q2:.75,Q3:.5,Q4:.25,'':0};
 
 function scopeFromCos(cos){ return Math.max(0,Math.min(1,(cos-AI_COS_LO)/(AI_COS_HI-AI_COS_LO))); }
 /* label bucket for a scope percentage (0-100) */
 function aiBucket(p){ return p>=70?'strong':p>=50?'good':p>=35?'possible':p>=20?'weak':'none'; }
+/* presentation tier: main (>= 50 %), possible (35-49 %), weak (20-34 %, collapsed), or none */
+function aiTier(scope){ return scope>=AI_MAIN?'main':scope>=AI_POSSIBLE?'possible':scope>=AI_MIN_SCOPE?'weak':'none'; }
+/* low-confidence records (title / broad categories only) are never promoted
+   above "possible"; insufficient ones are not matched at all */
+function aiTierCap(tier,conf){ return conf==='low'&&tier==='main'?'possible':tier; }
 /* ordering only: preferences are worth at most ~0.16 on top of scope */
 function rankScore(scope,r,kwHits){ return scope+.08*AI_QS[r.idx&&r.q?r.q:'']+.03*(r.dia?1:0)+.05*Math.min(1,(kwHits||0)/3); }
 
@@ -92,6 +150,40 @@ function manuscriptFamilies(cosByFam){
   if(!e.length||e[0][1]<0.10) return [];
   const cut=Math.max(0.10,e[0][1]*0.55);
   return e.filter(([,c])=>c>=cut).map(([k])=>k);
+}
+/* ---- specialist-scope gate ----
+   Some journals have a narrow scope that a broad family (Engineering, Energy,
+   Earth science, Business...) does not capture. If the journal's own text
+   signals such a specialism, the manuscript must show direct evidence of the
+   same specialism, otherwise the journal is excluded regardless of the
+   cosine. Domain lexicon only - no journal names. */
+var AI_SPECIALIST=[
+  {id:'power-grid',   j:/\b(power (grid|system|transmission|electronic)s?|smart grid|electric(al)? power|energy interconnection|grid technolog)/i, m:/\b(grid|power system|transmission line|substation|electric(al)? power|voltage|load forecast|smart grid|distribution network)/i},
+  {id:'vehicles',     j:/\b(vehicle|automotive|driving|autonomous car|traffic|transport(ation)?( engineering| systems?)?|railway|aviation|aeronautic|maritime|ship)/i, m:/\b(vehicle|car|driver|driving|traffic|road|transport|railway|aircraft|drone|ship|fleet|logistic)/i},
+  {id:'built-env',    j:/\b(built environment|building(s| physics| construction| energy)|construction|hvac|indoor air|architectur|civil engineering|structural engineering)/i, m:/\b(building|indoor|hvac|construction|structural|civil|architect|urban|occupant)/i},
+  {id:'supply-chain', j:/\b(supply chain|logistics|operations research|operations management|procurement|inventory)/i, m:/\b(supply chain|logistic|inventory|procurement|warehouse|operations|scheduling)/i},
+  {id:'earth-atmo',   j:/\b(geophysic|meteorolog|climatolog|atmospheric science|oceanograph|hydrolog|geolog|seismolog|earth science)/i, m:/\b(weather|meteorolog|atmospher|climate change|climate model|earth|geolog|ocean|hydrolog|precipitation|rainfall|soil moisture|satellite|remote sensing)/i},
+  {id:'medicine',     j:/\b(clinical|patient|medic(al|ine)|nursing|surg(ery|ical)|oncolog|cancer|hospital|disease|therap|pharmac|rehabilitat|dental|psychiatr)/i, m:/\b(patient|clinical|medical|disease|hospital|diagnos(is|tic)s? of|treatment|therap|cancer|tumou?r|health|nurs|surg)/i},
+  {id:'law',          j:/\b(law|legal|jurisprud|legislat|judicial|court)/i, m:/\b(law|legal|regulat|liabilit|legislat|court|compliance|gdpr|jurisdiction)/i},
+  {id:'religion-arts',j:/\b(theolog|religio|islamic studies|biblical|church|music|musicolog|literature|literary|linguistic|philosoph|theatre|fine arts|art history)/i, m:/\b(religio|theolog|faith|church|quran|bible|music|song|literary|novel|poem|linguistic|philosoph|artist)/i},
+  {id:'finance',      j:/\b(finance|financial|banking|accounting|marketing|econom(ics|etric)|stock market|insurance)/i, m:/\b(financ|bank|accounting|marketing|econom|market price|stock|insurance|investment|revenue|firm)/i},
+];
+function journalScopeText(r){ return [r.t,r.kw,r.dsub,r.cats].map(x=>String(x||'')).join(' | '); }
+/* a specialism only counts when it is the journal's DOMINANT scope: the title
+   signals it, or at least half of the keyword / category / subject items do.
+   One application keyword ("aeronautics" in a prognostics journal) or one
+   Scopus category ("Transportation") is not enough. */
+function specialistSignal(r,s){
+  if(s.j.test(String(r.t||''))) return true;
+  const items=[...String(r.kw||'').split(/[,;]+/),...String(r.cats||'').split(';'),...String(r.dsub||'').split('|')].map(x=>x.replace(/\(Q[1-4]\)/g,'').trim()).filter(Boolean);
+  if(!items.length) return false;
+  const hits=items.filter(it=>s.j.test(it)).length;
+  return hits/items.length>=0.5;
+}
+/* returns the specialism id that blocks the journal, or null */
+function specialistBlock(r,manuscriptLow){
+  for(const s of AI_SPECIALIST){ if(!s.m.test(manuscriptLow)&&specialistSignal(r,s)) return s.id; }
+  return null;
 }
 /* the discipline gate: a journal passes when it shares a family with the
    manuscript, is multidisciplinary / unclassified, or its scope alone is

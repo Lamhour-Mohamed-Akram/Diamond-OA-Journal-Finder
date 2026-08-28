@@ -6,6 +6,7 @@
 !data/doaj.csv
 !data/scimago.csv
 !data/extra-journals.csv
+!data/scopus-status.csv
 
 .DS_Store
 node_modules/

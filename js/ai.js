@@ -14,7 +14,7 @@
    restrict the candidates but never add relevance. */
 const AI_CDN='https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
 const AI_MODEL='Xenova/all-MiniLM-L6-v2';
-const AI_EMB_KEY='emb1';                   // IndexedDB key (bump with the .bin layout)
+const AI_EMB_KEY='emb2';                   // IndexedDB key (bump with the .bin layout)
 const AI_EMB_TTL=15*86400e3;               // refetch after 15 days (data refresh cadence)
 const AI_TOP=15;                            // shown at first; "Show more" adds 15 at a time
 const AI_POOL=300;                          // best candidates by similarity that get the full score
@@ -29,18 +29,23 @@ function aiProgress(pct,msg){
   el.style.display='block';
   el.innerHTML='<div class="aibar"><i style="width:'+Math.max(0,Math.min(100,pct))+'%"></i></div><span>'+esc(msg)+'</span>';
 }
+const AI_EMB_MAGIC='OAE2';   // weighted per-field vectors (see js/ai-score.js); older files are skipped
+const aiMagic=buf=>String.fromCharCode(...new Uint8Array(buf,0,4));
 async function aiLoadEmbeddings(){
   const c=await cacheGet(AI_EMB_KEY);
-  let buf=c&&c.buf&&(Date.now()-(c.ts||0)<AI_EMB_TTL)?c.buf:null;
+  let buf=c&&c.buf&&(Date.now()-(c.ts||0)<AI_EMB_TTL)&&aiMagic(c.buf)===AI_EMB_MAGIC?c.buf:null;
   if(!buf){
+    // GitHub raw first (free bandwidth), then the copy deployed with the site;
+    // a source serving an older format is skipped, so a newer local build wins
     for(const url of [GH_DATA+'data/embeddings.bin','data/embeddings.bin']){
-      try{ const r=await fetch(url); if(r.ok){ buf=await r.arrayBuffer(); break; } }catch(e){}
+      try{ const r=await fetch(url); if(r.ok){ const b=await r.arrayBuffer(); if(aiMagic(b)===AI_EMB_MAGIC){ buf=b; break; } console.info('embeddings.bin at '+url+' has format '+aiMagic(b)+', using the next source'); } }catch(e){}
     }
-    if(!buf){ if(c&&c.buf) buf=c.buf; else throw new Error(t('Couldn’t download the journal vectors (are you offline?). Try again in a moment.')); }
+    if(!buf){ if(c&&c.buf&&aiMagic(c.buf)===AI_EMB_MAGIC) buf=c.buf; else throw new Error(t('Couldn’t download the journal vectors (are you offline?). Try again in a moment.')); }
     else cacheSet(AI_EMB_KEY,{buf,ts:Date.now()});
   }
   const dv=new DataView(buf);
-  if(String.fromCharCode(...new Uint8Array(buf,0,4))!=='OAE1') throw new Error('embeddings.bin: unknown format');
+  const magic=aiMagic(buf);
+  if(magic!==AI_EMB_MAGIC) throw new Error('embeddings.bin: unknown format '+magic+' (expected '+AI_EMB_MAGIC+': rebuild with scripts/build-embeddings.mjs)');
   const n=dv.getUint32(4,true), dim=dv.getUint32(8,true), scale=dv.getFloat32(12,true);
   const idBytes=new Uint8Array(buf,16,n*8);
   const ids=new Array(n);
@@ -118,18 +123,29 @@ function aiKeywordHits(r,low){
 /* Journals not in DOAJ have no precomputed vector (embeddings.bin covers DOAJ
    only), so they are embedded here in the browser, once per dataset, from the
    same kind of text the build script uses (title + keywords + subjects). */
+/* per-field vectors of a set of journals (same scheme as the build script):
+   returns [{r, v (weighted, unit), fields:{name:{text,vec}}}] */
+async function aiFieldVecs(records){
+  const jobs=[]; const fields=records.map(r=>journalFields(r));
+  fields.forEach((f,j)=>{ for(const k in AI_FIELD_WEIGHTS) if(f[k]) jobs.push({j,k,text:f[k]}); });
+  const vecs=new Map(); let dim=0;
+  for(let i=0;i<jobs.length;i+=32){
+    const chunk=jobs.slice(i,i+32);
+    const out=await AI.extractor(chunk.map(x=>x.text),{pooling:'mean',normalize:true}); dim=out.dims[1];
+    chunk.forEach((x,c)=>vecs.set(x.j+':'+x.k,out.data.slice(c*dim,(c+1)*dim)));
+  }
+  return records.map((r,j)=>{
+    const v=new Float32Array(dim||384); const fl={};
+    for(const k in AI_FIELD_WEIGHTS){ const fv=vecs.get(j+':'+k); if(!fv) continue; fl[k]={text:fields[j][k],vec:fv}; for(let d=0;d<v.length;d++) v[d]+=AI_FIELD_WEIGHTS[k]*fv[d]; }
+    let n=0; for(let d=0;d<v.length;d++) n+=v[d]*v[d]; n=Math.sqrt(n)||1; for(let d=0;d<v.length;d++) v[d]/=n;
+    return {r,v,fields:fl};
+  });
+}
 async function aiExtraVecs(){
-  const extra=R.filter(r=>r.src);
+  const extra=R.filter(r=>r.src&&aiConfidence(r)!=='insufficient');
   const key=extra.map(r=>r.issn).join('|');
   if(AI.extraKey===key) return AI.extraVecs;
-  const texts=extra.map(r=>[r.t,r.kw,(r.dsub||'').replace(/\|/g,'; ')].filter(Boolean).join('. '));
-  const vecs=[];
-  for(let i=0;i<texts.length;i+=16){
-    const out=await AI.extractor(texts.slice(i,i+16),{pooling:'mean',normalize:true});
-    const dim=out.dims[1];
-    for(let c=0;c<out.dims[0];c++) vecs.push(out.data.slice(c*dim,(c+1)*dim));
-  }
-  AI.extraKey=key; AI.extraVecs=extra.map((r,i)=>({r,v:vecs[i]}));
+  AI.extraKey=key; AI.extraVecs=await aiFieldVecs(extra);
   return AI.extraVecs;
 }
 /* family descriptors are embedded once per session (11 short texts) */
@@ -145,6 +161,7 @@ async function aiRun(fromButton){
   const subj=$('aiSubj').value.trim(), abs=$('aiAbs').value.trim();
   if(!abs&&!subj) return;
   const text=[subj,abs].filter(Boolean).join('. ');
+  AI.shortText=text.split(/\s+/).filter(Boolean).length;   // word count: a bare title gives unreliable similarities
   const btn=$('aiRun'); btn.disabled=true;
   try{
     await aiEnsure();
@@ -173,20 +190,27 @@ async function aiRun(fromButton){
         out.push({r,cos:s});
       }
     }
-    // 1. relevance threshold + discipline gate (no metadata can rescue an irrelevant journal)
-    const passed=[]; let gated=0;
+    // eligibility stages (counts are kept for the hint line / diagnostics):
+    //   filters -> >= 20 % topical -> discipline family gate -> specialist-scope gate -> tiers
+    const counts={filtered:out.length,metadata:0,relevant:0,family:0,specialist:0,main:0,possible:0,weak:0};
+    const passed=[];
     for(const {r,cos} of out){
-      const scope=scopeFromCos(cos);
-      if(scope<AI_MIN_SCOPE) continue;
-      if(!gatePasses(r,msFams,scope)){ gated++; continue; }
-      passed.push({r,cos,scope});
+      const scope=scopeFromCos(cos), conf=aiConfidence(r);
+      if(conf==='insufficient') continue; counts.metadata++;
+      if(scope<AI_MIN_SCOPE) continue; counts.relevant++;
+      if(!gatePasses(r,msFams,scope)) continue; counts.family++;
+      if(specialistBlock(r,low)) continue; counts.specialist++;
+      passed.push({r,cos,scope,conf});
     }
-    // 2. order by scope + preferences; the displayed % stays the scope
-    const top=passed.map(x=>{ const kw=aiKeywordHits(x.r,low); return {...x,kw,sem:x.scope,score:rankScore(x.scope,x.r,kw.length)}; })
-      .sort((a,b)=>b.score-a.score||b.scope-a.scope).slice(0,AI_POOL);
-    top.forEach((x,i)=>x.rank=i+1);
-    AI.limit=AI_TOP;
-    AI.results={top,total:out.length,text,fams:msFams,gated};
+    // order by scope + preferences (ordering only); tier from the scope alone,
+    // capped at "possible" for low-confidence metadata
+    const top=passed.map(x=>{
+      const kw=aiKeywordHits(x.r,low);
+      return {...x,kw,tier:aiTierCap(aiTier(x.scope),x.conf),sem:x.scope,score:rankScore(x.scope,x.r,kw.length)};
+    }).sort((a,b)=>b.score-a.score||b.scope-a.scope);
+    top.forEach((x,i)=>{ x.rank=i+1; counts[x.tier]++; });
+    AI.limit=AI_TOP; AI.showWeak=false;
+    AI.results={top,total:out.length,text,fams:msFams,counts};
     AI.ran=true;
     renderAI();
     aiProgress(100,t('Ready: {n} journals indexed. Everything stays on this device.',{n:AI.emb.n.toLocaleString()}));
@@ -216,6 +240,16 @@ function aiWhy(x){
   return '<span class="aiw-topic"><em>'+t('Topical match')+'</em> '+topic.join(' · ')+'</span>'
     +(pref.length?'<span class="aiw-pref"><em>'+t('Order by your preferences')+'</em> '+pref.join(' · ')+'</span>':'');
 }
+/* one result row */
+function aiRowHtml(x){
+  const p=Math.round(x.scope*100), b=aiBucket(p), cls=b==='strong'?'st':b==='good'?'gd':b==='possible'?'ps':'wk';
+  return '<div class="airow '+cls+'"><div class="aihead"><span class="airank">#'+x.rank+'</span>'
+    +'<div class="aiscore" title="'+esc(t('Metadata-based topical similarity'))+' — '+esc(t('Estimated from journal title, keywords, subjects and indexing categories. Always verify the journal’s aims and scope.'))+'"><b>'+p+'%</b><small>'+aiLabel(p)+'</small>'
+    +(x.conf==='low'?'<span class="aiconf" title="'+esc(t('Only the title or broad categories are available for this journal.'))+'">'+t('low confidence')+'</span>':x.conf==='medium'?'<span class="aiconf mid" title="'+esc(t('Keywords or subjects available, but not both with indexing categories.'))+'">'+t('medium confidence')+'</span>':'')+'</div>'
+    +'<div class="aimeter"><i style="width:'+p+'%"></i></div>'
+    +'<div class="aiwhy">'+aiWhy(x)+'</div></div>'
+    +jrowHtml(x.r)+'</div>';
+}
 function renderAI(){
   const list=$('alist'); if(!list) return;
   $('aisortbar').style.display=AI.ran&&AI.results?'':'none';
@@ -225,25 +259,38 @@ function renderAI(){
     list.innerHTML='<div class="empty aiempty"><h3>'+t('✦ Find the right journal for your paper')+'</h3><p>'+t('Paste your abstract (and a subject) in the panel, then click <b>Find journals with AI</b>. A small language model runs in your browser and ranks every open access journal by how close its scope is to your text. Nothing is uploaded.')+'</p></div>';
     return;
   }
-  const {total}=AI.results;
+  const {total,counts}=AI.results;
   const {k,d}=aiState.sort, f=AI_SORT[k].val;
-  const all=[...AI.results.top].sort((a,b)=>{ const x=f(a),y=f(b); if(x==null&&y==null) return a.rank-b.rank; if(x==null) return 1; if(y==null) return -1; return x<y?-d:x>y?d:a.rank-b.rank; });
-  AI.sorted=all;
-  const top=all.slice(0,AI.limit);
+  const bySort=(a,b)=>{ const x=f(a),y=f(b); if(x==null&&y==null) return a.rank-b.rank; if(x==null) return 1; if(y==null) return -1; return x<y?-d:x>y?d:a.rank-b.rank; };
+  const main=AI.results.top.filter(x=>x.tier==='main').sort(bySort);
+  const poss=AI.results.top.filter(x=>x.tier==='possible').sort(bySort);
+  const weak=AI.results.top.filter(x=>x.tier==='weak').sort(bySort);
+  AI.sorted=[...main,...poss,...weak];   // export order
   renderAISort();
-  $('aresCount').textContent=top.length.toLocaleString();
-  if(!top.length){ list.innerHTML='<div class="empty"><h3>'+t('No sufficiently relevant journal')+'</h3><p>'+t('No sufficiently relevant journal matches your filters. Widen the budget, the quartiles or the selected disciplines.')+'</p></div>'; return; }
-  list.innerHTML='<div class="aihint">'+t('{k} relevant journals (of {n} passing your filters). The percentage is topical relevance only; quartile and fees only affect the order.',{k:all.length.toLocaleString(),n:total.toLocaleString()})+'</div>'
-    +top.map((x,i)=>{
-      const p=Math.round(x.scope*100), b=aiBucket(p), cls=b==='strong'?'st':b==='good'?'gd':b==='possible'?'ps':'wk';
-      return '<div class="airow '+cls+'"><div class="aihead"><span class="airank">#'+x.rank+'</span>'
-        +'<div class="aiscore"><b>'+p+'%</b><small>'+aiLabel(p)+'</small></div>'
-        +'<div class="aimeter"><i style="width:'+p+'%"></i></div>'
-        +'<div class="aiwhy">'+aiWhy(x)+'</div></div>'
-        +jrowHtml(x.r)+'</div>';
-    }).join('')
-    +(all.length>top.length?'<div class="more">'+t('Showing {a} of {b}',{a:top.length.toLocaleString(),b:all.length.toLocaleString()})+'<br><button id="aiMore">'+t('Show 15 more')+'</button></div>':'');
+  $('aresCount').textContent=(main.length+poss.length).toLocaleString();
+  const noMatch='<div class="empty"><h3>'+t('No sufficiently relevant journal')+'</h3><p>'+t('No sufficiently relevant journal was found among the journals passing your filters. Widen the budget, the quartiles or the selected disciplines.')+'</p></div>';
+  // header: never call weak / borderline results "relevant"
+  let head;
+  if(main.length) head=t('{k} relevant journals',{k:main.length.toLocaleString()})+(poss.length?' · '+t('{k} possible matches to verify',{k:poss.length.toLocaleString()}):'');
+  else if(poss.length) head=t('No strong match found · {k} possible matches to verify',{k:poss.length.toLocaleString()});
+  else head='';
+  const stages=t('Of {n} journals passing your filters: {m} with usable topical metadata, {a} topically related (≥ 20 %), {b} in a compatible discipline, {c} after the specialist-scope check.',{n:total.toLocaleString(),m:counts.metadata,a:counts.relevant,b:counts.family,c:counts.specialist});
+  const note='<span class="aimetric" title="'+esc(t('Estimated from journal title, keywords, subjects and indexing categories. Always verify the journal’s aims and scope.'))+'">'+t('Metadata-based topical similarity')+' ⓘ</span> — '+t('quartile and fees only affect the order.');
+  const shown=[...main.slice(0,AI.limit)];
+  let html=head?'<div class="aihint"><b>'+head+'</b><br>'+stages+' '+note+'</div>':noMatch+'<div class="aihint">'+stages+'</div>';
+  if(AI.shortText<40) html='<div class="aihint warn">'+t('Your text is short ({n} words). A title alone gives unreliable similarities: paste the full abstract for a meaningful estimate.',{n:AI.shortText})+'</div>'+html;
+  if(main.length){
+    html+=shown.map(aiRowHtml).join('');
+    if(main.length>shown.length) html+='<div class="more">'+t('Showing {a} of {b}',{a:shown.length.toLocaleString(),b:main.length.toLocaleString()})+'<br><button id="aiMore">'+t('Show 15 more')+'</button></div>';
+  }
+  if(poss.length) html+='<div class="aisection"><h4>'+t('Possible matches — verify the journal’s aims and scope')+' <span>'+poss.length+'</span></h4></div>'+poss.map(aiRowHtml).join('');
+  if(weak.length){
+    html+='<div class="aisection weak"><button id="aiWeakBtn" class="reset small">'+(AI.showWeak?t('Hide weak matches'):t('Show weak matches ({k})',{k:weak.length}))+'</button></div>';
+    if(AI.showWeak) html+='<div class="aihint">'+t('Weak matches (20–34 %): usually one shared generic keyword. Not recommendations.')+'</div>'+weak.map(aiRowHtml).join('');
+  }
+  list.innerHTML=html;
   const more=$('aiMore'); if(more) more.onclick=()=>{ AI.limit+=AI_TOP; renderAI(); };
+  const wb=$('aiWeakBtn'); if(wb) wb.onclick=()=>{ AI.showWeak=!AI.showWeak; renderAI(); };
 }
 function renderAISort(){
   const {k,d}=aiState.sort;
@@ -256,8 +303,8 @@ function renderAISort(){
 function exportAI(){
   if(!AI.sorted||!AI.sorted.length) return;
   const strip=h=>h.replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
-  downloadCSV(['Rank','Topical match %','Ranking score (with preferences)','Why','Shared keywords',...CSV_HEAD],
-    AI.sorted.map(x=>[x.rank,Math.round(x.scope*100),x.score.toFixed(3),strip(aiWhy(x).replace(/<\/span>/g,' | ')),x.kw.join('; '),...csvRow(x.r)]),'ai-journal-matches');
+  downloadCSV(['Rank','Tier','Topical match %','Confidence','Ranking score (with preferences)','Why','Shared keywords',...CSV_HEAD],
+    AI.sorted.map(x=>[x.rank,x.tier,Math.round(x.scope*100),x.conf,x.score.toFixed(3),strip(aiWhy(x).replace(/<\/span>/g,' | ')),x.kw.join('; '),...csvRow(x.r)]),'ai-journal-matches');
 }
 function bindAI(){
   $('aiExport').addEventListener('click',exportAI);
