@@ -70,7 +70,7 @@ async function fetchExtra(){
     try{ const r=await fetch(u); if(r.ok){ const text=await r.text(); if(registerText('extra-journals.csv',text)==='extra') return; } }catch(e){}
   }
 }
-async function fetchBundled(url,label,fallback,onProgress){
+async function fetchBundled(url,label,fallback,onProgress,quiet){
   let res=null;
   try{ res=await fetch(url); }catch(e){}
   if((!res || !res.ok) && fallback){ res=await fetch(fallback); }
@@ -85,7 +85,7 @@ async function fetchBundled(url,label,fallback,onProgress){
     const {done,value}=await reader.read();
     if(done) break;
     chunks.push(value); got+=value.length;
-    status(t('Downloading {l}… {mb} MB',{l:t(label),mb:(got/1048576).toFixed(1)}));
+    if(!quiet) status(t('Downloading {l}… {mb} MB',{l:t(label),mb:(got/1048576).toFixed(1)}));
     if(onProgress) onProgress(got,total);
   }
   const buf=new Uint8Array(got); let off=0;
@@ -97,6 +97,7 @@ async function loadBundled(){
   const btn=$('useBundled'); btn.disabled=true;
   files.manual=false; wait.show();
   try{
+    files.sig=await bundledSig();   // signature of what we are about to download (see refreshBundled)
     for(const b of BUNDLED){
       if(files.manual) return;   // user started dropping their own files - stand down
       wait.step(b.key,'active'); wait.progress(b.from,t('Downloading {l}…',{l:t(b.label)}));
@@ -124,33 +125,37 @@ $('backToApp').addEventListener('click',()=>{
   $('app').style.display='block';
 });
 
+/* Parse the registered DOAJ + SCImago files (plus the optional community
+   list) and join them. Shared by the first load and the background refresh. */
+async function buildData(afterDoaj,afterSci){
+  const inters=doajCsvToInters(parseCSV(files.doaj.text, files.doaj.delim));
+  await fetchExtra();
+  if(files.extra){
+    // skip anything DOAJ already lists (by ISSN) so a journal accepted into DOAJ later never shows twice
+    const have=new Set(); inters.forEach(it=>[it.pissn,it.eissn].map(normISSN).filter(Boolean).forEach(n=>have.add(n)));
+    const extra=extraCsvToInters(parseCSV(files.extra.text,files.extra.delim))
+      .filter(it=>![it.pissn,it.eissn].map(normISSN).filter(Boolean).some(n=>have.has(n)));
+    inters.push(...extra);
+  }
+  if(afterDoaj) afterDoaj();
+  await new Promise(r=>setTimeout(r,30));
+  const sciRows=parseCSV(files.sci.text, files.sci.delim);
+  if(afterSci) afterSci();
+  await new Promise(r=>setTimeout(r,30));
+  return assemble(inters,sciRows);
+}
+
 async function processAll(){
   try{
     if(wait.on()){ wait.step('parse','active'); wait.progress(80); }
     status(t('Parsing DOAJ file… (large file, a few seconds)'));
     await new Promise(r=>setTimeout(r,30));
-    const doajRows=parseCSV(files.doaj.text, files.doaj.delim);
-    const inters=doajCsvToInters(doajRows);
-    await fetchExtra();
-    if(files.extra){
-      // skip anything DOAJ already lists (by ISSN) so a journal accepted into DOAJ later never shows twice
-      const have=new Set(); inters.forEach(it=>[it.pissn,it.eissn].map(normISSN).filter(Boolean).forEach(n=>have.add(n)));
-      const extra=extraCsvToInters(parseCSV(files.extra.text,files.extra.delim))
-        .filter(it=>![it.pissn,it.eissn].map(normISSN).filter(Boolean).some(n=>have.has(n)));
-      inters.push(...extra);
-    }
-    if(wait.on()) wait.progress(88);
-    status(t('Parsing SCImago file…'));
-    await new Promise(r=>setTimeout(r,30));
-    const sciRows=parseCSV(files.sci.text, files.sci.delim);
-    if(wait.on()) wait.progress(94);
-    status(t('Joining on ISSN…'));
-    await new Promise(r=>setTimeout(r,30));
-    const data=assemble(inters,sciRows);
+    const data=await buildData(()=>{ if(wait.on()) wait.progress(88); status(t('Parsing SCImago file…')); },
+                               ()=>{ if(wait.on()) wait.progress(94); status(t('Joining on ISSN…')); });
     if(data.meta.total===0) throw new Error(t('Join produced 0 Diamond journals. Are these the right files?'));
     if(wait.on()){ wait.step('parse','done',t('{n} journals',{n:data.meta.total.toLocaleString()})); wait.step('done','active'); wait.progress(98,t('Saving on this device and opening…')); }
     const stamp=new Date().toLocaleDateString()+' · '+files.doaj.name+' + '+files.sci.name;
-    await cacheSet('dataset11',{data,stamp,ts:Date.now(),extraHash:files.extra?hashText(files.extra.text):''});
+    await cacheSet('dataset11',{data,stamp,ts:Date.now(),extraHash:files.extra?hashText(files.extra.text):'',sig:files.manual?'':(files.sig||'')});
     cacheDel('dataset5'); cacheDel('dataset6'); cacheDel('dataset7'); cacheDel('dataset8'); cacheDel('dataset9'); cacheDel('dataset10');   // superseded cache formats
     if(wait.on()){ wait.step('done','done'); wait.progress(100); await new Promise(r=>setTimeout(r,250)); }
     startApp(data,stamp);
@@ -198,13 +203,56 @@ async function refreshExtra(c){
   }catch(e){ console.warn('extra-journals refresh skipped',e); }
 }
 
+/* ---- Auto-refresh the DOAJ/SCImago snapshot for returning visitors ----
+   raw.githubusercontent.com exposes Content-Length cross-origin (ETag is not
+   exposed), so a HEAD on both files is a cheap signature of the published
+   snapshot. Every visit compares it with the signature the cache was built
+   from; when the refresh workflow has committed new data, the files are
+   downloaded and matched silently in the background, the cache is replaced
+   and the open list is swapped in place (filters untouched). Caches written
+   before this existed (no signature) refresh once. Manual-file caches never
+   refresh. Silent on any failure. */
+async function bundledSig(){
+  const parts=[];
+  for(const b of BUNDLED){
+    try{ const r=await fetch(b.url,{method:'HEAD',cache:'no-cache'}); const n=r.ok&&r.headers.get('content-length'); if(!n) return null; parts.push(n); }
+    catch(e){ return null; }
+  }
+  return parts.join('/');
+}
+async function refreshBundled(c){
+  try{
+    if(c.sig==='' ) return;                 // built from the visitor's own files
+    const sig=await bundledSig();
+    if(!sig || sig===c.sig) return;
+    console.info('New data snapshot published - refreshing in the background');
+    files.manual=false; files.sig=sig; files.extra=null;
+    for(const b of BUNDLED){
+      const {text}=await fetchBundled(b.url,b.label,null,null,true);
+      if(files.manual) return;               // the visitor started loading their own files - stand down
+      if(!registerText(t(b.label)+' ('+t('built-in')+')',text)) return;
+    }
+    if(files.manual) return;
+    const data=await buildData();
+    if(!data.meta.total) return;
+    const stamp=new Date().toLocaleDateString()+' · '+files.doaj.name+' + '+files.sci.name;
+    await cacheSet('dataset11',{data,stamp,ts:Date.now(),extraHash:files.extra?hashText(files.extra.text):'',sig});
+    if(typeof R!=='undefined' && R.length){
+      R=data.records; if(typeof S!=='undefined') S=data.sci||[];
+      $('sciStamp').textContent=stamp; $('dataStamp').textContent=stamp; $('cacheDate').textContent=stamp;
+      renderStats(); if(state) render();
+    }
+    console.info('Data snapshot refreshed: '+data.records.length.toLocaleString()+' journals');
+  }catch(e){ console.warn('data refresh skipped',e); }
+}
+
 cacheGet('dataset11').then(c=>{
   if(c && c.data){
     $('cacheNote').style.display='block';
     $('cacheDate').textContent=c.stamp;
     $('useCache').onclick=()=>startApp(c.data,c.stamp);
     startApp(c.data,c.stamp);   // returning visitor - straight into the app
-    refreshExtra(c);            // …then quietly pick up any new community-verified journals
+    refreshExtra(c).then(()=>refreshBundled(c));   // …then quietly pick up new community journals / a new snapshot
   } else {
     loadBundled();              // first visit - fetch the built-in data right away
   }
