@@ -3,7 +3,9 @@ name: Refresh data snapshots
 # Refreshes the bundled snapshots behind the one-click "built-in data" load
 # twice a month (Netlify redeploys on push):
 #
-#  - data/doaj.csv    — straight from doaj.org/csv (no bot protection)
+#  - data/doaj.csv    — straight from doaj.org/csv (no bot protection), then
+#    topped up from the DOAJ search API with journals indexed after the
+#    export was cut (the export lags the live database by several weeks)
 #  - data/scimago.csv — scimagojr.com blocks scripted downloads (Cloudflare),
 #    so the latest yearly export is pulled from the community mirror
 #    github.com/ikashnitsky/sjrdata (MIT) and converted back to the official
@@ -37,6 +39,14 @@ jobs:
           head -1 doaj_new.csv | grep -qi 'apc'
           [ "$(stat -c%s doaj_new.csv)" -gt 10000000 ]
           mv doaj_new.csv data/doaj.csv
+
+      - name: Top up the DOAJ snapshot from the DOAJ API
+        # doaj.org/csv lags DOAJ's live database by several weeks, so journals
+        # indexed since the export was cut are fetched from the search API and
+        # appended in the same column layout (scripts/doaj_api_supplement.py)
+        run: |
+          pip -q install pycountry
+          python scripts/doaj_api_supplement.py data/doaj.csv
 
       - name: Refresh SCImago snapshot (via sjrdata mirror)
         run: |
