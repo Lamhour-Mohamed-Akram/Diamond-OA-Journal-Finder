@@ -1,5 +1,8 @@
 [build]
-  publish = "."
+  # dist/ is assembled by an explicit allowlist so working files (out/,
+  # scripts/, tests/, source CSVs, notes) can never reach the live site.
+  command = "bash scripts/build-dist.sh"
+  publish = "dist"
   functions = "netlify/functions"
   # Every production deploy costs ~15 credits (free plan: 300/month), so if
   # this repo is ever linked to Netlify for auto-deploys, skip builds for

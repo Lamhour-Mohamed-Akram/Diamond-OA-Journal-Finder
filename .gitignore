@@ -14,6 +14,9 @@ node_modules/
 # Local Netlify folder
 .netlify
 
+# deploy staging dir, rebuilt by scripts/build-dist.sh on every deploy
+dist/
+
 # scope enrichment: 
 out/
 .venv/
