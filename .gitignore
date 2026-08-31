@@ -13,3 +13,17 @@ node_modules/
 
 # Local Netlify folder
 .netlify
+
+# scope enrichment: 
+out/
+.venv/
+__pycache__/
+.pytest_cache/
+
+# golden fixture pack: 
+tests/scope_enrichment/fixtures/html/
+
+# scope enrichment: 
+scripts/scope_enrichment/
+tests/scope_enrichment/
+.claude/settings.local.json
