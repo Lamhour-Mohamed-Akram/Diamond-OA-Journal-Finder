@@ -269,15 +269,9 @@ function renderAI(){
   renderAISort();
   $('aresCount').textContent=(main.length+poss.length).toLocaleString();
   const noMatch='<div class="empty"><h3>'+t('No sufficiently relevant journal')+'</h3><p>'+t('No sufficiently relevant journal was found among the journals passing your filters. Widen the budget, the quartiles or the selected disciplines.')+'</p></div>';
-  // header: never call weak / borderline results "relevant"
-  let head;
-  if(main.length) head=t('{k} relevant journals',{k:main.length.toLocaleString()})+(poss.length?' · '+t('{k} possible matches to verify',{k:poss.length.toLocaleString()}):'');
-  else if(poss.length) head=t('No strong match found · {k} possible matches to verify',{k:poss.length.toLocaleString()});
-  else head='';
-  const stages=t('Of {n} journals passing your filters: {m} with usable topical metadata, {a} topically related (≥ 20 %), {b} in a compatible discipline, {c} after the specialist-scope check.',{n:total.toLocaleString(),m:counts.metadata,a:counts.relevant,b:counts.family,c:counts.specialist});
-  const note='<span class="aimetric" title="'+esc(t('Estimated from journal title, keywords, subjects and indexing categories. Always verify the journal’s aims and scope.'))+'">'+t('Metadata-based topical similarity')+' ⓘ</span> — '+t('quartile and fees only affect the order.');
+  // topical-metadata summary header removed per request (relevant/possible counts, filter funnel, disclaimer)
   const shown=[...main.slice(0,AI.limit)];
-  let html=head?'<div class="aihint"><b>'+head+'</b><br>'+stages+' '+note+'</div>':noMatch+'<div class="aihint">'+stages+'</div>';
+  let html=(main.length||poss.length)?'':noMatch;
   if(AI.shortText<40) html='<div class="aihint warn">'+t('Your text is short ({n} words). A title alone gives unreliable similarities: paste the full abstract for a meaningful estimate.',{n:AI.shortText})+'</div>'+html;
   if(main.length){
     html+=shown.map(aiRowHtml).join('');

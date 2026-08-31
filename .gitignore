@@ -27,3 +27,6 @@ tests/scope_enrichment/fixtures/html/
 scripts/scope_enrichment/
 tests/scope_enrichment/
 .claude/settings.local.json
+
+# local planning notes
+AI_MATCH_IDEAS.md
