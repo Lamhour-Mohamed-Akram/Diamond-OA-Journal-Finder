@@ -323,7 +323,7 @@ function bindOnce(){
     renderStats();
     if(state){ renderSortBar(); syncSubjLink(); $('wkVal').textContent=state.weeks>=52?t('Any'):'≤ '+state.weeks+'w'; $('apcVal').textContent=apcLabel(state.maxUsd); render(); }
     if(typeof setSrc==='function' && $('main-c').style.display!=='none') setSrc(csrc);
-    else if(typeof applyStats==='function') applyStats();
+    else { if(typeof csortOptions==='function') csortOptions(csrc); if(typeof applyStats==='function') applyStats(); }
     if($('main-s').style.display!=='none') renderScopus();
     if($('main-a').style.display!=='none') renderAI();
   });

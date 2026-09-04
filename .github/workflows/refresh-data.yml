@@ -82,6 +82,14 @@ jobs:
         run: |
           cd scripts && npm install --no-audit --no-fund && npm run build:embeddings
 
+      - name: Regenerate the subject landing pages and sitemap
+        # subjects/*/index.html, subjects/index.html, sitemap.xml and the
+        # "browse by subject" block of index.html are static HTML built from
+        # the snapshots, so their counts and "Updated <month>" go stale unless
+        # rebuilt here. These files are only served after the next
+        # `netlify deploy --prod` (the app fetches data from GitHub, pages not).
+        run: node scripts/build-subjects.mjs
+
       - name: Commit if changed
         # runs even if one source failed — the other file still gets refreshed
         # (the workflow stays red so the failure is visible)
@@ -89,5 +97,5 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -f data/doaj.csv data/scimago.csv data/scopus-status.csv data/embeddings.bin
+          git add -f data/doaj.csv data/scimago.csv data/scopus-status.csv data/embeddings.bin subjects sitemap.xml index.html
           git diff --cached --quiet || { git commit -m 'Refresh bundled data snapshots'; git push; }

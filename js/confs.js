@@ -143,6 +143,14 @@ function applyStats(){
   $('s-c30').textContent=s?s[2].toLocaleString():'–';
   $('s-ctotal-l').textContent=L[0]; $('s-copen-l').textContent=L[1]; $('s-c30-l').textContent=L[2];
 }
+/* sort <select> labels; also re-run on language change (the tab may be hidden then) */
+function csortOptions(src){
+  const sel=$('csort'), v=sel.value;
+  sel.innerHTML= src==='ma'
+    ? '<option value="tl">'+t('Date (upcoming first)')+'</option><option value="az">'+t('Title A–Z')+'</option>'
+    : '<option value="dl">'+t('Deadline soonest')+'</option><option value="ccf">'+t('CCF rank')+'</option><option value="core">'+t('CORE rank')+'</option><option value="az">'+t('Acronym A–Z')+'</option>';
+  if(v&&[...sel.options].some(o=>o.value===v)) sel.value=v;
+}
 function setSrc(src){
   csrc=src;
   document.querySelectorAll('.srcbar button').forEach(b=>b.classList.toggle('on',b.dataset.src===src));
@@ -154,10 +162,7 @@ function setSrc(src){
   $('openLbl').textContent=t(src==='ma'?'Upcoming events only':'Open calls only');
   $('openSub').textContent=t(src==='ma'?'hide events that already happened':'hide conferences with no upcoming deadline');
   $('cq').placeholder=t(src==='ma'?'Title, discipline, keyword…':'Acronym, name, place…');
-  const sel=$('csort');
-  sel.innerHTML= src==='ma'
-    ? '<option value="tl">'+t('Date (upcoming first)')+'</option><option value="az">'+t('Title A–Z')+'</option>'
-    : '<option value="dl">'+t('Deadline soonest')+'</option><option value="ccf">'+t('CCF rank')+'</option><option value="core">'+t('CORE rank')+'</option><option value="az">'+t('Acronym A–Z')+'</option>';
+  const sel=$('csort'); csortOptions(src);
   const st=curState();
   if(st){ sel.value=st.sort; $('cq').value=st.q; $('openOnly').checked=st.open; }
   else { $('cq').value=''; $('openOnly').checked=true; }

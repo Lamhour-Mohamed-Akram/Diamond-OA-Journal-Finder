@@ -14,6 +14,35 @@
 [functions]
   node_bundler = "esbuild"
 
+# Security headers. The CSP is an allowlist of everything the app actually
+# talks to; add a host here before wiring a new source into the JS.
+#   script-src   jsDelivr (Transformers.js)
+#   connect-src  GitHub raw (data snapshots, cnrst.xml, embeddings.bin),
+#                jsDelivr + Hugging Face (model weights, fetched by the AI tab),
+#                ccf-deadlines feed, the Scopus proxy ('self')
+#   worker-src   blob: (onnxruntime-web spawns wasm workers from a blob URL)
+#   'wasm-unsafe-eval' lets the browser compile the ONNX runtime's WebAssembly
+#   img-src      data: for the inline SVG icons; the ccfddl feed is text
+# 'unsafe-inline' for scripts stays for now: index.html carries inline JSON-LD
+# and the subject pages carry inline sort/filter scripts.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://raw.githubusercontent.com https://cdn.jsdelivr.net https://huggingface.co https://*.hf.co https://ccfddl.com https://ccfddl.github.io; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Cross-Origin-Opener-Policy = "same-origin"
+
+# Data snapshots and the CNRST mirror are fetched cross-origin by nothing but
+# this app itself; the bundled copies are the fallback when GitHub raw is
+# unreachable, so let browsers keep them for a day.
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
+
 # Old Netlify URL and www alias permanently redirect to the primary domain,
 # keeping the path and query string (shareable filter links keep working).
 [[redirects]]

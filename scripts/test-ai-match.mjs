@@ -138,4 +138,9 @@ ok(ctx.scopeFromCos(0)===0&&ctx.scopeFromCos(ctx.AI_COS_LO)===0&&ctx.scopeFromCo
 ok(ctx.rankScore(0,{q:'Q1',idx:true,dia:true},0)>0&&ctx.scopeFromCos(0)===0,'preferences affect rank score only, never scope');
 ok(['none','weak','possible','good','strong'].join()===[10,25,40,60,80].map(ctx.aiBucket).join(),'label buckets 20/35/50/70');
 console.log('\n'+(fails?fails+' test(s) FAILED':'all tests passed'));
-process.exit(fails?1:0);
+/* set the exit code and let the event loop drain instead of calling
+   process.exit(): tearing onnxruntime down inside process.exit() aborts the
+   process (libc++abi "mutex lock failed", exit 134) even after every test
+   passed, which would turn a green run red in CI */
+await ex.dispose();
+process.exitCode=fails?1:0;

@@ -1,9 +1,11 @@
-/* ================= i18n (EN default, FR, DE) =================
+/* ================= i18n (EN default, FR, DE, AR) =================
    - HTML: mark an element with data-i18n (key = its original English innerHTML,
      trimmed) or data-i18n="explicit.key". Optional data-i18n-args='{"n":"12"}'
      fills {n} placeholders. data-i18n-ph / data-i18n-title / data-i18n-label
      translate the placeholder / title / aria-label attributes the same way.
-   - JS: t('English text', {n: 12}) returns the translation when FR/DE is active.
+   - JS: t('English text', {n: 12}) returns the translation when FR/DE/AR is active.
+   - AR flips the document to right-to-left (dir="rtl"); the stylesheet uses
+     logical properties so the layout mirrors on its own.
    - I18N.onChange(fn) registers a hook that re-renders JS-generated content.
    The choice is remembered in localStorage and mirrored in ?lang=fr so shared
    links keep the language. English stays the default and the fallback. */
@@ -813,8 +815,417 @@
     'hub.about': 'Diamond- (oder Platinum-)Open-Access-Zeitschriften sind für Lesende und für Autorinnen und Autoren kostenlos: keine Artikelbearbeitungsgebühr, keine Einreichungsgebühr, keine Seitengebühren. Sie werden meist von Universitäten, Forschungsinstituten, Fachgesellschaften oder öffentlichen Programmen finanziert. Dort zu publizieren kostet nichts und hält Ihre Arbeit frei zugänglich, weshalb Förderer sie zunehmend empfehlen. Das Qualitätssignal ist dasselbe wie bei jeder Zeitschrift: Begutachtungsverfahren, Indexierung (Scopus, Web of Science) und das SCImago-Quartil – all das zeigt der <a href="/">Finder</a> für jeden Titel.',
   };
 
-  const D = { fr: FR, de: DE };
-  const LANGS = ['en', 'fr', 'de'];
+  const AR = {
+    /* ---- AI match ---- */
+    '✦ AI match': '✦ مطابقة بالذكاء الاصطناعي',
+    'ainfo': 'صف مقالك، ويقوم نموذج لغوي صغير (<b>MiniLM</b>، ~23 م.ب) بترتيب كل مجلات الوصول المفتوح حسب قرب نطاقها من نصك. يعمل <b>داخل متصفحك</b>: لا يُرسل شيء، لا حساب، لا واجهة برمجية.',
+    'Subject or title': 'الموضوع أو العنوان',
+    'e.g. Deep learning for irrigation scheduling': 'مثال: التعلم العميق لجدولة الري',
+    'Abstract': 'الملخص',
+    'Paste your abstract here…': 'الصق ملخصك هنا…',
+    '✦ Find journals with AI': '✦ ابحث عن المجلات بالذكاء الاصطناعي',
+    'Clear': 'مسح',
+    'Match': 'التطابق',
+    '{n} past events hidden by “upcoming events only”.': '{n} أحداث سابقة مخفية بسبب «الأحداث القادمة فقط».',
+    'Show past events too': 'أظهر الأحداث السابقة أيضاً',
+    'Download all scored matches (current sort) as a CSV file': 'تنزيل كل المطابقات المقيَّمة (بالترتيب الحالي) كملف CSV',
+    'Show 15 more': 'أظهر 15 أخرى',
+    'default: best match first': 'افتراضياً: الأفضل تطابقاً أولاً',
+    'Any subject area': 'كل المجالات',
+    'hint.ai': 'اختياري. مجلات هذا المجال في SCImago تحصل على نقاط إضافية؛ اترك «الكل» ليقرر النموذج بنفسه.',
+    'suggested journals': 'مجلات مقترحة',
+    'On-device AI · nothing leaves your browser': 'ذكاء اصطناعي على جهازك · لا شيء يغادر متصفحك',
+    'Downloading the journal vectors…': 'جارٍ تنزيل متجهات المجلات…',
+    'Loading the AI model (~23 MB, once)…': 'جارٍ تحميل نموذج الذكاء الاصطناعي (~23 م.ب، مرة واحدة)…',
+    'Loading the AI model… {p}%': 'جارٍ تحميل النموذج… {p}%',
+    'Ready: {n} journals indexed. Everything stays on this device.': 'جاهز: {n} مجلة مفهرسة. كل شيء يبقى على هذا الجهاز.',
+    'Matching…': 'جارٍ المطابقة…',
+    'Couldn’t download the journal vectors (are you offline?). Try again in a moment.': 'تعذر تنزيل متجهات المجلات (هل أنت غير متصل؟). حاول مرة أخرى بعد قليل.',
+    'Excellent match': 'تطابق ممتاز',
+    'Strong match': 'تطابق قوي',
+    'Good match': 'تطابق جيد',
+    'Possible match': 'تطابق محتمل',
+    'Possible match — check the scope': 'تطابق محتمل — تحقق من النطاق',
+    'Weak match': 'تطابق ضعيف',
+    'Only partly related: check the journal’s aims & scope': 'صلة جزئية فقط: تحقق من أهداف المجلة ونطاقها',
+    'Topical match': 'التطابق الموضوعي',
+    'Order by your preferences': 'الترتيب حسب تفضيلاتك',
+    'No sufficiently relevant journal': 'لا توجد مجلة ذات صلة كافية',
+    'No sufficiently relevant journal was found among the journals passing your filters. Widen the budget, the quartiles or the selected disciplines.': 'لم يُعثر على مجلة ذات صلة كافية بين المجلات المطابقة لمرشحاتك. وسّع الميزانية أو الأرباع أو التخصصات المختارة.',
+    '{k} relevant journals': '{k} مجلة ذات صلة',
+    '{k} possible matches to verify': '{k} تطابقاً محتملاً للتحقق',
+    'No strong match found · {k} possible matches to verify': 'لا تطابق قوي · {k} تطابقاً محتملاً للتحقق',
+    'Of {n} journals passing your filters: {a} topically related (≥ 20 %), {b} in a compatible discipline, {c} after the specialist-scope check.': 'من بين {n} مجلة مطابقة لمرشحاتك: {a} ذات صلة موضوعية (≥ 20%)، {b} في تخصص متوافق، {c} بعد فحص النطاق المتخصص.',
+    'The percentage is topical relevance only (title, keywords, subjects); quartile and fees only affect the order.': 'النسبة تعكس الصلة الموضوعية فقط (العنوان، الكلمات المفتاحية، المواضيع)؛ الربع والرسوم يؤثران على الترتيب فقط.',
+    'Possible matches — verify the journal’s aims and scope': 'تطابقات محتملة — تحقق من أهداف المجلة ونطاقها',
+    'Show weak matches ({k})': 'أظهر التطابقات الضعيفة ({k})',
+    'Hide weak matches': 'أخفِ التطابقات الضعيفة',
+    'Weak matches (20–34 %): usually one shared generic keyword. Not recommendations.': 'تطابقات ضعيفة (20–34%): غالباً كلمة مفتاحية عامة واحدة مشتركة. ليست توصيات.',
+    'low confidence': 'ثقة منخفضة', 'medium confidence': 'ثقة متوسطة',
+    'Your text is short ({n} words). A title alone gives unreliable similarities: paste the full abstract for a meaningful estimate.': 'نصك قصير ({n} كلمة). العنوان وحده يعطي تشابهات غير موثوقة: الصق الملخص كاملاً لتقدير ذي معنى.',
+    'Only the title or broad categories are available for this journal.': 'لا يتوفر لهذه المجلة سوى العنوان أو فئات عامة.',
+    'Keywords or subjects available, but not both with indexing categories.': 'تتوفر الكلمات المفتاحية أو المواضيع، لكن ليس كلاهما مع فئات الفهرسة.',
+    'Metadata-based topical similarity': 'تشابه موضوعي مبني على البيانات الوصفية',
+    'Estimated from journal title, keywords, subjects and indexing categories. Always verify the journal’s aims and scope.': 'مقدَّر من عنوان المجلة وكلماتها المفتاحية ومواضيعها وفئات فهرستها. تحقق دائماً من أهداف المجلة ونطاقها.',
+    'quartile and fees only affect the order.': 'الربع والرسوم يؤثران على الترتيب فقط.',
+    'Of {n} journals passing your filters: {m} with usable topical metadata, {a} topically related (≥ 20 %), {b} in a compatible discipline, {c} after the specialist-scope check.': 'من بين {n} مجلة مطابقة لمرشحاتك: {m} ببيانات موضوعية قابلة للاستخدام، {a} ذات صلة موضوعية (≥ 20%)، {b} في تخصص متوافق، {c} بعد فحص النطاق المتخصص.',
+    '{k} relevant journals (of {n} passing your filters). The percentage is topical relevance only; quartile and fees only affect the order.': '{k} مجلة ذات صلة (من {n} مطابقة لمرشحاتك). النسبة تعكس الصلة الموضوعية فقط؛ الربع والرسوم يؤثران على الترتيب فقط.',
+    'Shares your topics: {k}': 'مواضيع مشتركة معك: {k}',
+    'Scope closely related to your abstract': 'نطاق وثيق الصلة بملخصك',
+    'Scope related to your abstract': 'نطاق ذو صلة بملخصك',
+    'Ranked in {c}': 'مصنفة في {c}',
+    'free to publish': 'النشر مجاني',
+    '✦ Find the right journal for your paper': '✦ اعثر على المجلة المناسبة لمقالك',
+    'Paste your abstract (and a subject) in the panel, then click <b>Find journals with AI</b>. A small language model runs in your browser and ranks every open access journal by how close its scope is to your text. Nothing is uploaded.':
+      'الصق ملخصك (وموضوعاً) في اللوحة، ثم اضغط <b>ابحث عن المجلات بالذكاء الاصطناعي</b>. نموذج لغوي صغير يعمل في متصفحك ويرتب كل مجلات الوصول المفتوح حسب قرب نطاقها من نصك. لا يُرفع أي شيء.',
+    'Try enabling more quartiles or fee types in the panel.': 'جرّب تفعيل المزيد من الأرباع أو أنواع الرسوم في اللوحة.',
+    'Top {k} of {n} journals passing your filters, ranked by scope similarity to your text.': 'أفضل {k} من {n} مجلة مطابقة لمرشحاتك، مرتبة حسب تشابه النطاق مع نصك.',
+    /* ---- head ---- */
+    'meta.title': 'الباحث عن مجلات الوصول المفتوح الماسي: مجلات مجانية النشر مع أرباع SCImago',
+    'meta.desc': 'ابحث في أكثر من 20,000 مجلة وصول مفتوح بدون رسوم نشر (Diamond OA)، مرتبة حسب ربع SCImago والتخصص. الصق ملخصك ويقترح ذكاء اصطناعي محلي أنسب المجلات. تحقق من فهرسة Scopus وتابع مواعيد المؤتمرات. مجاني، بدون تسجيل، مباشرة في متصفحك.',
+
+    /* ---- wait / loader ---- */
+    'Preparing the journal database. The first visit takes a moment (a few MB are downloaded and matched right here in your browser); after that the finder opens instantly from this device.':
+      'جارٍ تجهيز قاعدة بيانات المجلات. الزيارة الأولى تستغرق لحظة (تُنزَّل بضعة ميغابايت وتُطابَق هنا في متصفحك)؛ بعدها تفتح الأداة فوراً من هذا الجهاز.',
+    'Starting…': 'جارٍ البدء…',
+    'Download the DOAJ open access journal list': 'تنزيل قائمة مجلات الوصول المفتوح من DOAJ',
+    'Download the SCImago rankings': 'تنزيل تصنيفات SCImago',
+    'Match journals by ISSN and rank them': 'مطابقة المجلات بالـ ISSN وترتيبها',
+    'Open the finder': 'فتح الأداة',
+    'wfoot': 'لا يُرفع أي شيء إلى أي مكان. <a id="waitManual">حمّل ملفات البيانات يدوياً بدلاً من ذلك</a> · <a id="waitConf">تبحث عن المؤتمرات فقط؟ ←</a> · <a href="/subjects/">تصفح المجلات حسب التخصص ←</a>',
+    'Find open access journals: Diamond (100% free to publish) by default, or include APC journals with one click. Everything runs right here in your browser (nothing is uploaded anywhere) and the result is remembered for next time.':
+      'اعثر على مجلات الوصول المفتوح: الماسية (النشر مجاني 100%) افتراضياً، أو أضف المجلات ذات الرسوم بنقرة واحدة. كل شيء يعمل هنا في متصفحك (لا يُرفع أي شيء) وتُحفظ النتيجة للمرة القادمة.',
+    '← Back to the journals': '→ العودة إلى المجلات',
+    '⚡ Load the built-in data': '⚡ تحميل البيانات المدمجة',
+    'One click: uses the DOAJ + SCImago snapshots shipped with the app (a few MB, then cached on this device). Want the very latest data instead? Follow steps 1–2 below.':
+      'نقرة واحدة: تستخدم لقطات DOAJ + SCImago المرفقة مع التطبيق (بضعة ميغابايت، ثم تُخزَّن على هذا الجهاز). تريد أحدث البيانات؟ اتبع الخطوتين 1–2 أدناه.',
+    'or load fresh files yourself': 'أو حمّل ملفات حديثة بنفسك',
+    'Journal data (DOAJ)': 'بيانات المجلات (DOAJ)',
+    'Rankings (SCImago)': 'التصنيفات (SCImago)',
+    'waiting…': 'في الانتظار…',
+    '⬇ Download the DOAJ journal CSV': '⬇ تنزيل ملف CSV لمجلات DOAJ',
+    'step1.alt': 'يبدأ التنزيل تلقائياً عند فتح الرابط (~25 م.ب، كل مجلات الوصول المفتوح). ثم أسقط الملف في المربع أدناه.',
+    '↗ Open scimagojr.com/journalrank.php': '↗ افتح scimagojr.com/journalrank.php',
+    'step2.alt': 'في تلك الصفحة، اضغط زر <b>«⬇ Download»</b> أعلى اليمين. يحفظ ملفاً مثل <b>«scimagojr 2025.csv»</b>. ثم أسقط ذلك الملف في المربع أدناه.<br>💡 <b>نصيحة:</b> لأفضل النتائج، نزّل <b>القائمة الكاملة الافتراضية (بدون مرشحات)</b>؛ يمكنك التصفية داخل هذا التطبيق لاحقاً. التنزيلات المصفاة (فئة واحدة، منطقة واحدة…) تعمل أيضاً، لكن المجلات خارج مرشحك ستظهر «غير مصنفة».',
+    'Drop the downloaded file(s) here': 'أسقط الملف (الملفات) المنزَّلة هنا',
+    'or click to choose; the app recognizes DOAJ and SCImago files automatically, in any order': 'أو انقر للاختيار؛ يتعرف التطبيق على ملفات DOAJ وSCImago تلقائياً بأي ترتيب',
+    'Data from': 'بيانات بتاريخ',
+    'is saved on this device.': 'محفوظة على هذا الجهاز.',
+    'Open with saved data': 'افتح بالبيانات المحفوظة',
+    'Just looking for conferences?': 'تبحث عن المؤتمرات فقط؟',
+    'Open the Conference Finder →': 'افتح باحث المؤتمرات ←',
+    'Made by': 'من إعداد',
+
+    /* ---- guide / FAQ ---- */
+    'How to find an open access journal that is free to publish in': 'كيف تجد مجلة وصول مفتوح مجانية النشر',
+    'g.intro': 'يسمع معظم الباحثين «الوصول المفتوح» فيفكرون في رسوم معالجة المقالات (APC) من 1,000 إلى 3,000 دولار أو أكثر. لكن آلاف المجلات المحكَّمة هي <b>وصول مفتوح ماسي</b>: مجانية القراءة ومجانية النشر، وتمولها عادة الجامعات أو الجمعيات العلمية أو الهيئات العمومية. تجمع هذه الأداة قائمة مجلات <a href="https://doaj.org" rel="noopener" target="_blank">DOAJ</a> مع تصنيفات <a href="https://www.scimagojr.com" rel="noopener" target="_blank">SCImago</a> لتبحث في هذه المجلات فقط، وتصفيها حسب التخصص واللغة والبلد والربع (Q1 إلى Q4)، وتتحقق مما إذا كانت مفهرسة في Scopus.',
+    'What is a Diamond open access journal?': 'ما هي مجلة الوصول المفتوح الماسي؟',
+    'faq1': 'مجلة الوصول المفتوح الماسي (وتسمى أيضاً البلاتيني) لا تفرض أي رسوم على المؤلفين ولا على القراء. تُحكَّم المقالات وتُنشر برخصة مفتوحة، وتُغطى تكاليف المجلة من مؤسسة أو جمعية علمية أو تمويل عمومي بدلاً من رسوم APC. يسجل DOAJ لكل مجلة ما إذا كانت تفرض رسوم APC؛ وتعرض هذه الأداة افتراضياً المجلات بدون رسوم.',
+    'How do I find journals with no APC in my field?': 'كيف أجد مجلات بدون رسوم APC في مجالي؟',
+    'faq2': 'حمّل البيانات (يتم ذلك تلقائياً)، ثم اكتب كلمة مفتاحية أو اختر تخصصاً في تبويب المجلات. كل نتيجة هي مجلة مدرجة في DOAJ بدون رسوم نشر. ضيّق النتائج حسب ربع SCImago أو اللغة أو البلد أو الناشر، ورتّب حسب التصنيف. لعرض المجلات ذات الرسوم أيضاً، غيّر مرشح الرسوم وحدد سقف السعر.',
+    'How can I check if a journal is indexed in Scopus?': 'كيف أتحقق من فهرسة مجلة في Scopus؟',
+    'faq3': 'افتح تبويب Scopus واكتب ISSN المجلة أو DOI أحد مقالاتها أو اسمها. يُتحقق من ISSN أو DOI مباشرة عبر واجهة Scopus ويخبرك بعدد الوثائق المفهرسة وتاريخ أحدثها: هذه أوثق طريقة لكشف المجلات التي تدعي فهرسة في Scopus لم تعد تملكها. أما الأسماء فتُقارن بالقائمة الكاملة لمصادر SCImago، أي نحو 30,000 عنوان في Scopus.',
+    'What do Q1, Q2, Q3 and Q4 mean?': 'ماذا تعني Q1 وQ2 وQ3 وQ4؟',
+    'faq4': 'يقسم SCImago مجلات كل فئة موضوعية إلى أربعة أرباع حسب درجة SJR. Q1 هي أفضل 25% من مجلات تلك الفئة، وQ4 أدنى 25%. يمكن أن تكون المجلة Q1 في فئة وQ2 في أخرى؛ وتعرض هذه الأداة أفضل ربع بلغته. المجلات غير المشمولة في Scopus لا ربع لها وتظهر «غير مصنفة».',
+    'How do I avoid predatory journals?': 'كيف أتجنب المجلات المفترسة؟',
+    'faq5': 'اقتصر على المجلات المدرجة في DOAJ (كل ما يُعرض هنا مدرج فيه)، وتحقق من فهرسة Scopus عبر ISSN لا عبر موقع المجلة، واحذر أي مجلة تعد بالنشر خلال أيام أو تراسلك بالبريد الإلكتروني. الأسماء المتشابهة شائعة: قد تتقاسم مجلتان العنوان نفسه بينما واحدة فقط تملك الـ ISSN الحقيقي.',
+    'Where do the conference deadlines come from?': 'من أين تأتي مواعيد المؤتمرات؟',
+    'faq6': 'يعرض تبويب المؤتمرات مواعيد مؤتمرات علوم الحاسوب مع تصنيفات CCF وCORE من مجموعة بيانات ccfddl المفتوحة، إضافة إلى الأحداث البحثية في المغرب من أجندة المركز الوطني للبحث العلمي والتقني (CNRST). يتحدث المصدران تلقائياً.',
+    'Is the data up to date, and is anything uploaded?': 'هل البيانات محدثة، وهل يُرفع أي شيء؟',
+    'faq7': 'تُحدَّث لقطات DOAJ وSCImago المدمجة مرتين في الشهر، ويمكنك في أي وقت إسقاط تصدير حديث من DOAJ أو SCImago. كل شيء يعمل في متصفحك: لا حساب، لا تتبع، وعمليات بحثك لا تغادر جهازك أبداً.',
+    'Free-to-publish journals by subject': 'المجلات مجانية النشر حسب التخصص',
+    'subj.blurb': '{n} مجلة مفهرسة في Scopus بدون رسوم APC، مجمعة حسب مجالات SCImago. <a href="/subjects/">عرض المجالات الـ {k} ←</a>',
+    'Free tool built by Mohamed-Akram Lamhour. Data: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus API (Elsevier), ccfddl, CNRST.':
+      'أداة مجانية من إعداد محمد أكرم لمحور. البيانات: DOAJ (CC BY-SA)، SCImago Journal &amp; Country Rank، واجهة Scopus (Elsevier)، ccfddl، CNRST.',
+
+    /* ---- sidebar ---- */
+    'Open access journals, ranked conferences & research events, with live data.': 'مجلات الوصول المفتوح، مؤتمرات مصنفة وأحداث بحثية، ببيانات حية.',
+    'Journals': 'المجلات',
+    'Conferences': 'المؤتمرات',
+    'Data loaded:': 'البيانات المحملة:',
+    'Load newer data…': 'تحميل بيانات أحدث…',
+    'OA journals': 'مجلة وصول مفتوح',
+    'Diamond · free': 'ماسية · مجانية',
+    'Browse journals by subject': 'تصفح المجلات حسب التخصص',
+    '27 areas, each with counts and a ranked top 50': '27 مجالاً، لكل منها أعداده وأفضل 50 مجلة مرتبة',
+    '{a}: ranked page': '{a}: صفحة مرتبة',
+    'Counts, Q1/Q2 share and the top 50 free-to-publish journals': 'الأعداد، حصة Q1/Q2 وأفضل 50 مجلة مجانية النشر',
+    'Reset all filters': 'إعادة ضبط كل المرشحات',
+    'Search': 'بحث',
+    'Title, ISSN, paper DOI, subject…': 'العنوان، ISSN، DOI مقال، التخصص…',
+    'Publication fees': 'رسوم النشر',
+    'APC / fees': 'APC / رسوم',
+    'Quartile': 'الربع',
+    'Unranked': 'غير مصنفة',
+    'idx.toggle': 'المفهرسة في SCImago فقط<span class="sub">إخفاء المجلات غير الموجودة في SCImago</span>',
+    'idx.toggle2': '<b class="tt">المفهرسة في SCImago فقط</b><span class="sub"><span class="when-on">مفعّل: المجلات المصنفة في SCImago / Scopus فقط. عطّله لعرض مجلات DOAJ غير المصنفة أيضاً.</span><span class="when-off">معطّل: تُعرض مجلات DOAJ غير المصنفة أيضاً. فعّله للاقتصار على المجلات المصنفة.</span></span>',
+    'hint.fees': 'انقر زراً لإظهار هذه المجلات أو إخفائها. <b>ماسية</b> = مجانية للنشر والقراءة. <b>APC</b> = المجلة تفرض رسوماً على المؤلفين.',
+    'hint.quart': 'انقر لإظهار كل مستوى أو إخفائه. <b>Q1</b> = أفضل 25% من المجلات في مجالها ضمن SCImago، <b>Q4</b> = أدنى 25%. <b>غير مصنفة</b> = غير موجودة في Scopus / SCImago (بدون ربع).',
+    'hint.tgroup': 'مفتاحان يحددان المجلات التي تظهر في القائمة:',
+    'Not in DOAJ · auto-checked': 'ليست في DOAJ · تحقق تلقائي',
+    'Back to top': 'العودة إلى الأعلى',
+    '+ Add': '+ إضافة', '✓ Added': '✓ أُضيفت', '☆ Shortlist': '☆ قائمتي', 'Remove': 'إزالة', 'Close': 'إغلاق', 'Shortlist': 'قائمتي المختصرة',
+    'Open your shortlist of picked journals': 'افتح قائمة المجلات التي اخترتها',
+    'Clear list': 'إفراغ القائمة', '⬇ Export CSV (all details)': '⬇ تصدير CSV (كل التفاصيل)',
+    'Your shortlist is empty. Use “+ Add” on a journal card to keep it here.': 'قائمتك فارغة. استخدم «+ إضافة» على بطاقة مجلة لحفظها هنا.',
+    'bk.hint': 'المجلات المضافة بزر «+ إضافة». تبقى على هذا الجهاز حتى تفرغ القائمة؛ التصدير ينزّل كل التفاصيل كملف CSV ويفرغ القائمة.',
+    'Support this free project': 'ادعم هذا المشروع المجاني',
+    'Free & non-profit': 'مجاني وغير ربحي',
+    '✓ In Scopus': '✓ في Scopus',
+    'Listed in the Scopus source list (SCImago snapshot). Use the button for a live check.': 'مدرجة في قائمة مصادر Scopus (لقطة SCImago). استخدم الزر للتحقق المباشر.',
+    'Checked automatically on ': 'تم التحقق تلقائياً في ',
+    'Subject area': 'المجال',
+    'All areas': 'كل المجالات',
+    'Turnaround': 'مدة النشر',
+    'Max weeks to publication': 'الحد الأقصى للأسابيع حتى النشر',
+    'Any': 'أي مدة',
+    'hint.w': 'كما صرحت به المجلة في DOAJ؛ بعضها يترك هذا الحقل فارغاً. تبقى المجلات بدون مدة ما لم تنزل تحت 52.',
+    'Price (APC)': 'السعر (APC)',
+    'Max article fee': 'الحد الأقصى لرسوم المقال',
+    'Free only': 'المجاني فقط',
+    'hint.p': 'دولار أمريكي تقريبي، محوَّل من العملة التي تذكرها المجلة. المجلات الماسية تُحسب 0$. المجلات ذات الرسوم بدون مبلغ محدد تُخفى حين تنزل تحت الحد الأقصى.',
+    'Country': 'البلد',
+    'All countries': 'كل البلدان',
+    'Worldwide CS': 'علوم الحاسوب (عالمياً)',
+    'Morocco': 'المغرب',
+    'cinfo.ccf': 'مواعيد وتصنيفات مؤتمرات علوم الحاسوب من مجموعة بيانات <b>ccfddl</b> المفتوحة (تصنيفات CCF + CORE).',
+    'cinfo.ma': 'أحداث بحثية في <b>المغرب</b> من أجندة CNRST (كل التخصصات)، نسخة تُحدَّث أسبوعياً.',
+    'Feed loaded:': 'تم تحميل المصدر:',
+    'Refresh feed': 'تحديث المصدر',
+    'Open calls': 'دعوات مفتوحة',
+    'Due ≤ 30 days': 'خلال ≤ 30 يوماً',
+    'Events': 'أحداث',
+    'Upcoming': 'قادمة',
+    'Next 30 days': 'خلال 30 يوماً',
+    'Acronym, name, place…': 'الاختصار، الاسم، المكان…',
+    'Title, discipline, keyword…': 'العنوان، التخصص، كلمة مفتاحية…',
+    'CCF rank': 'تصنيف CCF',
+    'Not ranked': 'غير مصنف',
+    'Field': 'المجال',
+    'All fields': 'كل المجالات',
+    'Discipline': 'التخصص',
+    'All disciplines': 'كل التخصصات',
+    'Open calls only': 'الدعوات المفتوحة فقط',
+    'hide conferences with no upcoming deadline': 'إخفاء المؤتمرات بدون موعد قادم',
+    'Upcoming events only': 'الأحداث القادمة فقط',
+    'hide events that already happened': 'إخفاء الأحداث التي انقضت',
+    'sinfo': 'يتحقق من أي مجلة في ملف <b>SCImago</b> المبني على بيانات <b>Scopus</b>: نحو 30,000 مصدر في Scopus، وليس الوصول المفتوح فقط.',
+    'Snapshot:': 'اللقطة:',
+    'Scopus sources': 'مصدر في Scopus',
+    'Actively covered': 'مشمول حالياً',
+    'Journal title, ISSN, or paper DOI': 'عنوان المجلة أو ISSN أو DOI مقال',
+    'ISSN, DOI, or journal name…': 'ISSN أو DOI أو اسم المجلة…',
+    'shint': 'اكتب <b>ISSN</b> أو <b>DOI</b> مقال للتحقق المباشر في Scopus. اسم المجلة يبحث فوراً في اللقطة دون اتصال. ISSN/DOI الأوثق؛ الأسماء قد تنسخها المجلات المفترسة.',
+    'Hide or show the filters panel': 'إظهار لوحة المرشحات أو إخفاؤها',
+    'Hide / show filters': 'إظهار / إخفاء المرشحات',
+    'Filters': 'المرشحات',
+
+    /* ---- main: journals ---- */
+    'journals': 'مجلة',
+    'Search in this list…': 'ابحث في هذه القائمة…',
+    'Copy a link that opens this exact filtered view': 'انسخ رابطاً يفتح هذا العرض المصفى بالضبط',
+    '🔗 Share view': '🔗 مشاركة العرض',
+    '✓ Link copied': '✓ تم نسخ الرابط',
+    'Copy this link:': 'انسخ هذا الرابط:',
+    'Download the current filtered list as a CSV file': 'تنزيل القائمة المصفاة الحالية كملف CSV',
+    '⬇ Export CSV': '⬇ تصدير CSV',
+    'Click a key to sort by it; click again to reverse; a third click removes it. Several keys combine in the order you picked them.': 'انقر معياراً للترتيب به؛ انقر مجدداً لعكسه؛ النقرة الثالثة تزيله. تتجمع عدة معايير بالترتيب الذي اخترته.',
+    'Sort by': 'ترتيب حسب',
+    'SJR': 'SJR',
+    'H-index': 'مؤشر H',
+    'Price': 'السعر',
+    'Title': 'العنوان',
+    'Remove all sort keys': 'إزالة كل معايير الترتيب',
+    '✕ Reset sort': '✕ إعادة ضبط الترتيب',
+    'default: best quartile first': 'افتراضياً: أفضل ربع أولاً',
+    ', then ': '، ثم ',
+    'No journals match': 'لا توجد مجلات مطابقة',
+    'Try enabling more quartiles, turning off “indexed only”, or widening the turnaround.': 'جرّب تفعيل المزيد من الأرباع، أو تعطيل «المفهرسة فقط»، أو توسيع مدة النشر.',
+    '🔍 Resolving DOI via Scopus…': '🔍 جارٍ تحليل DOI عبر Scopus…',
+    'DOI not found in Scopus': 'لم يُعثر على DOI في Scopus',
+    'Couldn’t resolve this DOI to a journal. Try the <b>Scopus</b> tab, or search the journal name.': 'تعذر ربط هذا الـ DOI بمجلة. جرّب تبويب <b>Scopus</b> أو ابحث باسم المجلة.',
+    'this DOI’s journal': 'مجلة هذا الـ DOI',
+    'Not in the open-access (DOAJ) list': 'ليست في قائمة الوصول المفتوح (DOAJ)',
+    'na.body': '{what} ليست مجلة وصول مفتوح في DOAJ{ins}تحقق منها في تبويب <b>Scopus</b>. وتأكد أيضاً أن مرشحات الرسوم / الربع لا تخفيها.',
+    ', but it <b>is in Scopus</b> (SCImago {q}). ': '، لكنها <b>موجودة في Scopus</b> (SCImago {q}). ',
+    'best quartile <b>{q}</b>': 'أفضل ربع <b>{q}</b>',
+    'unranked': 'غير مصنفة',
+    'quartile': 'ربع',
+    'Not in SCImago': 'ليست في SCImago',
+    'Not in DOAJ': 'ليست في DOAJ',
+    'Community-verified': 'متحقق منها من المجتمع',
+    'Added from a community submission and checked by hand: peer-review page, editorial board, no author fees, recent issues.': 'أُضيفت من اقتراح مجتمعي وفُحصت يدوياً: صفحة التحكيم، هيئة التحرير، بدون رسوم على المؤلفين، أعداد حديثة.',
+    'Checked': 'تم الفحص في',
+    'Found on the journal platform and checked automatically: ISSN, peer-review statement, no author-fee wording, articles in the last 2 years. Always confirm on the journal site.': 'عُثر عليها في منصة المجلات وفُحصت تلقائياً: ISSN، بيان التحكيم، لا ذكر لرسوم المؤلفين، مقالات في آخر سنتين. تأكد دائماً من موقع المجلة.',
+    'Review': 'التحكيم',
+    'Evidence page ↗': 'صفحة الدليل ↗',
+    'extra.toggle': '<b class="tt">تضمين المجلات غير الموجودة في DOAJ</b><span class="sub"><span class="when-on">مفعّل: تُعرض أيضاً مجلات وصول مفتوح مجانية ومحكَّمة ليست بعد في DOAJ، فُحصت تلقائياً (ISSN، تحكيم، بدون رسوم، مقالات حديثة) ومعلَّمة <b>ليست في DOAJ</b>. تحقق من موقع المجلة.</span><span class="when-off">معطّل: مجلات DOAJ فقط. فعّله لإضافة المجلات المفحوصة تلقائياً التي ليست بعد في DOAJ (معلَّمة <b>ليست في DOAJ</b>).</span></span>',
+    'APC: ': 'APC: ',
+    'Has fees': 'برسوم',
+    '✓ Check Scopus': '✓ تحقق من Scopus',
+    'n/a': 'غير متاح',
+    'Showing {a} of {b}': 'عرض {a} من {b}',
+    'Show 60 more': 'أظهر 60 أخرى',
+    'Show 20 more': 'أظهر 20 أخرى',
+    'All {n} shown': 'عُرضت كل الـ {n}',
+    'Journal': 'المجلة',
+
+    /* ---- main: conferences ---- */
+    'conferences': 'مؤتمر',
+    'events': 'حدث',
+    'Sort': 'ترتيب',
+    'Deadline soonest': 'أقرب موعد',
+    'CORE rank': 'تصنيف CORE',
+    'Acronym A–Z': 'الاختصار أ–ي',
+    'Date (upcoming first)': 'التاريخ (القادم أولاً)',
+    'Title A–Z': 'العنوان أ–ي',
+    'Load the Morocco events feed': 'تحميل مصدر أحداث المغرب',
+    'ma.help': 'تعذر الوصول إلى النسخة التلقائية من المصدر (هل أنت غير متصل؟). يمكنك تحميله يدوياً:<br>1. افتح <a href="https://www.cnrst.ma/fr/liste-des-evenements/list?format=feed&amp;type=rss" target="_blank" rel="noopener">تدفق RSS لأحداث CNRST ↗</a> واحفظ الصفحة كملف (⌘S / Ctrl-S).<br>2. أسقط الملف المحفوظ أدناه.',
+    'Drop the CNRST feed file here': 'أسقط ملف مصدر CNRST هنا',
+    'or click to choose: the .xml / .rss file you just saved': 'أو انقر للاختيار: ملف .xml / .rss الذي حفظته للتو',
+    'Loading conference feed…': 'جارٍ تحميل مصدر المؤتمرات…',
+    'Could not load the conference feed: ': 'تعذر تحميل مصدر المؤتمرات: ',
+    ' (offline, using saved copy)': ' (غير متصل، تُستخدم النسخة المحفوظة)',
+    ' (mirror unreachable, using saved copy)': ' (تعذر الوصول إلى النسخة، تُستخدم النسخة المحفوظة)',
+    'Loading Morocco events feed…': 'جارٍ تحميل مصدر أحداث المغرب…',
+    'No conferences match': 'لا توجد مؤتمرات مطابقة',
+    'Try enabling more ranks, turning off “open calls only”, or clearing the search.': 'جرّب تفعيل المزيد من التصنيفات، أو تعطيل «الدعوات المفتوحة فقط»، أو مسح البحث.',
+    'No events match': 'لا توجد أحداث مطابقة',
+    'Try turning off “upcoming events only” or clearing the search.': 'جرّب تعطيل «الأحداث القادمة فقط» أو مسح البحث.',
+    'in {d}d': 'بعد {d} يوم',
+    '{t} deadline': 'موعد {t}',
+    'no open call': 'لا دعوة مفتوحة',
+    'past': 'منقضٍ',
+    'Website ↗': 'الموقع ↗',
+    'Details ↗': 'التفاصيل ↗',
+    'Reading {f}…': 'جارٍ قراءة {f}…',
+    ' events': ' حدث',
+    ' · auto-updated mirror · ': ' · نسخة محدَّثة تلقائياً · ',
+    'That file isn’t valid XML/RSS. Save the feed page itself (⌘S / Ctrl-S).': 'هذا الملف ليس XML/RSS صالحاً. احفظ صفحة المصدر نفسها (⌘S / Ctrl-S).',
+    'No events found in this file. Is it the CNRST events RSS feed?': 'لم يُعثر على أحداث في هذا الملف. هل هو تدفق RSS لأحداث CNRST؟',
+
+    /* ---- main: scopus ---- */
+    'matches': 'نتيجة',
+    'Scopus indexing check': 'التحقق من فهرسة Scopus',
+    '🔍 Checking Scopus live…': '🔍 جارٍ التحقق مباشرة في Scopus…',
+    'Verify on scopus.com/sources ↗': 'تحقق على scopus.com/sources ↗',
+    'Verify on scopus.com ↗': 'تحقق على scopus.com ↗',
+    '✓ Indexed in Scopus': '✓ مفهرسة في Scopus',
+    '⚠ In Scopus, check recency': '⚠ في Scopus، تحقق من الحداثة',
+    'Documents indexed': 'الوثائق المفهرسة',
+    'Source name': 'اسم المصدر',
+    'Most recent paper': 'أحدث مقال',
+    'SCImago best quartile': 'أفضل ربع في SCImago',
+    'Live from Scopus (Elsevier API)': 'مباشرة من Scopus (واجهة Elsevier)',
+    '. Latest indexed paper isn’t recent; the journal may have been discontinued from Scopus.': '. أحدث مقال مفهرس ليس حديثاً؛ ربما أُوقفت المجلة من Scopus.',
+    '✗ Not found in Scopus': '✗ لم يُعثر عليها في Scopus',
+    'This ISSN returned no documents in Scopus. It is most likely <b>not indexed</b>. Be cautious of any “Scopus indexed” claim on the journal’s own site.': 'لم يُرجع هذا الـ ISSN أي وثيقة في Scopus. على الأرجح <b>غير مفهرسة</b>. احذر من أي ادعاء «مفهرسة في Scopus» على موقع المجلة.',
+    '✓ In Scopus (snapshot)': '✓ في Scopus (لقطة)',
+    '⚠ Coverage ended (snapshot)': '⚠ انتهت التغطية (لقطة)',
+    'Scopus coverage': 'تغطية Scopus',
+    'From the offline SCImago snapshot (live check unavailable).': 'من لقطة SCImago دون اتصال (التحقق المباشر غير متاح).',
+    '✗ Not in Scopus': '✗ ليست في Scopus',
+    'Not found in Scopus (offline snapshot; live check unavailable).': 'لم يُعثر عليها في Scopus (لقطة دون اتصال؛ التحقق المباشر غير متاح).',
+    'This paper': 'هذا المقال',
+    'This ISSN': 'هذا الـ ISSN',
+    'live': 'مباشر',
+    'lv.yes': '{label} موجود في Scopus: <b>{n}</b> وثيقة مفهرسة{in}{recent}',
+    ' in <b>{name}</b>': ' في <b>{name}</b>',
+    '. Most recent indexed: <b>{d}</b>{active}.': '. أحدث فهرسة: <b>{d}</b>{active}.',
+    ' (actively covered)': ' (تغطية نشطة)',
+    'No SCImago ranking found for this journal in the snapshot.': 'لم يُعثر على تصنيف SCImago لهذه المجلة في اللقطة.',
+    'SCImago <b>unranked</b>': 'SCImago <b>غير مصنفة</b>',
+    'SCImago best quartile <b>{q}</b>': 'أفضل ربع في SCImago <b>{q}</b>',
+    'lv.no': '{label} يُرجع <b>0</b> وثيقة في Scopus. على الأرجح <b>غير مفهرسة</b>. احذر من أي ادعاء «مفهرسة في Scopus».',
+    'Load journal data first': 'حمّل بيانات المجلات أولاً',
+    'The offline snapshot uses the SCImago file. Go to the <b>Journals</b> tab and load the data once, then come back here. (Live ISSN/DOI checks work without it.)': 'تستخدم اللقطة دون اتصال ملف SCImago. اذهب إلى تبويب <b>المجلات</b> وحمّل البيانات مرة واحدة، ثم عد إلى هنا. (التحقق المباشر بالـ ISSN/DOI يعمل بدونه.)',
+    'Is it in Scopus?': 'هل هي في Scopus؟',
+    'Type an <b>ISSN</b> or paper <b>DOI</b> for a live check, or a <b>journal name</b> to search the snapshot.<br>Green = currently covered · amber = coverage ended (possibly discontinued).': 'اكتب <b>ISSN</b> أو <b>DOI</b> مقال للتحقق المباشر، أو <b>اسم مجلة</b> للبحث في اللقطة.<br>أخضر = مشمولة حالياً · كهرماني = انتهت التغطية (ربما أُوقفت).',
+    'DOI checked live above. Search an ISSN or journal name to also browse the offline snapshot.': 'تم التحقق من DOI مباشرة أعلاه. ابحث بـ ISSN أو اسم مجلة لتصفح اللقطة دون اتصال أيضاً.',
+    '✗ Not found in the Scopus source list': '✗ لم يُعثر عليها في قائمة مصادر Scopus',
+    'snf.body': '«{q}» لا يطابق أياً من {n} مصدراً في لقطة SCImago/Scopus. على الأرجح <b>غير مفهرسة في Scopus</b>.<br><br>تحقق من الـ ISSN الدقيق على <a href="https://www.scopus.com/sources" target="_blank" rel="noopener" style="color:var(--coral);font-weight:600">scopus.com/sources ↗</a>، واحذر المجلات التي تدعي الفهرسة على موقعها.',
+    '✓ In Scopus, coverage {c}': '✓ في Scopus، التغطية {c}',
+    '⚠ Coverage ended {y}, may be discontinued from Scopus': '⚠ انتهت التغطية في {y}، ربما أُوقفت من Scopus',
+
+    /* ---- Scopus discontinued (official source list) ---- */
+    '⛔ Discontinued by Scopus{y}': '⛔ أوقفتها Scopus{y}',
+    '⛔ Discontinued by Scopus': '⛔ أوقفتها Scopus',
+    '⛔ Removed from Scopus{y}': '⛔ أُزيلت من Scopus{y}',
+    '⚠ Scopus coverage ended{y}': '⚠ انتهت تغطية Scopus{y}',
+    'Removed from the Scopus index (quality or publication concerns). Its SCImago ranking is historical.': 'أُزيلت من فهرس Scopus (مخاوف تتعلق بالجودة أو النشر). تصنيفها في SCImago تاريخي.',
+    'Removed from the Scopus index after a journal policy change.': 'أُزيلت من فهرس Scopus بعد تغيير في سياسة المجلة.',
+    'Source: Elsevier’s official Scopus source list.': 'المصدر: قائمة مصادر Scopus الرسمية من Elsevier.',
+    /* ---- loader / status messages ---- */
+    'Could not read {f}': 'تعذر قراءة {f}',
+    '“{f}” doesn’t look like a DOAJ or SCImago CSV, check the file.': '«{f}» لا يبدو ملف CSV من DOAJ أو SCImago، تحقق من الملف.',
+    'SCImago loaded ✓. Now drop the DOAJ CSV (step 1).': 'تم تحميل SCImago ✓. أسقط الآن ملف CSV من DOAJ (الخطوة 1).',
+    'DOAJ loaded ✓. Now drop the SCImago CSV (step 2).': 'تم تحميل DOAJ ✓. أسقط الآن ملف CSV من SCImago (الخطوة 2).',
+    'DOAJ journal list': 'قائمة مجلات DOAJ',
+    'SCImago rankings': 'تصنيفات SCImago',
+    'Couldn’t load the built-in {l}{s}. You can still load the files manually below.': 'تعذر تحميل {l} المدمجة{s}. لا يزال بإمكانك تحميل الملفات يدوياً أدناه.',
+    'Downloading {l}…': 'جارٍ تنزيل {l}…',
+    'Downloading {l}… {mb} MB': 'جارٍ تنزيل {l}… {mb} م.ب',
+    ' MB': ' م.ب',
+    'built-in': 'المدمجة',
+    'The built-in {l} file looks corrupted; load the files manually below.': 'يبدو ملف {l} المدمج تالفاً؛ حمّل الملفات يدوياً أدناه.',
+    'Parsing DOAJ file… (large file, a few seconds)': 'جارٍ تحليل ملف DOAJ… (ملف كبير، بضع ثوانٍ)',
+    'Parsing SCImago file…': 'جارٍ تحليل ملف SCImago…',
+    'Joining on ISSN…': 'جارٍ الربط بالـ ISSN…',
+    'Join produced 0 Diamond journals. Are these the right files?': 'أنتج الربط 0 مجلة ماسية. هل هذه الملفات الصحيحة؟',
+    '{n} journals': '{n} مجلة',
+    'Saving on this device and opening…': 'جارٍ الحفظ على هذا الجهاز والفتح…',
+
+    /* ---- subject pages ---- */
+    'Search journals': 'البحث عن المجلات',
+    'All subjects': 'كل التخصصات',
+    'Scopus check': 'التحقق من Scopus',
+    'Home': 'الرئيسية',
+    'Subjects': 'التخصصات',
+    'sp.h1': 'مجلات الوصول المفتوح الماسي في {area}',
+    'sp.lead': '{n} مجلة محكَّمة في {area} <b>مجانية النشر</b>: بدون رسوم معالجة المقالات ولا أي رسوم أخرى على المؤلفين، وفق <a href="https://doaj.org" rel="noopener">DOAJ</a>. كلها مفهرسة في Scopus ومرتبة أدناه حسب ربع <a href="https://www.scimagojr.com" rel="noopener">SCImago</a> ودرجة SJR. لقطة البيانات: {m}.',
+    'journals with no APC': 'مجلة بدون رسوم APC',
+    'ranked Q1 (top 25%)': 'مصنفة Q1 (أفضل 25%)',
+    'ranked Q2': 'مصنفة Q2',
+    'ranked Q3 or Q4': 'مصنفة Q3 أو Q4',
+    'more journals charge an APC': 'مجلة أخرى تفرض رسوم APC',
+    'Open all {n} in the finder →': 'افتح الـ {n} كلها في الأداة ←',
+    'Include Q3, Q4 and unranked': 'تضمين Q3 وQ4 وغير المصنفة',
+    'Include journals with fees': 'تضمين المجلات ذات الرسوم',
+    'sp.h2all': 'كل المجلات الـ {n} مجانية النشر في {area}',
+    'sp.howto': 'مرتبة حسب أفضل ربع في SCImago ثم SJR. انقر رأس عمود للترتيب به؛ انقر عموداً ثانياً لإضافة معيار ثانوي (تتجمع مستويات الترتيب بالتسلسل الذي اخترته). انقر مجدداً للعكس، وثالثة للإزالة. مربع البحث يضيّق القائمة. مدة النشر هي رقم المجلة نفسها في DOAJ: متوسط الأسابيع من التقديم إلى النشر.',
+    'Search by title, publisher, country or ISSN…': 'ابحث بالعنوان أو الناشر أو البلد أو ISSN…',
+    '✕ Reset': '✕ إعادة ضبط',
+    'Publisher': 'الناشر',
+    'Time to publish': 'مدة النشر',
+    '{i} of {n} match': '{i} من {n} مطابقة',
+    '{s} of {n}': '{s} من {n}',
+    'Sorted by ': 'مرتبة حسب ',
+    'Click a column to sort; click a second column to add a tiebreak.': 'انقر عموداً للترتيب؛ وعموداً ثانياً لإضافة معيار ثانوي.',
+    'Show all {n} journals': 'أظهر كل المجلات الـ {n}',
+    'sp.more': 'عرض أول {k}. <a href="{href}">الأداة التفاعلية</a> تضيف التحقق المباشر من Scopus وتصدير CSV وروابط مرشحات قابلة للمشاركة.',
+    'Where these journals come from': 'من أين تأتي هذه المجلات',
+    'Top countries of publication': 'أكثر بلدان النشر',
+    'Top publishers': 'أكثر الناشرين',
+    'Main manuscript languages': 'لغات المخطوطات الرئيسية',
+    'About this list': 'حول هذه القائمة',
+    'sp.about1': '<b>الوصول المفتوح الماسي</b> (ويسمى أيضاً البلاتيني) يعني أن المجلة مجانية القراءة ومجانية النشر. المجلات أعلاه هي التي يسجلها DOAJ بـ «APC: لا» و«رسوم أخرى: لا» ويدرجها SCImago ضمن المجال <i>{area}</i> (قد تنتمي المجلة إلى عدة مجالات). الأرباع من تصنيف SJR لدى SCImago لأحدث إصدار: Q1 أفضل 25% من مجلات الفئة، وQ4 أدنى 25%. المجلات الموجودة في DOAJ وغير الموجودة في Scopus لا ربع لها ولا تُحسب هنا؛ ويمكن للأداة عرضها أيضاً.',
+    'sp.about2': 'قبل التقديم، تأكد دائماً من المجلة على موقعها وفي DOAJ، وتحقق من فهرسة Scopus بالـ ISSN عبر <a href="/#tab=s">التحقق من Scopus</a> بدلاً من الوثوق بادعاءات موقع المجلة، واحذر العناوين المتشابهة.',
+    'Other subject areas': 'مجالات أخرى',
+    '{n} free-to-publish journals · {q1} Q1': '{n} مجلة مجانية النشر · {q1} Q1',
+    'sp.foot': 'البيانات: <a href="https://doaj.org" rel="noopener">DOAJ</a> (قائمة المجلات، الرسوم) و<a href="https://www.scimagojr.com" rel="noopener">SCImago Journal Rank</a> (الأرباع، SJR، تغطية Scopus)، لقطة {m}. تُعاد الصفحات تلقائياً مع كل تحديث للبيانات. من إعداد محمد أكرم لمحور · <a href="/">openaccessfinder.de</a>',
+    'Free-to-publish open access journals by subject': 'مجلات الوصول المفتوح مجانية النشر حسب التخصص',
+    'hub.lead': 'يدرج DOAJ {t} مجلة لا تفرض رسوم APC ولا أي رسوم أخرى على المؤلفين. {n} منها مفهرسة أيضاً في Scopus وبالتالي لها تصنيف SCImago. اختر مجالاً لترى كم مجلة في تخصصك، وأيها Q1 أو Q2، ومن ينشرها. لقطة البيانات: {m}.',
+    'No-APC journals': 'مجلات بدون APC',
+    'Q3 + Q4': 'Q3 + Q4',
+    'Share Q1/Q2': 'حصة Q1/Q2',
+    'hub.note': 'قد تنتمي المجلة إلى أكثر من مجال، لذا لا يساوي مجموع العمود الإجمالي. أعداد Q تستخدم أفضل ربع للمجلة عبر فئاتها. المجلات بدون إدراج في Scopus لا تُحسب في هذه الصفحات لكنها قابلة للبحث في <a href="/">الأداة</a>.',
+    'What "Diamond open access" means': 'ماذا يعني «الوصول المفتوح الماسي»',
+    'hub.about': 'مجلات الوصول المفتوح الماسي (أو البلاتيني) مجانية للقراء وللمؤلفين: بدون رسوم معالجة مقالات، بدون رسوم تقديم، بدون رسوم صفحات. تمولها عادة الجامعات أو معاهد البحث أو الجمعيات العلمية أو البرامج العمومية. النشر فيها لا يكلف شيئاً ويبقي عملك متاحاً للجميع، ولهذا توصي بها جهات التمويل أكثر فأكثر. مؤشر الجودة هو نفسه لأي مجلة: عملية التحكيم، الفهرسة (Scopus، Web of Science) وربع SCImago، وكلها تعرضها <a href="/">الأداة</a> لكل عنوان.',
+  };
+
+  const D = { fr: FR, de: DE, ar: AR };
+  const LANGS = ['en', 'fr', 'de', 'ar'];
+  const RTL = new Set(['ar']);
   let lang = 'en';
   const hooks = [];
   const fill = (s, args) => args ? s.replace(/\{(\w+)\}/g, (m, k) => (k in args ? args[k] : m)) : s;
@@ -827,7 +1238,9 @@
       if (el.__en == null) el.__en = el.innerHTML;
       const key = el.dataset.i18n || el.__en.trim();
       const args = argsOf(el);
-      const v = lookup(key); el.innerHTML = v != null ? fill(v, args) : el.__en;
+      // innerHTML serializes a literal "&" as "&amp;"; accept keys written either way
+      let v = lookup(key); if (v == null && key.includes('&amp;')) v = lookup(key.replace(/&amp;/g, '&'));
+      el.innerHTML = v != null ? fill(v, args) : el.__en;
     });
     [['data-i18n-ph', 'placeholder'], ['data-i18n-title', 'title'], ['data-i18n-label', 'aria-label']].forEach(([attr, prop]) => {
       root.querySelectorAll('[' + attr + ']').forEach(el => {
@@ -838,6 +1251,7 @@
       });
     });
     document.documentElement.lang = lang;
+    document.documentElement.dir = RTL.has(lang) ? 'rtl' : 'ltr';
     document.querySelectorAll('.langsw button').forEach(b => b.classList.toggle('on', b.dataset.lang === lang));
     // <title> / meta description on the app page only (subject pages keep their own)
     if (document.getElementById('loader')) {
@@ -869,24 +1283,26 @@
   function mountSwitch(){
     if (document.querySelector('.langsw')) return;
     const st = document.createElement('style');
-    st.textContent = '.langsw{position:fixed;bottom:14px;right:14px;z-index:60;display:inline-flex;background:#0E2A33;border:1px solid #24454d;border-radius:999px;padding:3px;gap:2px;box-shadow:0 6px 18px -10px rgba(14,42,51,.6)}'
+    st.textContent = '.langsw{position:fixed;bottom:14px;inset-inline-end:14px;z-index:60;display:inline-flex;background:#0E2A33;border:1px solid #24454d;border-radius:999px;padding:3px;gap:2px;box-shadow:0 6px 18px -10px rgba(14,42,51,.6)}'
       + '.langsw button{background:transparent;border:0;border-radius:999px;color:#8fa5a2;font:600 11.5px/1 Inter,system-ui,sans-serif;letter-spacing:.04em;padding:6px 9px;cursor:pointer;transition:.12s}'
       + '.langsw button.on{background:#E0563E;color:#fff}.langsw button:not(.on):hover{color:#fff}'
-      + '@media(max-width:860px){.langsw{left:14px;right:auto}}';
+      + '@media(max-width:860px){.langsw{inset-inline-start:14px;inset-inline-end:auto}}';
     document.head.appendChild(st);
     const d = document.createElement('div'); d.className = 'langsw'; d.setAttribute('aria-label', 'Language');
     d.innerHTML = LANGS.map(l => '<button type="button" data-lang="' + l + '">' + l.toUpperCase() + '</button>').join('');
     d.addEventListener('click', e => { const b = e.target.closest('button'); if (b && b.dataset.lang !== lang) setLang(b.dataset.lang); });
     document.body.appendChild(d);
   }
-  function init(){ mountSwitch(); setLang(detect(), { silentUrl: true }); }
-  if (document.body) init(); else document.addEventListener('DOMContentLoaded', init);   // script sits at the end of <body>
-
+  // exported BEFORE init(): the first setLang() dispatches i18n:change, and
+  // listeners registered by inline scripts above this file (subject pages)
+  // read window.t inside that handler
   window.t = t;
   window.I18N = { t, setLang, apply, get lang(){ return lang; }, onChange: fn => hooks.push(fn), D };
-  // Numbers follow the chosen language, not the browser locale: 23,204 (EN) / 23 204 (FR) / 23.204 (DE).
+  function init(){ mountSwitch(); setLang(detect(), { silentUrl: true }); }
+  if (document.body) init(); else document.addEventListener('DOMContentLoaded', init);   // script sits at the end of <body>
+  // Numbers follow the chosen language, not the browser locale: 23,204 (EN) / 23 204 (FR) / 23.204 (DE) / 23.204 (AR).
   // Every n.toLocaleString() call without an explicit locale goes through here.
-  const LOCALES = { en: 'en-US', fr: 'fr-FR', de: 'de-DE' };
+  const LOCALES = { en: 'en-US', fr: 'fr-FR', de: 'de-DE', ar: 'ar-MA' };   // ar-MA: Arabic wording, Western digits (Maghreb convention)
   const numTLS = Number.prototype.toLocaleString;
   Number.prototype.toLocaleString = function(loc, opt){ return numTLS.call(this, loc || LOCALES[lang] || 'en-US', opt); };
 })();

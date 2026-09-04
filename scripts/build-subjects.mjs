@@ -21,6 +21,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = 'https://openaccessfinder.de';
 const TOP_N = 50;
 const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf-8');
+/* same i18n.js cache-buster as the app page, so subject pages never serve a stale translation file */
+const I18N_V = (rd('index.html').match(/js\/i18n\.js\?v=(\d+)/) || [, '1'])[1];
 
 /* ---- load the app's join logic (browser-neutral functions only) ---- */
 const ctx = { indexedDB: undefined, console };
@@ -78,7 +80,7 @@ a{color:var(--coral);font-weight:600;text-decoration:none}a:hover{text-decoratio
 .top{display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid var(--line);background:var(--card)}
 .top .mark{font-family:"IBM Plex Mono",monospace;font-weight:600;letter-spacing:.14em;font-size:11px;color:var(--coral)}
 .top .brand{font-family:Spectral,Georgia,serif;font-weight:700;font-size:18px;color:var(--ink)}
-.top nav{margin-left:auto;display:flex;gap:18px;font-size:13.5px}.top nav a{color:var(--ink-2)}
+.top nav{margin-inline-start:auto;display:flex;gap:18px;font-size:13.5px}.top nav a{color:var(--ink-2)}
 .wrap{max-width:980px;margin:0 auto;padding:36px 24px 70px}
 .crumbs{font-size:12.5px;color:var(--muted-2);margin-bottom:18px}.crumbs a{color:var(--muted);font-weight:500}
 h1{font-family:Spectral,Georgia,serif;font-weight:700;font-size:38px;line-height:1.1;margin:0 0 12px}
@@ -92,7 +94,7 @@ p.lead{font-size:17px;color:var(--ink-2);margin:0 0 22px;max-width:760px}
 .cta:hover{filter:brightness(1.08);text-decoration:none}.cta.alt{background:var(--paper-2);color:var(--ink);border:1px solid var(--line)}
 .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}
 table{border-collapse:collapse;width:100%;font-size:13.5px}
-th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th,td{padding:9px 12px;text-align:start;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--paper-2);white-space:nowrap}
 tr:last-child td{border-bottom:0}td.n{color:var(--muted-2);font-family:"IBM Plex Mono",monospace;font-size:12px}
 td a{color:var(--ink);font-weight:600}td a:hover{color:var(--coral)}
@@ -102,7 +104,7 @@ td a{color:var(--ink);font-weight:600}td a:hover{color:var(--coral)}
 .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
 .box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .box h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.box ol{margin:0;padding-left:20px;font-size:13.5px}.box li{margin:3px 0}.box li span{color:var(--muted-2);font-family:"IBM Plex Mono",monospace;font-size:12px}
+.box ol{margin:0;padding-inline-start:20px;font-size:13.5px}.box li{margin:3px 0}.box li span{color:var(--muted-2);font-family:"IBM Plex Mono",monospace;font-size:12px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 .card{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--ink);font-weight:600;transition:.12s}
 .card:hover{border-color:var(--coral);text-decoration:none}.card small{display:block;font-weight:400;color:var(--muted);font-size:12.5px;margin-top:4px}
@@ -111,12 +113,15 @@ td a{color:var(--ink);font-weight:600}td a:hover{color:var(--coral)}
 .fbar input,.fbar select{font-family:inherit;font-size:13px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:150px}
 .fbar input{flex:1 1 220px}
 .freset{background:transparent;border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--coral);cursor:pointer}.freset:hover{border-color:var(--coral)}
-.fcount{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted)}
+.fcount{margin-inline-start:auto;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted)}
 th[data-sort]{cursor:pointer;user-select:none}th[data-sort]:not(.on)::after{content:" ↕";color:var(--muted-2);font-size:10px}
-th.on{color:var(--ink)}th .pri{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--coral);color:#fff;font-size:10px;margin-left:4px;vertical-align:middle}th .dir{color:var(--sea);margin-left:3px}
+th.on{color:var(--ink)}th .pri{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--coral);color:#fff;font-size:10px;margin-inline-start:4px;vertical-align:middle}th .dir{color:var(--sea);margin-inline-start:3px}
 .sorthint{flex-basis:100%;font-size:12px;color:var(--muted);margin-top:2px}th[data-sort]:hover{color:var(--ink)}
 footer{border-top:1px solid var(--line);padding:22px 24px;font-size:12.5px;color:var(--muted)}
 @media(max-width:600px){h1{font-size:30px}.wrap{padding:24px 16px 50px}.top nav{display:none}}
+[dir=rtl] body{font-family:"IBM Plex Sans Arabic",Inter,system-ui,sans-serif}
+[dir=rtl] h1,[dir=rtl] h2,[dir=rtl] .top .brand{font-family:"IBM Plex Sans Arabic",Spectral,Georgia,serif}
+[dir=rtl] .issn,[dir=rtl] .mono{direction:ltr;unicode-bidi:isolate}
 `;
 const head = ({ title, desc, url, ld }) => `<!DOCTYPE html>
 <html lang="en">
@@ -141,7 +146,7 @@ const head = ({ title, desc, url, ld }) => `<!DOCTYPE html>
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>${CSS}</style>
 ${ld.map(o => `<script type="application/ld+json">${JSON.stringify(o)}</script>`).join('\n')}
 </head>
@@ -151,7 +156,7 @@ ${ld.map(o => `<script type="application/ld+json">${JSON.stringify(o)}</script>`
 <main class="wrap">`;
 const foot = () => `</main>
 <footer data-i18n="sp.foot" data-i18n-args='${JSON.stringify({ m: monthYear })}'>Data: <a href="https://doaj.org" rel="noopener">DOAJ</a> (journal list, fees) and <a href="https://www.scimagojr.com" rel="noopener">SCImago Journal Rank</a> (quartiles, SJR, Scopus coverage), snapshot of ${esc(monthYear)}. Pages regenerate automatically with every data refresh. Built by Mohamed-Akram Lamhour · <a href="/">openaccessfinder.de</a></footer>
-<script src="/js/i18n.js?v=2"></script>
+<script src="/js/i18n.js?v=${I18N_V}"></script>
 </body>
 </html>
 `;
@@ -235,7 +240,7 @@ ${rows}
       if(!q||r.dataset.t.indexOf(q)>=0){ i++; var vis=showAll||q||i<=LIMIT; r.hidden=!vis; if(vis){ shown++; r.firstElementChild.textContent=i; } }
       else r.hidden=true;
     });
-    var T=window.t||function(k,a){return k.replace(/\{(\w+)\}/g,function(m,x){return a&&x in a?a[x]:m})};
+    var T=window.t||function(k,a){return k.replace(/\\{(\\w+)\\}/g,function(m,x){return a&&x in a?a[x]:m})};
     $('f-count').textContent=q?T('{i} of {n} match',{i:i,n:N}):T('{s} of {n}',{s:shown,n:N});
     $('more-note').style.display=(q||showAll||N<=LIMIT)?'none':'';
   }
