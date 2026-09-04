@@ -33,3 +33,6 @@ tests/scope_enrichment/
 
 # local planning notes
 AI_MATCH_IDEAS.md
+
+# deployed Aims & Scope evidence (status/confidence/URL only, no text) — see scripts/scope_enrichment
+!data/scope-evidence.csv

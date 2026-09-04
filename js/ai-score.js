@@ -25,6 +25,28 @@
    non-topical field (publisher, country, language, fees, quartile, SJR,
    H-index, turnaround, notes, URLs) is ever embedded. */
 var AI_FIELD_WEIGHTS={title:0.15,keywords:0.35,subjects:0.30,categories:0.15,areas:0.05};
+/* ---- official Aims & Scope evidence (offline enrichment, scripts/scope_enrichment) ----
+   When a journal has an ACCEPTED official scope (official_scope_clean / official_scope_minor_noise,
+   verified against the journal's own page), its vector is built from explicit evidence weights:
+   official scope text 80 % · DOAJ keywords+subjects 15 % · SCImago categories 5 %. The title carries
+   no weight in that case and never absorbs the scope weight when the scope is missing: journals
+   without accepted scope keep the metadata scheme above and are labelled metadata-only.
+   Only derived vectors and a status table (data/scope-evidence.csv) are deployed - never the text. */
+var AI_EVIDENCE_WEIGHTS={scope:0.80,doaj:0.15,categories:0.05};
+var AI_OFFICIAL=new Set(['official_scope_clean','official_scope_minor_noise']);
+var AI_EVIDENCE_LABEL={official:'Official aims & scope',metadata:'Official scope unavailable — metadata only'};
+/* SCOPE_EV: {issn8: {st, conf, url}} loaded from data/scope-evidence.csv (app.js); absent in tests unless injected */
+var SCOPE_EV=(typeof SCOPE_EV!=='undefined')?SCOPE_EV:null;
+function scopeEvidence(r,map){
+  const m=map||SCOPE_EV; if(!m) return null;
+  for(const i of (r.issns||[r.issn]).filter(Boolean)){ const e=m[i]||m.get&&m.get(i); if(e) return e; }
+  return null;
+}
+/* 'official' when accepted official scope text backs the vector, else 'metadata' */
+function journalEvidence(r,map){ const e=scopeEvidence(r,map); return e&&AI_OFFICIAL.has(e.st)?'official':'metadata'; }
+function evidenceLabel(r,map){ return AI_EVIDENCE_LABEL[journalEvidence(r,map)]; }
+/* the direct verification link: the official page the scope was taken from, else the journal site */
+function verifyScopeUrl(r,map){ const e=scopeEvidence(r,map); return (e&&e.url)||r.url||''; }
 /* generic terms carry no topical evidence on their own; they are removed from
    the journal fields before embedding (a keyword list left empty after this
    counts as "no meaningful keywords") */
@@ -57,7 +79,8 @@ function journalFields(r){
   };
 }
 /* metadata confidence: what topical evidence exists for this journal */
-function aiConfidence(r){
+function aiConfidence(r,map){
+  if(journalEvidence(r,map)==='official') return 'official';
   const f=journalFields(r);
   const kw=f.keywords.length>=3, sub=f.subjects.length>=3, cat=f.categories.length>=3||f.areas.length>=3, ti=f.title.length>=3;
   if(kw&&sub&&cat) return 'high';
@@ -79,7 +102,10 @@ function aiBucket(p){ return p>=70?'strong':p>=50?'good':p>=35?'possible':p>=20?
 function aiTier(scope){ return scope>=AI_MAIN?'main':scope>=AI_POSSIBLE?'possible':scope>=AI_MIN_SCOPE?'weak':'none'; }
 /* low-confidence records (title / broad categories only) are never promoted
    above "possible"; insufficient ones are not matched at all */
-function aiTierCap(tier,conf){ return conf==='low'&&tier==='main'?'possible':tier; }
+/* only journals backed by accepted official scope can be a "main" recommendation; metadata-only
+   journals (no official scope evidence) are capped at "possible" and shown in the separate
+   "verify" section - they are never presented as an official-scope match */
+function aiTierCap(tier,conf){ return tier==='main'&&conf!=='official'?'possible':tier; }
 /* ordering only: preferences are worth at most ~0.16 on top of scope */
 function rankScore(scope,r,kwHits){ return scope+.08*AI_QS[r.idx&&r.q?r.q:'']+.03*(r.dia?1:0)+.05*Math.min(1,(kwHits||0)/3); }
 

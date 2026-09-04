@@ -29,7 +29,7 @@ function aiProgress(pct,msg){
   el.style.display='block';
   el.innerHTML='<div class="aibar"><i style="width:'+Math.max(0,Math.min(100,pct))+'%"></i></div><span>'+esc(msg)+'</span>';
 }
-const AI_EMB_MAGIC='OAE2';   // weighted per-field vectors (see js/ai-score.js); older files are skipped
+const AI_EMB_MAGIC='OAE3';   // OAE3 = per-field vectors + official-scope evidence vectors (see js/ai-score.js); older files are skipped
 const aiMagic=buf=>String.fromCharCode(...new Uint8Array(buf,0,4));
 async function aiLoadEmbeddings(){
   const c=await cacheGet(AI_EMB_KEY);
@@ -166,13 +166,20 @@ async function aiRun(fromButton){
   try{
     await aiEnsure();
     aiProgress(100,t('Matching…'));
-    const q=await aiEmbed(text);
-    // discipline gate: which families does the manuscript belong to?
-    const fv=await aiFamilyVecs(); const cosByFam={};
-    for(const k in fv){ let s=0; const v=fv[k]; for(let d=0;d<v.length;d++) s+=v[d]*q[d]; cosByFam[k]=s; }
-    const msFams=manuscriptFamilies(cosByFam);
+    // the manuscript vector and its discipline families depend on the text only: a filter change
+    // (slider, chip, area) must not run the model again, just re-filter and re-rank
+    let q,msFams;
+    if(AI.qCache&&AI.qCache.text===text){ ({q,fams:msFams}=AI.qCache); }
+    else{
+      q=await aiEmbed(text);
+      const fv=await aiFamilyVecs(); const cosByFam={};
+      for(const k in fv){ let s=0; const v=fv[k]; for(let d=0;d<v.length;d++) s+=v[d]*q[d]; cosByFam[k]=s; }
+      msFams=manuscriptFamilies(cosByFam);
+      AI.qCache={text,q,fams:msFams};
+    }
     const {n,dim,scale,ids,vec}=AI.emb;
-    const byIssn=new Map(); for(const r of R) for(const i of (r.issns||[r.issn])) if(i&&!byIssn.has(i)) byIssn.set(i,r);
+    if(!AI.byIssn||AI.byIssnFor!==R){ AI.byIssn=new Map(); for(const r of R) for(const i of (r.issns||[r.issn])) if(i&&!AI.byIssn.has(i)) AI.byIssn.set(i,r); AI.byIssnFor=R; }
+    const byIssn=AI.byIssn;
     const low=' '+text.toLowerCase()+' ';
     const out=[];
     for(let i=0;i<n;i++){
@@ -244,8 +251,11 @@ function aiWhy(x){
 function aiRowHtml(x){
   const p=Math.round(x.scope*100), b=aiBucket(p), cls=b==='strong'?'st':b==='good'?'gd':b==='possible'?'ps':'wk';
   return '<div class="airow '+cls+'"><div class="aihead"><span class="airank">#'+x.rank+'</span>'
-    +'<div class="aiscore" title="'+esc(t('Metadata-based topical similarity'))+' — '+esc(t('Estimated from journal title, keywords, subjects and indexing categories. Always verify the journal’s aims and scope.'))+'"><b>'+p+'%</b><small>'+aiLabel(p)+'</small>'
-    +(x.conf==='low'?'<span class="aiconf" title="'+esc(t('Only the title or broad categories are available for this journal.'))+'">'+t('low confidence')+'</span>':x.conf==='medium'?'<span class="aiconf mid" title="'+esc(t('Keywords or subjects available, but not both with indexing categories.'))+'">'+t('medium confidence')+'</span>':'')+'</div>'
+    +'<div class="aiscore" title="'+esc(x.conf==='official'?t('Topical similarity to the journal’s official aims & scope (80 %), DOAJ keywords/subjects (15 %) and SCImago categories (5 %).'):t('Metadata-based topical similarity'))+' — '+esc(t('Estimated from journal title, keywords, subjects and indexing categories. Always verify the journal’s aims and scope.'))+'"><b>'+p+'%</b><small>'+aiLabel(p)+'</small>'
+    +(x.conf==='official'?'<span class="aiconf off" title="'+esc(t('Topical match computed from the journal’s own Aims & Scope page (verified offline).'))+'">'+t(AI_EVIDENCE_LABEL.official)+'</span>'
+      :'<span class="aiconf" title="'+esc(t('No verified official Aims & Scope text for this journal: the match relies on title, keywords, subjects and categories only.'))+'">'+t(AI_EVIDENCE_LABEL.metadata)+'</span>')
+    +(x.conf==='low'?'<span class="aiconf" title="'+esc(t('Only the title or broad categories are available for this journal.'))+'">'+t('low confidence')+'</span>':x.conf==='medium'?'<span class="aiconf mid" title="'+esc(t('Keywords or subjects available, but not both with indexing categories.'))+'">'+t('medium confidence')+'</span>':'')
+    +(verifyScopeUrl(x.r)?'<a class="aiverify" href="'+esc(verifyScopeUrl(x.r))+'" target="_blank" rel="noopener">'+t('Verify aims & scope')+' ↗</a>':'')+'</div>'
     +'<div class="aimeter"><i style="width:'+p+'%"></i></div>'
     +'<div class="aiwhy">'+aiWhy(x)+'</div></div>'
     +jrowHtml(x.r)+'</div>';
@@ -308,8 +318,10 @@ function bindAI(){
     aiState.sort=aiState.sort.k===k?{k,d:-aiState.sort.d}:{k,d:AI_SORT[k].def};
     renderAI();
   });
-  $('aiWeeks').addEventListener('input',e=>{ aiState.weeks=+e.target.value; $('aiWkVal').textContent=aiState.weeks>=52?t('Any'):'≤ '+aiState.weeks+'w'; if(AI.ran) aiRun(); });
-  $('aiApc').addEventListener('input',e=>{ aiState.maxUsd=+e.target.value; $('aiApcVal').textContent=apcLabel(aiState.maxUsd); if(AI.ran) aiRun(); });
+  // sliders fire many input events per drag: the label follows the thumb at once, the re-rank waits for a pause
+  let aiSlideTmr=null; const aiRerun=()=>{ clearTimeout(aiSlideTmr); aiSlideTmr=setTimeout(()=>{ if(AI.ran) aiRun(); },160); };
+  $('aiWeeks').addEventListener('input',e=>{ aiState.weeks=+e.target.value; $('aiWkVal').textContent=aiState.weeks>=52?t('Any'):'≤ '+aiState.weeks+'w'; aiRerun(); });
+  $('aiApc').addEventListener('input',e=>{ aiState.maxUsd=+e.target.value; $('aiApcVal').textContent=apcLabel(aiState.maxUsd); aiRerun(); });
   $('aiRun').addEventListener('click',()=>aiRun(true));
   $('aiAbs').addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='Enter') aiRun(true); });
   document.querySelectorAll('#afchips .chip').forEach(ch=>ch.addEventListener('click',()=>{

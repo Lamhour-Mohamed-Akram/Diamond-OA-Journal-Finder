@@ -80,7 +80,10 @@ jobs:
         # one MiniLM vector per DOAJ journal (data/embeddings.bin); the script
         # refuses to write a truncated file. Takes a few minutes on CPU.
         run: |
-          cd scripts && npm install --no-audit --no-fund && npm run build:embeddings
+          # --reuse: journals whose official Aims & Scope came from the local crawl keep their
+          # deployed vector (that text never leaves the maintainer's machine); PJIP text and
+          # DOAJ metadata are in the repo, so new journals are embedded here normally.
+          cd scripts && npm install --no-audit --no-fund && npm run build:embeddings -- --reuse
 
       - name: Regenerate the subject landing pages and sitemap
         # subjects/*/index.html, subjects/index.html, sitemap.xml and the
@@ -97,5 +100,5 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -f data/doaj.csv data/scimago.csv data/scopus-status.csv data/embeddings.bin subjects sitemap.xml index.html
+          git add -f data/doaj.csv data/scimago.csv data/scopus-status.csv data/embeddings.bin data/scope-evidence.csv subjects sitemap.xml index.html
           git diff --cached --quiet || { git commit -m 'Refresh bundled data snapshots'; git push; }

@@ -497,6 +497,9 @@ body:not(.app-open) .totop{display:none}
 /* AI match: metric name */
 .aimetric{font-weight:600;color:var(--ink-2);cursor:help;border-bottom:1px dotted var(--muted-2)}
 .aiconf.mid{color:#5b5b5b;background:#ECEAE3}
+.aiconf.off{color:#1f6b3a;background:#DDF0E3}
+.aiverify{font-size:11px;font-weight:600;margin-left:8px;color:var(--coral);text-decoration:none;white-space:nowrap}
+.aiverify:hover{text-decoration:underline}
 .aihint.warn{background:var(--amber-soft);border:1px solid #ecdcb5;color:#7a5a12;border-radius:10px;padding:10px 12px;margin-bottom:10px}
 @media(max-width:860px){.jacts{flex-wrap:wrap;justify-content:flex-start}}
 
@@ -510,7 +513,18 @@ body:not(.app-open) .totop{display:none}
   .qbadge{align-self:start;min-height:60px;padding:10px 6px}
 }
 
-/* ---- right-to-left (Arabic) ----
+/* ---- Aims & scope on the card (PJIP text, CC BY-NC) ---- */
+.jscope{margin-top:8px;font-size:12.5px;color:var(--ink-2)}
+.jscope summary{cursor:pointer;font-weight:600;color:var(--sea);list-style:none;display:inline-flex;align-items:center;gap:6px}
+.jscope summary::-webkit-details-marker{display:none}
+.jscope summary::before{content:"▸";font-size:11px;transition:.12s}
+.jscope[open] summary::before{transform:rotate(90deg)}
+[dir=rtl] .jscope summary::before{content:"◂"}[dir=rtl] .jscope[open] summary::before{transform:rotate(-90deg)}
+.jscope summary small{font-weight:500;color:var(--muted-2);font-size:11px}
+.jscope p{margin:6px 0 4px;line-height:1.5;background:var(--paper-2);border-inline-start:3px solid var(--sea-soft);border-radius:0 8px 8px 0;padding:8px 10px}
+[dir=rtl] .jscope p{border-radius:8px 0 0 8px}
+.jscope-src{font-size:11px;color:var(--muted)}.jscope-src a{color:var(--coral);font-weight:600;text-decoration:none}
+
    Spacing and positions above use logical properties, so the layout mirrors
    by itself when i18n.js sets dir="rtl". Only what CSS cannot mirror on its
    own is listed here: transforms, asymmetric radii and the typeface. */

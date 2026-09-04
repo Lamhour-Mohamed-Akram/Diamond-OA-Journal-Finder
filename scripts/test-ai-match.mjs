@@ -9,9 +9,11 @@ vm.runInContext(fs.readFileSync('../js/data.js','utf8'),ctx);
 vm.runInContext(fs.readFileSync('../js/ai-score.js','utf8'),ctx);
 const load=p=>{const t=fs.readFileSync(p,'utf8');return ctx.parseCSV(t,ctx.sniffDelim(t.slice(0,t.indexOf('\n'))));};
 const R=ctx.assemble(ctx.doajCsvToInters(load('../data/doaj.csv')),load('../data/scimago.csv')).records;
+/* official-scope evidence table (deployed asset; statuses only) */
+ctx.SCOPE_EV={}; if(fs.existsSync('../data/scope-evidence.csv')) for(const row of load('../data/scope-evidence.csv').slice(1)){ const [a,b,st,conf,url]=row; if(st){ if(a) ctx.SCOPE_EV[a]={st,conf:+conf,url}; if(b) ctx.SCOPE_EV[b]={st,conf:+conf,url}; } }
 const byIssn=new Map(); for(const r of R) for(const i of (r.issns||[])) if(!byIssn.has(i)) byIssn.set(i,r);
 const buf=fs.readFileSync('../data/embeddings.bin'); const dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);
-if(buf.toString('ascii',0,4)!=='OAE2') throw new Error('embeddings.bin must be OAE2 (weighted per-field vectors): run npm run build:embeddings');
+if(buf.toString('ascii',0,4)!=='OAE3') throw new Error('embeddings.bin must be OAE3 (per-field + official-scope evidence vectors): run npm run build:embeddings');
 const n=dv.getUint32(4,true),dim=dv.getUint32(8,true),scale=dv.getFloat32(12,true);
 const ids=[]; for(let i=0;i<n;i++) ids.push(buf.toString('latin1',16+i*8,16+i*8+8).trim());
 const vec=new Int8Array(buf.buffer,buf.byteOffset+16+n*8,n*dim);
@@ -36,7 +38,7 @@ async function run(text,filter=()=>true){
   const low=' '+text.toLowerCase()+' ';
   const counts={filtered:all.length,metadata:0,relevant:0,family:0,specialist:0,main:0,possible:0,weak:0}; const shown=[];
   for(const x of all){
-    const conf=ctx.aiConfidence(x.r); if(conf==='insufficient') continue; counts.metadata++;
+    const conf=ctx.aiConfidence(x.r,ctx.SCOPE_EV); if(conf==='insufficient') continue; counts.metadata++;
     if(x.scope<ctx.AI_MIN_SCOPE) continue; counts.relevant++;
     if(!ctx.gatePasses(x.r,fams,x.scope)){gated++;continue;} counts.family++;
     if(ctx.specialistBlock(x.r,low)) continue; counts.specialist++;
@@ -131,12 +133,28 @@ console.log('\n[5] data parsing & matching document');
   const gen=ctx.journalFields({t:'International Journal of Research',kw:'research, data, analysis, energy, system',dsub:'',cats:'',areas:''});
   ok(gen.keywords===''&&ctx.aiConfidence({t:'International Journal of Research',kw:'research, data, analysis, energy, system',dsub:'',cats:'',areas:''})==='insufficient','all-generic metadata -> insufficient (excluded from AI match)');
   ok(ctx.aiConfidence({t:'X',kw:'iot sensors',dsub:'Technology: Electrical engineering',cats:'Software (Q2)'})==='high'&&ctx.aiConfidence({t:'X',kw:'iot sensors',dsub:'',cats:''})==='medium'&&ctx.aiConfidence({t:'Journal of Nanophotonics',kw:'',dsub:'',cats:'',areas:''})==='low','confidence levels high / medium / low');
-  ok(ctx.aiTierCap('main','low')==='possible'&&ctx.aiTierCap('main','high')==='main','low-confidence records never reach the relevant tier');
-  const cc={high:0,medium:0,low:0,insufficient:0}; for(const r of R) cc[ctx.aiConfidence(r)]++; console.log('  confidence distribution (DOAJ):',JSON.stringify(cc)); }
+  ok(ctx.aiTierCap('main','low')==='possible'&&ctx.aiTierCap('main','high')==='possible'&&ctx.aiTierCap('main','official')==='main','only official-scope journals reach the relevant tier; metadata-only ones (any confidence) are capped at possible');
+  const cc={official:0,high:0,medium:0,low:0,insufficient:0}; for(const r of R) cc[ctx.aiConfidence(r,ctx.SCOPE_EV)]++; console.log('  confidence distribution (DOAJ):',JSON.stringify(cc)); }
 console.log('\n[6] scoring functions');
 ok(ctx.scopeFromCos(0)===0&&ctx.scopeFromCos(ctx.AI_COS_LO)===0&&ctx.scopeFromCos(ctx.AI_COS_HI)===1&&ctx.scopeFromCos(0.5)===1,'scope calibration endpoints');
 ok(ctx.rankScore(0,{q:'Q1',idx:true,dia:true},0)>0&&ctx.scopeFromCos(0)===0,'preferences affect rank score only, never scope');
 ok(['none','weak','possible','good','strong'].join()===[10,25,40,60,80].map(ctx.aiBucket).join(),'label buckets 20/35/50/70');
+console.log('\n[evidence] official scope vs metadata-only (score separation)');
+{ const recOff={t:'Journal of Apple Studies',kw:'apples, orchards',dsub:'Agriculture: Plant culture',cats:'',areas:'',issn:'11112222',issns:['11112222'],q:'Q1',dia:true,idx:true,url:'https://j.org'};
+  const map={'11112222':{st:'official_scope_clean',conf:0.9,url:'https://j.org/about'},'33334444':{st:'metadata_only',conf:0.1,url:'https://k.org/about'}};
+  ok(ctx.journalEvidence(recOff,map)==='official'&&ctx.aiConfidence(recOff,map)==='official','accepted official scope → evidence "official"');
+  ok(ctx.evidenceLabel(recOff,map)==='Official aims & scope'&&ctx.verifyScopeUrl(recOff,map)==='https://j.org/about','label "Official aims & scope" + Verify link to the official page');
+  const recMeta={...recOff,issn:'33334444',issns:['33334444']};
+  ok(ctx.journalEvidence(recMeta,map)==='metadata'&&ctx.evidenceLabel(recMeta,map)==='Official scope unavailable — metadata only','metadata-only journal is labelled "Official scope unavailable — metadata only"');
+  ok(ctx.aiTierCap('main',ctx.aiConfidence(recMeta,map))==='possible'&&ctx.aiTierCap('main','official')==='main','metadata-only journal is never a main recommendation; official-scope journal can be');
+  ok(ctx.journalEvidence({...recMeta,issns:['99999999']},map)==='metadata','journal absent from the evidence table → metadata-only (title never absorbs the scope weight)');
+  const w=ctx.AI_EVIDENCE_WEIGHTS; ok(Math.abs(w.scope-0.8)<1e-9&&Math.abs(w.doaj-0.15)<1e-9&&Math.abs(w.categories-0.05)<1e-9,'evidence weights are 80/15/5');
+  const cos=0.30, a=ctx.scopeFromCos(cos), b=ctx.scopeFromCos(cos);
+  const r1={...recOff,q:'Q1',dia:true,sjr:5,h:200,w:4}, r2={...recOff,q:'Q4',dia:false,sjr:0.1,h:1,w:52};
+  ok(a===b&&ctx.rankScore(a,r1,0)>ctx.rankScore(b,r2,0),'quartile/APC/SJR/H-index/turnaround leave the topical % unchanged and only affect the ordering score');
+  const evTxt=fs.existsSync('../data/scope-evidence.csv')?fs.readFileSync('../data/scope-evidence.csv','utf8'):'';
+  ok(!evTxt||!/scope_text|[^,\n]{240,}/.test(evTxt),'deployed evidence asset carries no verbatim scope text (no field ≥ 240 chars)');
+  const offCount=Object.values(ctx.SCOPE_EV).filter(e=>ctx.AI_OFFICIAL.has(e.st)).length; console.log('  official-scope journals in the deployed table:',offCount); }
 console.log('\n'+(fails?fails+' test(s) FAILED':'all tests passed'));
 /* set the exit code and let the event loop drain instead of calling
    process.exit(): tearing onnxruntime down inside process.exit() aborts the

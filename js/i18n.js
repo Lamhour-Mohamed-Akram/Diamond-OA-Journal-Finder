@@ -11,6 +11,16 @@
    links keep the language. English stays the default and the fallback. */
 (function(){
   const FR = {
+    'Aims & scope': 'Objectifs et champ',
+    'via PJIP': 'via PJIP',
+    'Source:': 'Source :',
+    'Journal profile on PJIP (aims & scope, review times, fees)': 'Fiche de la revue sur PJIP (objectifs et champ, délais d\'évaluation, frais)',
+    "Official aims & scope": "Objectifs et champ officiels",
+    "Official scope unavailable — metadata only": "Champ officiel indisponible — métadonnées seulement",
+    "Verify aims & scope": "Vérifier les objectifs et le champ",
+    "Topical similarity to the journal’s official aims & scope (80 %), DOAJ keywords/subjects (15 %) and SCImago categories (5 %).": "Similarité thématique avec les objectifs et le champ officiels de la revue (80 %), les mots-clés/sujets DOAJ (15 %) et les catégories SCImago (5 %).",
+    "Topical match computed from the journal’s own Aims & Scope page (verified offline).": "Correspondance thématique calculée à partir de la page « Aims & Scope » officielle de la revue (vérifiée hors ligne).",
+    "No verified official Aims & Scope text for this journal: the match relies on title, keywords, subjects and categories only.": "Aucun texte officiel « Aims & Scope » vérifié pour cette revue : la correspondance repose uniquement sur le titre, les mots-clés, les sujets et les catégories.",
     /* ---- AI match ---- */
     '✦ AI match': '✦ IA',
     'ainfo': "Décrivez votre article et un petit modèle de langage (<b>MiniLM</b>, ~23 Mo) classe toutes les revues en libre accès selon la proximité de leur périmètre avec votre texte. Il s'exécute <b>dans votre navigateur</b> : rien n'est envoyé, pas de compte, pas d'API.",
@@ -130,8 +140,8 @@
     'faq7': "Les instantanés DOAJ et SCImago intégrés sont actualisés deux fois par mois, et vous pouvez déposer à tout moment un export DOAJ ou SCImago récent. Tout s'exécute dans votre navigateur : pas de compte, pas de suivi, et vos recherches ne quittent jamais votre appareil.",
     'Free-to-publish journals by subject': 'Revues gratuites à publier par discipline',
     'subj.blurb': '{n} revues indexées dans Scopus sans APC, regroupées par domaine SCImago. <a href="/subjects/">Voir les {k} domaines →</a>',
-    'Free tool built by Mohamed-Akram Lamhour. Data: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus API (Elsevier), ccfddl, CNRST.':
-      'Outil gratuit créé par Mohamed-Akram Lamhour. Données : DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, API Scopus (Elsevier), ccfddl, CNRST.',
+    'Free tool built by Mohamed-Akram Lamhour. Data: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus API (Elsevier), ccfddl, CNRST, <a href="https://www.pjip.org" rel="noopener" target="_blank">PJIP</a> (aims &amp; scope, CC BY-NC).':
+      'Outil gratuit créé par Mohamed-Akram Lamhour. Données : DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, API Scopus (Elsevier), ccfddl, CNRST, <a href="https://www.pjip.org" rel="noopener" target="_blank">PJIP</a> (objectifs et champ, CC BY-NC).',
 
     /* ---- sidebar ---- */
     'Open access journals, ranked conferences & research events, with live data.': 'Revues en libre accès, conférences classées et événements de recherche, avec des données en direct.',
@@ -420,6 +430,16 @@
   };
 
   const DE = {
+    'Aims & scope': 'Aims & Scope',
+    'via PJIP': 'via PJIP',
+    'Source:': 'Quelle:',
+    'Journal profile on PJIP (aims & scope, review times, fees)': 'Zeitschriftenprofil auf PJIP (Aims & Scope, Begutachtungsdauer, Gebühren)',
+    "Official aims & scope": "Offizielle Aims & Scope",
+    "Official scope unavailable — metadata only": "Offizieller Scope nicht verfügbar — nur Metadaten",
+    "Verify aims & scope": "Aims & Scope prüfen",
+    "Topical similarity to the journal’s official aims & scope (80 %), DOAJ keywords/subjects (15 %) and SCImago categories (5 %).": "Thematische Ähnlichkeit mit den offiziellen Aims & Scope der Zeitschrift (80 %), DOAJ-Schlagwörtern/Fächern (15 %) und SCImago-Kategorien (5 %).",
+    "Topical match computed from the journal’s own Aims & Scope page (verified offline).": "Thematische Übereinstimmung, berechnet aus der offiziellen Aims-&-Scope-Seite der Zeitschrift (offline geprüft).",
+    "No verified official Aims & Scope text for this journal: the match relies on title, keywords, subjects and categories only.": "Kein geprüfter offizieller Aims-&-Scope-Text für diese Zeitschrift: die Übereinstimmung beruht nur auf Titel, Schlagwörtern, Fächern und Kategorien.",
     /* ---- AI match ---- */
     '✦ AI match': '✦ KI',
     'ainfo': 'Beschreiben Sie Ihren Artikel, und ein kleines Sprachmodell (<b>MiniLM</b>, ~23 MB) ordnet alle Open-Access-Zeitschriften danach, wie nah ihr Themenspektrum an Ihrem Text liegt. Es läuft <b>in Ihrem Browser</b>: nichts wird hochgeladen, kein Konto, keine API.',
@@ -536,8 +556,8 @@
     'faq7': 'Die integrierten DOAJ- und SCImago-Snapshots werden zweimal im Monat aktualisiert, und Sie können jederzeit einen frischen DOAJ- oder SCImago-Export einlesen. Alles läuft in Ihrem Browser: kein Konto, kein Tracking, und Ihre Suchen verlassen nie Ihr Gerät.',
     'Free-to-publish journals by subject': 'Kostenlos publizierbare Zeitschriften nach Fachgebiet',
     'subj.blurb': '{n} in Scopus indexierte Zeitschriften ohne APC, gruppiert nach SCImago-Fachgebiet. <a href="/subjects/">Alle {k} Fachgebiete anzeigen →</a>',
-    'Free tool built by Mohamed-Akram Lamhour. Data: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus API (Elsevier), ccfddl, CNRST.':
-      'Kostenloses Tool von Mohamed-Akram Lamhour. Daten: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus-API (Elsevier), ccfddl, CNRST.',
+    'Free tool built by Mohamed-Akram Lamhour. Data: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus API (Elsevier), ccfddl, CNRST, <a href="https://www.pjip.org" rel="noopener" target="_blank">PJIP</a> (aims &amp; scope, CC BY-NC).':
+      'Kostenloses Tool von Mohamed-Akram Lamhour. Daten: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus-API (Elsevier), ccfddl, CNRST, <a href="https://www.pjip.org" rel="noopener" target="_blank">PJIP</a> (Aims & Scope, CC BY-NC).',
 
     'Open access journals, ranked conferences & research events, with live data.': 'Open-Access-Zeitschriften, gerankte Konferenzen und Forschungsveranstaltungen, mit Live-Daten.',
     'Journals': 'Zeitschriften',
@@ -816,6 +836,16 @@
   };
 
   const AR = {
+    "Official aims & scope": "الأهداف والنطاق الرسميان",
+    "Official scope unavailable — metadata only": "النطاق الرسمي غير متاح — بيانات وصفية فقط",
+    "Verify aims & scope": "تحقق من الأهداف والنطاق",
+    "Topical similarity to the journal’s official aims & scope (80 %), DOAJ keywords/subjects (15 %) and SCImago categories (5 %).": "التشابه الموضوعي مع الأهداف والنطاق الرسميين للمجلة (80%)، وكلمات DOAJ المفتاحية/مواضيعها (15%)، وفئات SCImago (5%).",
+    "Topical match computed from the journal’s own Aims & Scope page (verified offline).": "تطابق موضوعي محسوب من صفحة الأهداف والنطاق الخاصة بالمجلة (تم التحقق منها دون اتصال).",
+    "No verified official Aims & Scope text for this journal: the match relies on title, keywords, subjects and categories only.": "لا يوجد نص رسمي متحقق منه للأهداف والنطاق لهذه المجلة: يعتمد التطابق على العنوان والكلمات المفتاحية والمواضيع والفئات فقط.",
+    'Aims & scope': 'الأهداف والنطاق',
+    'via PJIP': 'عبر PJIP',
+    'Source:': 'المصدر:',
+    'Journal profile on PJIP (aims & scope, review times, fees)': 'ملف المجلة على PJIP (الأهداف والنطاق، مدة التحكيم، الرسوم)',
     /* ---- AI match ---- */
     '✦ AI match': '✦ مطابقة بالذكاء الاصطناعي',
     'ainfo': 'صف مقالك، ويقوم نموذج لغوي صغير (<b>MiniLM</b>، ~23 م.ب) بترتيب كل مجلات الوصول المفتوح حسب قرب نطاقها من نصك. يعمل <b>داخل متصفحك</b>: لا يُرسل شيء، لا حساب، لا واجهة برمجية.',
@@ -935,8 +965,8 @@
     'faq7': 'تُحدَّث لقطات DOAJ وSCImago المدمجة مرتين في الشهر، ويمكنك في أي وقت إسقاط تصدير حديث من DOAJ أو SCImago. كل شيء يعمل في متصفحك: لا حساب، لا تتبع، وعمليات بحثك لا تغادر جهازك أبداً.',
     'Free-to-publish journals by subject': 'المجلات مجانية النشر حسب التخصص',
     'subj.blurb': '{n} مجلة مفهرسة في Scopus بدون رسوم APC، مجمعة حسب مجالات SCImago. <a href="/subjects/">عرض المجالات الـ {k} ←</a>',
-    'Free tool built by Mohamed-Akram Lamhour. Data: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus API (Elsevier), ccfddl, CNRST.':
-      'أداة مجانية من إعداد محمد أكرم لمحور. البيانات: DOAJ (CC BY-SA)، SCImago Journal &amp; Country Rank، واجهة Scopus (Elsevier)، ccfddl، CNRST.',
+    'Free tool built by Mohamed-Akram Lamhour. Data: DOAJ (CC BY-SA), SCImago Journal &amp; Country Rank, Scopus API (Elsevier), ccfddl, CNRST, <a href="https://www.pjip.org" rel="noopener" target="_blank">PJIP</a> (aims &amp; scope, CC BY-NC).':
+      'أداة مجانية من إعداد محمد أكرم لمحور. البيانات: DOAJ (CC BY-SA)، SCImago Journal &amp; Country Rank، واجهة Scopus (Elsevier)، ccfddl، CNRST، <a href="https://www.pjip.org" rel="noopener" target="_blank">PJIP</a> (الأهداف والنطاق، CC BY-NC).',
 
     /* ---- sidebar ---- */
     'Open access journals, ranked conferences & research events, with live data.': 'مجلات الوصول المفتوح، مؤتمرات مصنفة وأحداث بحثية، ببيانات حية.',

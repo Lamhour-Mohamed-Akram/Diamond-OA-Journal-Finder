@@ -53,6 +53,44 @@ async function loadScopusStatus(){
   if(state) render();
   if($('main-s').style.display!=='none') renderScopus();
 }
+/* ---- Official Aims & Scope evidence status (data/scope-evidence.csv, built offline by
+   scripts/scope_enrichment; status + confidence + source URL only, never the text).
+   Read by js/ai-score.js (journalEvidence / verifyScopeUrl). ---- */
+var SCOPE_EV={};   // issn8 -> {st, conf, url}
+let scopeEvLoaded=false;
+async function loadScopeEvidence(){
+  if(scopeEvLoaded) return; scopeEvLoaded=true;
+  let text='';
+  for(const url of [GH_DATA+'data/scope-evidence.csv','data/scope-evidence.csv']){
+    try{ const r=await fetch(url); if(r.ok){ text=await r.text(); break; } }catch(e){}
+  }
+  if(!text){ scopeEvLoaded=false; return; }
+  const rows=parseCSV(text,',');
+  for(let i=1;i<rows.length;i++){
+    const [a,b,st,conf,url]=rows[i]; if(!st) continue;
+    const e={st,conf:parseFloat(conf)||0,url:url||''};
+    if(a) SCOPE_EV[a]=e; if(b) SCOPE_EV[b]=e;
+  }
+  if(typeof AI!=='undefined'&&AI.ran&&typeof renderAI==='function') renderAI();
+}
+/* ---- PJIP Aims & Scope text (data/pjip-scopes.json; CC BY-NC 4.0, shared by PJIP for this site).
+   Shown verbatim on the journal card with attribution and a link to the journal's PJIP profile,
+   both required by the licence agreement. Cached on the device for a day. ---- */
+var PJIP=null;   // {j:[{t,u}], issns:{issn8:index}}
+let pjipLoaded=false;
+function pjipOf(r){ if(!PJIP) return null; for(const i of (r.issns||[r.issn])){ const k=i&&PJIP.issns[i]; if(k!=null) return PJIP.j[k]; } return null; }
+async function loadPjip(){
+  if(pjipLoaded) return; pjipLoaded=true;
+  try{ const c=await cacheGet('pjip1'); if(c&&c.doc&&Date.now()-(c.ts||0)<864e5){ PJIP=c.doc; if(state) render(); return; } }catch(e){}
+  let doc=null;
+  for(const url of [GH_DATA+'data/pjip-scopes.json','data/pjip-scopes.json']){
+    try{ const r=await fetch(url); if(r.ok){ doc=await r.json(); break; } }catch(e){}
+  }
+  if(!doc||!doc.j||!doc.issns){ pjipLoaded=false; return; }
+  PJIP=doc; cacheSet('pjip1',{doc,ts:Date.now()});
+  if(state) render();
+  if(typeof AI!=='undefined'&&AI.ran&&typeof renderAI==='function') renderAI();
+}
 /* badge + card class for a status entry (null → nothing) */
 function scopusFlag(v){
   if(!v) return {cls:'',tag:''};
@@ -203,6 +241,8 @@ function startApp(data,stamp,tab){
   switchTab(tab||(['j','a','c','s'].includes(hashTab)?hashTab:'j'));
   if(data) render();
   loadScopusStatus();
+  loadScopeEvidence();
+  loadPjip();
 }
 
 /* sidebar counters (Journals + Scopus tabs); re-run on language switch so the number format follows the language */
@@ -264,15 +304,17 @@ function bindOnce(){
     else state.sorts.splice(i,1);                                    // 3rd: remove
     renderSortBar(); render();
   });
+  // sliders: update the label on every tick, re-render the list only after a short pause
+  let slideTmr=null; const slideRender=()=>{ clearTimeout(slideTmr); slideTmr=setTimeout(()=>{ state.limit=60; render(); },120); };
   $('weeks').addEventListener('input',e=>{
     state.weeks=+e.target.value;
     $('wkVal').textContent=state.weeks>=52?t('Any'):'≤ '+state.weeks+'w';
-    state.limit=60; render();
+    slideRender();
   });
   $('apc').addEventListener('input',e=>{
     state.maxUsd=+e.target.value;
     $('apcVal').textContent=apcLabel(state.maxUsd);
-    state.limit=60; render();
+    slideRender();
   });
   $('resetBtn').addEventListener('click',()=>{
     state={q:'',fees:new Set(['dia']),quarts:new Set(['Q1','Q2','Q3','Q4','']),idxOnly:false,extra:false,area:'',weeks:52,maxUsd:APC_MAX,country:'',sorts:DEFAULT_SORTS.map(x=>({...x})),limit:60};
