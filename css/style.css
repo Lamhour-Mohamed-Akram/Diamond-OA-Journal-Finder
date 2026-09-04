@@ -395,7 +395,7 @@ body:not(.app-open) .side-toggle{display:none}
   .jrow{grid-template-columns:58px 1fr}
   .jside{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;min-width:0;flex-wrap:wrap}
   .speed{width:auto;flex:1;min-width:120px;max-width:200px}
-  .qbadge{align-self:start;min-height:60px;padding:10px 6px}
+  .qbadge{align-self:stretch;min-height:60px;padding:10px 6px}   /* fills the badge column down to the tags, no dead space under the square */
   #main-j .tools{width:100%;justify-content:center}
   #main-a .tools{margin-inline-start:auto}
   .slots{grid-template-columns:1fr}
@@ -510,18 +510,18 @@ body:not(.app-open) .totop{display:none}
   .jrow{grid-template-columns:58px minmax(0,1fr)}
   .jside{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;min-width:0;max-width:none;flex-wrap:wrap}
   .jacts{flex-wrap:wrap;justify-content:flex-start}
-  .qbadge{align-self:start;min-height:60px;padding:10px 6px}
+  .qbadge{align-self:stretch;min-height:60px;padding:10px 6px}   /* fills the badge column down to the tags, no dead space under the square */
 }
 
 /* ---- Aims & scope on the card (PJIP text, CC BY-NC) ---- */
-.jscope{margin-top:8px;font-size:12.5px;color:var(--ink-2)}
+.jscope{grid-column:1/-1;margin-top:-2px;font-size:12.5px;color:var(--ink-2)}
 .jscope summary{cursor:pointer;font-weight:600;color:var(--sea);list-style:none;display:inline-flex;align-items:center;gap:6px}
 .jscope summary::-webkit-details-marker{display:none}
 .jscope summary::before{content:"▸";font-size:11px;transition:.12s}
 .jscope[open] summary::before{transform:rotate(90deg)}
 [dir=rtl] .jscope summary::before{content:"◂"}[dir=rtl] .jscope[open] summary::before{transform:rotate(-90deg)}
 .jscope summary small{font-weight:500;color:var(--muted-2);font-size:11px}
-.jscope p{margin:6px 0 4px;line-height:1.5;background:var(--paper-2);border-inline-start:3px solid var(--sea-soft);border-radius:0 8px 8px 0;padding:8px 10px}
+.jscope p{margin:6px 0 4px;line-height:1.5;background:var(--paper-2);border-inline-start:3px solid var(--sea-soft);border-radius:0 8px 8px 0;padding:8px 10px;max-height:260px;overflow:auto}
 [dir=rtl] .jscope p{border-radius:8px 0 0 8px}
 .jscope-src{font-size:11px;color:var(--muted)}.jscope-src a{color:var(--coral);font-weight:600;text-decoration:none}
 

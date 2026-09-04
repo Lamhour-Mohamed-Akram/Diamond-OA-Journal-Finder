@@ -127,12 +127,12 @@ function jrowHtml(r){
       +'<div class="qbadge q-'+q+'"><span class="q">'+(r.idx?(r.q||'–'):'–')+'</span><span class="lbl">'+(r.idx?t('quartile'):t('unranked'))+'</span></div>'
       +'<div class="jmain"><h3 class="jtitle">'+link+'</h3>'
       +'<div class="jmeta"><span class="pub">'+esc(r.pub||'–')+'</span><span class="dot"></span><span>'+esc(r.c||'')+'</span>'+(r.lang?'<span class="dot"></span><span>'+esc(r.lang)+'</span>':'')+'</div>'
-      +'<div class="tags">'+fl.tag+feeT+commT+areaT+'</div>'+(catT?'<div class="tags cats">'+catT+'</div>':'')+scopeT+'</div>'
+      +'<div class="tags">'+fl.tag+feeT+commT+areaT+'</div>'+(catT?'<div class="tags cats">'+catT+'</div>':'')+'</div>'
       +'<div class="jside'+(r.src?' comm':'')+'">'+info+notIdx+'<div style="display:flex;gap:16px">'+sjr+hix+'</div>'+speedHtml(r.w)
       +'<div class="jacts">'+inScopus
       +'<button class="pick-btn'+(typeof bkHas==='function'&&bkHas(r.issn||('t:'+r.t))?' on':'')+'" data-key="'+esc(r.issn||('t:'+r.t))+'">'+(typeof bkHas==='function'&&bkHas(r.issn||('t:'+r.t))?t('✓ Added'):t('+ Add'))+'</button>'
       +(r.issn?'<button class="scopus-btn" data-issn="'+esc(r.issn)+'" data-title="'+esc(r.t)+'">'+t('✓ Check Scopus')+'</button>':'')
       +(r.doaj?'<a href="'+esc(r.doaj)+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--coral);font-weight:600;text-decoration:none">DOAJ ↗</a>':'')
       +(pj?'<a href="'+esc(pj.u)+'" target="_blank" rel="noopener" title="'+esc(t('Journal profile on PJIP (aims & scope, review times, fees)'))+'" style="font-size:11px;color:var(--coral);font-weight:600;text-decoration:none">PJIP ↗</a>':'')
-      +'</div></div></div>';
+      +'</div></div>'+scopeT+'</div>';   // the scope block spans the whole card width (own grid row), on desktop and phone alike
 }
