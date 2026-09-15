@@ -101,4 +101,13 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add -f data/doaj.csv data/scimago.csv data/scopus-status.csv data/embeddings.bin data/scope-evidence.csv subjects sitemap.xml index.html
-          git diff --cached --quiet || { git commit -m 'Refresh bundled data snapshots'; git push; }
+          git diff --cached --quiet && exit 0
+          git commit -m 'Refresh bundled data snapshots'
+          # the other scheduled workflows also push to main (they touch different
+          # files) - rebase onto whatever landed while this job ran, then retry
+          for attempt in 1 2 3 4 5; do
+            git push && exit 0
+            sleep $((attempt * 10))
+            git pull --rebase
+          done
+          exit 1
