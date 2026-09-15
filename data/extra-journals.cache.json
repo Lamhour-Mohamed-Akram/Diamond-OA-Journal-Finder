@@ -2790,6 +2790,11 @@
 "row": null,
 "status": "in DOAJ"
 },
+"https://revues.imist.ma/fjss": {
+"date": "2026-09-15",
+"row": null,
+"status": "no article in last 2 years"
+},
 "https://revues.imist.ma/fsejournal": {
 "date": "2026-08-27",
 "row": {
@@ -2831,6 +2836,11 @@
 },
 "https://revues.imist.ma/ijact": {
 "date": "2026-08-27",
+"row": null,
+"status": "no article in last 2 years"
+},
+"https://revues.imist.ma/irmals": {
+"date": "2026-09-15",
 "row": null,
 "status": "no article in last 2 years"
 },
