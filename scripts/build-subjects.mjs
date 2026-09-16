@@ -78,7 +78,7 @@ const CSS = `
 body{background:var(--paper);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
 a{color:var(--coral);font-weight:600;text-decoration:none}a:hover{text-decoration:underline}
 .top{display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid var(--line);background:var(--card)}
-.top .mark{font-family:"IBM Plex Mono",monospace;font-weight:600;letter-spacing:.14em;font-size:11px;color:var(--coral)}
+.top .mark{font-weight:600;font-size:21px;line-height:1;color:var(--coral)}
 .top .brand{font-family:Spectral,Georgia,serif;font-weight:700;font-size:18px;color:var(--ink)}
 .top nav{margin-inline-start:auto;display:flex;gap:18px;font-size:13.5px}.top nav a{color:var(--ink-2)}
 .wrap{max-width:980px;margin:0 auto;padding:36px 24px 70px}
@@ -151,7 +151,7 @@ const head = ({ title, desc, url, ld }) => `<!DOCTYPE html>
 ${ld.map(o => `<script type="application/ld+json">${JSON.stringify(o)}</script>`).join('\n')}
 </head>
 <body>
-<header class="top"><span class="mark">◆ OA</span><a class="brand" href="/">Diamond Open Access Journal Finder</a>
+<header class="top"><span class="mark" aria-hidden="true">◆</span><a class="brand" href="/">Diamond Open Access Journal Finder</a>
 <nav><a href="/" data-i18n>Search journals</a><a href="/subjects/" data-i18n>All subjects</a><a href="/#tab=s" data-i18n>Scopus check</a></nav></header>
 <main class="wrap">`;
 const foot = () => `</main>

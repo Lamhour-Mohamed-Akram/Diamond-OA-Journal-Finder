@@ -38,7 +38,7 @@ body.app-open #guide{display:none}
 #loader.waiting .load-card{display:none}
 #loader:not(.waiting) .wait-card{display:none}
 .wait-card{max-width:560px;width:100%;animation:pop .25s ease-out}
-.wait-card .mark{font-family:"IBM Plex Mono",monospace;font-weight:600;letter-spacing:.14em;font-size:12px;color:var(--coral)}
+.wait-card .mark{display:block;font-weight:600;font-size:56px;line-height:1;margin-bottom:6px;color:var(--coral)}
 .wait-card h1{font-family:Spectral,Georgia,serif;font-weight:700;font-size:34px;margin:6px 0 10px;line-height:1.1}
 .wait-card p.lead{color:var(--muted);font-size:15px;margin:0 0 26px;line-height:1.55}
 .wbar{height:10px;background:var(--paper-2);border:1px solid var(--line);border-radius:999px;overflow:hidden;position:relative}
@@ -64,7 +64,7 @@ body.app-open #guide{display:none}
 
 #loader{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px}
 .load-card{max-width:640px;width:100%}
-.load-card .mark{font-family:"IBM Plex Mono",monospace;font-weight:600;letter-spacing:.14em;font-size:12px;color:var(--coral)}
+.load-card .mark{display:block;font-weight:600;font-size:56px;line-height:1;margin-bottom:6px;color:var(--coral)}
 .load-card h1{font-family:Spectral,Georgia,serif;font-weight:700;font-size:34px;margin:6px 0 10px;line-height:1.1}
 .load-card p.lead{color:var(--muted);font-size:15px;margin:0 0 26px;line-height:1.55}
 .dropzone{
@@ -132,8 +132,8 @@ aside .credit a:focus-visible{outline-color:#fff}
 #app{display:none}
 .wrap{display:grid;grid-template-columns:308px 1fr;min-height:100vh}
 aside{background:var(--ink);color:#EAF0EE;padding:22px 20px 40px;position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;border-inline-end:1px solid #0a1e24}
-.brand{display:flex;align-items:baseline;justify-content:center;gap:9px;margin-bottom:4px}
-.brand .mark{font-family:"IBM Plex Mono",monospace;font-weight:600;letter-spacing:.14em;font-size:11px;color:var(--coral)}
+.brand{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:4px}
+.brand .mark{font-weight:600;font-size:22px;line-height:1;color:var(--coral)}
 .brand h1{font-family:Spectral,Georgia,serif;font-weight:700;font-size:21px;line-height:1.1;margin:0;color:#F4F7F5}
 .tagline{color:#9DB0AD;font-size:12px;margin:2px 0 14px;line-height:1.4;text-align:center}
 /* optional support line under the tagline (rendered only when SUPPORT_LINK_ENABLED in app.js) */
