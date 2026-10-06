@@ -1113,6 +1113,35 @@
 "row": null,
 "status": "no article in last 2 years"
 },
+"https://journals.imist.ma/rrshc": {
+"date": "2026-10-06",
+"row": null,
+"status": "no article in last 2 years"
+},
+"https://journals.imist.ma/tafakor": {
+"date": "2026-10-06",
+"row": {
+"APC": "No",
+"APC amount": "",
+"Country": "Morocco",
+"EISSN": "",
+"Evidence URL": "https://journals.imist.ma/index.php/tafakor/about",
+"Has other fees": "No",
+"ISSN (print)": "3119-6659",
+"Journal URL": "https://journals.imist.ma/index.php/tafakor",
+"Journal title": "مجلة تفاكر للعلوم الإنسانية والاجتماعية",
+"Keywords": "education, educational reform, islamic educational thought, professional competencies, sociology, teacher education, الإصلاح التربوي, الحداثة, العقل, الفكر التربوي الإسلامي, الكفايات المهنية, -imam al-hasan al-yusi, acquisition of professional competencies, actor, adaptive learning, al-hasan al-yusi, analysis of professional practices, anthropophilosophy, application, arab and muslim worlds, artificial intelligence, based approach, basic specialized training, cognitive apprenticeship, competency, complex, complexity, construction of a muslim problem, continuing professional development, convergence, critical thinking, cultural pluralism, cultural representations, culture, curriculum, descriptive files, didactic modeling, didactic situation, didactics, digital",
+"Languages": "Arabic, English",
+"Notes": "Automatic checks passed: ISSN found · peer-review statement · no fee wording · articles in the last 2 years.",
+"Publisher": "hosted on journals.imist.ma (IMIST / CNRST)",
+"Review process": "Peer review (policy stated on the journal site)",
+"Source": "journals.imist.ma-auto",
+"Subjects": "",
+"Verified on": "2026-10-06",
+"Weeks to publication": ""
+},
+"status": "ADDED"
+},
 "https://journals.imist.ma/takwine": {
 "date": "2026-09-29",
 "row": {
@@ -2980,6 +3009,11 @@
 },
 "https://revues.imist.ma/rpg": {
 "date": "2026-09-29",
+"row": null,
+"status": "no article in last 2 years"
+},
+"https://revues.imist.ma/tafakor": {
+"date": "2026-10-06",
 "row": null,
 "status": "no article in last 2 years"
 },
